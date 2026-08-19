@@ -33,10 +33,20 @@
 - [ ] `react-text` 1.3.2 VS Code のインストール画面
 - [ ] `react-text` 1.3.3 拡張機能の検索画面
 - [ ] `react-text` 1.6.4 開発者ツールの画面
-- [ ] `react-text` 3.3.1 ボックスモデルの図（開発者ツール）
+- [ ] `react-text` 3.3.1 ボックスモデルの図（開発者ツール。もしくは下記「図解の変換待ち」で SVG 化してもよい）
 - [ ] `docker-text` 2.1 Docker Desktop の画面
 
 画像は `<book>/images/` に置き、`docs/style-guide.md` の命名規則に従ってください。
+
+---
+
+## 図解の変換待ち（SVG → PNG）
+
+ルーティンが SVG ソースは作成したが、実行環境で PNG に変換できなかった図。
+`docs/writing-guidelines.md` 6.2 の手順で変換し、本文中の
+`<!-- TODO(review-notes): ... -->` プレースホルダを実際の画像参照に差し替えてください。
+
+- [ ] （ここにルーティンが `SVGパス` / `埋め込み予定のPNGパス` / `本文中の箇所` を追記します）
 
 ---
 

@@ -44,8 +44,13 @@ Codex / Copilot / Cursor など、`AGENTS.md` を読むエージェント向け�
 1. [`docs/writing-tasks/RUNBOOK.md`](./docs/writing-tasks/RUNBOOK.md) — 手順と完成条件
 2. [`docs/writing-tasks/TASKS.md`](./docs/writing-tasks/TASKS.md) — **1件だけ**取る
 3. 対象の本の `README.md` の章立て（3階層）どおりに書く
-4. **解答編への追記を忘れない**
+4. **演習問題が難しければ演習ではなく本文を厚くする**（RUNBOOK 3.6）
+5. 表で表現しきれない図は Mermaid か SVG→PNG で作る（`.svg` を本文から直接参照しない）
+6. **解答編への追記を忘れない**
+7. **`main` に直接コミットしない。** ブランチを切ってコミット・プッシュし、
+   プルリクエストを作成する（マージはしない。RUNBOOK 4章参照）
 
 1回の実行で複数タスクを進めないでください。
 
-詳細は `ai/instructions.md` を読んでください。
+詳細は [`docs/writing-guidelines.md`](./docs/writing-guidelines.md) と
+[`docs/writing-tasks/RUNBOOK.md`](./docs/writing-tasks/RUNBOOK.md) を読んでください。

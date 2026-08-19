@@ -81,13 +81,18 @@ grep -rn 'TakahashiTaiga' --include='*.md' .
 ### クラウドルーティンの設定
 
 1. [`writing-tasks/RUNBOOK.md`](./writing-tasks/RUNBOOK.md) の「2. ルーティンに設定するプロンプト」をコピー
-2. Claude のクラウドルーティンに貼り付け、リポジトリを `TakahashiTaiga/programing-texts`、ブランチを `main` に設定
-3. 頻度は **1日1〜2回**を推奨（人間が読んで確認できるペースにする）
+2. Claude のクラウドルーティンに貼り付け、リポジトリを `TakahashiTaiga/programing-texts`、ベースブランチを `main` に設定
+3. 実行環境で `gh`（GitHub CLI）がこのリポジトリに認証済みであることを確認する（PR 作成に必要）
+4. 頻度は **1日1〜2回**を推奨（人間が読んで確認できるペースにする）
+
+**ルーティンは main に直接コミットしません。** タスクごとにブランチを切り、
+PR を作成するところまでを行います。マージは人間が行います。
 
 ### 人間がやること
 
-- [ ] 数タスクごとに、書かれた章を読んで内容を確認する
+- [ ] **作成された PR をレビューしてマージする**（これが新しい必須作業）
 - [ ] **各本の第1〜2章（環境構築）は必ず実機で通しで検証する**
+- [ ] SVG → PNG の変換待ちがないか `writing-tasks/review-notes.md` を確認する
 - [ ] スクリーンショットを撮って `<book>/images/` に配置する
 - [ ] 気づいたことを `writing-tasks/review-notes.md` に追記する
 
