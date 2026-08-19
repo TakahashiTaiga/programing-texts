@@ -1,0 +1,25 @@
+title: "プログラミング未経験から始める FastAPI"
+summary: |
+  Python を学び終えた人向けの、Web API 入門書です。
+  HTTP の基礎から始めて、FastAPI でエンドポイントを作り、
+  Pydantic によるバリデーション、データベース連携、認証、テストまでを扱います。
+  最後に React のアプリと接続して、Web アプリを完成させます。
+
+  生成 AI にサポートしてもらいながら学ぶ構成です。
+topics: ["fastapi", "python", "api", "初心者", "バックエンド"]
+published: false
+price: 0
+chapters:
+  - 00-introduction
+  - 01-web-api
+  - 02-getting-started
+  - 03-parameters
+  - 04-pydantic
+  - 05-project-structure
+  - 06-database
+  - 07-authentication
+  - 08-testing
+  - 09-practice-connect-react
+  - 10-next-steps
+  - 90-answers-part1
+  - 91-answers-part2

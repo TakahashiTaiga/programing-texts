@@ -72,13 +72,34 @@ React本の 2.2.1 で詰まりました。
 │   ├── chapter-template.md
 │   ├── style-guide.md
 │   ├── glossary.md
-│   └── zenn-publishing.md
+│   ├── zenn-publishing.md
+│   ├── SETUP-CHECKLIST.md
+│   └── writing-tasks/       # ★執筆タスクのキュー（1タスクずつ消化する）
+│       ├── RUNBOOK.md          実行手順と完成条件
+│       ├── TASKS.md            全59タスクの一覧と進捗
+│       └── review-notes.md     人間向けの申し送り
 ├── react-text/          # 1冊目
 ├── python-text/         # 2冊目
 ├── fastapi-text/        # 3冊目
 ├── docker-text/         # 4冊目
 └── mysql-text/          # 5冊目
 ```
+
+---
+
+## 執筆の進め方（執筆者向け）
+
+章立ては各テキストの `README.md` に3階層（`2.3.4`）まで確定済みです。
+そこから **1章 = 1タスク**に分割し、[`docs/writing-tasks/TASKS.md`](./docs/writing-tasks/TASKS.md)
+のキューを上から1件ずつ消化していきます。
+
+| ファイル | 役割 |
+|---------|------|
+| [`docs/writing-tasks/TASKS.md`](./docs/writing-tasks/TASKS.md) | 全59タスクの一覧と進捗 |
+| [`docs/writing-tasks/RUNBOOK.md`](./docs/writing-tasks/RUNBOOK.md) | 実行手順・完成条件・ルーティンに貼るプロンプト |
+| [`docs/writing-tasks/review-notes.md`](./docs/writing-tasks/review-notes.md) | 人間が検証すべき箇所の申し送り |
+
+> **各本の第1〜2章（環境構築）だけは、必ず人間が実機で検証してください。**
 
 ---
 

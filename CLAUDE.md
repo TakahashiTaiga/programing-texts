@@ -19,9 +19,19 @@
 
 ---
 
-## あなたが「執筆補助役」として呼ばれた場合
+## あなたが「執筆役」として呼ばれた場合
 
-テキストを書く・直すときは [`docs/writing-guidelines.md`](./docs/writing-guidelines.md)
+**執筆は1タスクずつキューから取り出して進めます。**
+
+1. [`docs/writing-tasks/RUNBOOK.md`](./docs/writing-tasks/RUNBOOK.md) を読む（手順と完成条件）
+2. [`docs/writing-tasks/TASKS.md`](./docs/writing-tasks/TASKS.md) から**1件だけ**タスクを取る
+3. 対象の本の `README.md` にある章立て（3階層）のとおりに書く
+4. **解答編への追記を忘れない**
+5. `ai/curriculum-map.md` と `TASKS.md` の状態を更新してコミットする
+
+**1回の実行で複数タスクを進めないでください。**
+
+執筆時のルールは [`docs/writing-guidelines.md`](./docs/writing-guidelines.md)
 と [`docs/style-guide.md`](./docs/style-guide.md) に従ってください。
 
 要点：

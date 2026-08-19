@@ -35,4 +35,17 @@ Codex / Copilot / Cursor など、`AGENTS.md` を読むエージェント向け�
 - 日本語・ですます調・詰めない
 - 演習の答えは、学習者が最低 1 回試すまで出さない
 
+---
+
+## 執筆役として呼ばれた場合
+
+執筆は1タスクずつキューから取り出して進めます。
+
+1. [`docs/writing-tasks/RUNBOOK.md`](./docs/writing-tasks/RUNBOOK.md) — 手順と完成条件
+2. [`docs/writing-tasks/TASKS.md`](./docs/writing-tasks/TASKS.md) — **1件だけ**取る
+3. 対象の本の `README.md` の章立て（3階層）どおりに書く
+4. **解答編への追記を忘れない**
+
+1回の実行で複数タスクを進めないでください。
+
 詳細は `ai/instructions.md` を読んでください。

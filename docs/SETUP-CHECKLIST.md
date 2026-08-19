@@ -4,35 +4,16 @@
 
 ---
 
-## 1. プレースホルダを実際の値に置き換える
+## 1. プレースホルダの置換 ✅ 完了
 
-現在、リポジトリの URL は `TakahashiTaiga` というプレースホルダになっています。
-**GitHub にリポジトリを作ったら、次のファイルをすべて置換してください。**
+リポジトリ内の URL は `TakahashiTaiga/programing-texts` に置換済みです。
+リポジトリ名やユーザー名を変えた場合は、次のファイルを更新してください。
 
-置換対象：`TakahashiTaiga` → 実際の GitHub ユーザー名（またはOrganization 名）
-
-| ファイル | 出現箇所 |
-|---------|---------|
-| `README.md` | AI に読ませる URL |
-| `ai/instructions.md` | （現在なし。将来追加したら確認） |
-| `ai/prompt-templates.md` | 質問テンプレート内の URL |
-| `docs/zenn-publishing.md` | URL の説明 |
-| `react-text/00-introduction.md` | **0.2.3 と 0.3.2**（最重要） |
-| 各テキストの `00-introduction.md` | 同上 |
-
-**一括置換コマンド（PowerShell）**
-
-```powershell
-Get-ChildItem -Recurse -Include *.md | ForEach-Object { (Get-Content $_.FullName -Raw) -replace 'TakahashiTaiga', 'あなたのGitHubユーザー名' | Set-Content $_.FullName -Encoding utf8 }
-```
-
-**一括置換コマンド（bash）**
-
-```bash
-grep -rl 'TakahashiTaiga' --include='*.md' . | xargs sed -i 's/TakahashiTaiga/あなたのGitHubユーザー名/g'
-```
-
-置換後、残っていないか確認します。
+- `README.md`
+- `ai/prompt-templates.md`
+- `docs/zenn-publishing.md`
+- `react-text/00-introduction.md`（0.2.3 と 0.3.2）
+- 各テキストの `00-introduction.md`
 
 ```bash
 grep -rn 'TakahashiTaiga' --include='*.md' .
@@ -40,19 +21,13 @@ grep -rn 'TakahashiTaiga' --include='*.md' .
 
 ---
 
-## 2. Git リポジトリを作る
+## 2. Git リポジトリ ✅ 完了
 
-```bash
-git init
-git add .
-git commit -m "初回コミット: リポジトリ構成と React テキスト第3章まで"
-git branch -M main
-git remote add origin https://github.com/TakahashiTaiga/programing-texts.git
-git push -u origin main
-```
+`https://github.com/TakahashiTaiga/programing-texts` にプッシュ済みです。
 
 > **必ず public リポジトリにしてください。**
 > private だと、学習者の AI が `ai/instructions.md` を読み込めません。
+> GitHub の Settings → Danger Zone から変更できます。
 
 ---
 
@@ -94,24 +69,27 @@ git push -u origin main
 
 ## 5. 執筆を進める
 
-現在の進捗：
+**章立ては全5冊分、3階層（`2.3.4`）まで確定済み**です（各テキストの `README.md`）。
+そこから **1章 = 1タスク**に分割し、キューを上から消化していきます。
 
-| テキスト | 進捗 |
+| ファイル | 役割 |
 |---------|------|
-| react-text | 第0〜3章 + 解答編（第3章まで）完成 |
-| python-text | 目次のみ |
-| fastapi-text | 目次のみ |
-| docker-text | 目次のみ |
-| mysql-text | 目次のみ |
+| [`writing-tasks/TASKS.md`](./writing-tasks/TASKS.md) | 全59タスクの一覧と進捗 |
+| [`writing-tasks/RUNBOOK.md`](./writing-tasks/RUNBOOK.md) | 実行手順・完成条件・ルーティンに貼るプロンプト |
+| [`writing-tasks/review-notes.md`](./writing-tasks/review-notes.md) | 人間が検証すべき箇所の申し送り |
 
-**次にやること**
+### クラウドルーティンの設定
 
-1. react-text 第4章（JavaScript 基礎・前半）を書く
-2. 書いたら **その場で** `90-answers-part1.md` の「第4章」に解答を追記する
-3. `ai/curriculum-map.md` の既習範囲が実際の内容と合っているか確認する
-4. `docs/style-guide.md` の章末チェックリストで確認する
+1. [`writing-tasks/RUNBOOK.md`](./writing-tasks/RUNBOOK.md) の「2. ルーティンに設定するプロンプト」をコピー
+2. Claude のクラウドルーティンに貼り付け、リポジトリを `TakahashiTaiga/programing-texts`、ブランチを `main` に設定
+3. 頻度は **1日1〜2回**を推奨（人間が読んで確認できるペースにする）
 
-**章を書くときは** [`docs/chapter-template.md`](./chapter-template.md) をコピーして使ってください。
+### 人間がやること
+
+- [ ] 数タスクごとに、書かれた章を読んで内容を確認する
+- [ ] **各本の第1〜2章（環境構築）は必ず実機で通しで検証する**
+- [ ] スクリーンショットを撮って `<book>/images/` に配置する
+- [ ] 気づいたことを `writing-tasks/review-notes.md` に追記する
 
 ---
 

@@ -1,0 +1,23 @@
+title: "プログラミング未経験から始める MySQL"
+summary: |
+  Web アプリのデータを支えるデータベースの入門書です。
+  SQL の基本から始めて、テーブル設計、結合と集計、インデックスと実行計画までを扱い、
+  最後に FastAPI から実際に使うところまで進みます。
+
+  この本を終えると、React + FastAPI + MySQL を Docker で動かす Web アプリが一人で作れます。
+topics: ["mysql", "sql", "database", "初心者"]
+published: false
+price: 0
+chapters:
+  - 00-introduction
+  - 01-what-is-database
+  - 02-environment
+  - 03-select
+  - 04-modify-data
+  - 05-table-design
+  - 06-join-and-aggregate
+  - 07-index-and-explain
+  - 08-use-from-app
+  - 09-next-steps
+  - 90-answers-part1
+  - 91-answers-part2

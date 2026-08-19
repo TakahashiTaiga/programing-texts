@@ -1,0 +1,26 @@
+title: "プログラミング未経験から始める Python"
+summary: |
+  プログラミングを一度もやったことがない人向けの Python 入門書です。
+  環境構築から始めて、文法・データ構造・関数・オブジェクト指向・型ヒントまでを扱い、
+  最後に実用的なデータ処理スクリプトを作ります。
+
+  生成 AI にサポートしてもらいながら学ぶ構成です。第0章で AI の準備をしてから読み進めてください。
+  各章は 2.2.1 のように細かく番号を振ってあります。
+topics: ["python", "初心者", "プログラミング入門"]
+published: false
+price: 0
+chapters:
+  - 00-introduction
+  - 01-environment
+  - 02-basics
+  - 03-control-flow
+  - 04-data-structures
+  - 05-functions
+  - 06-modules
+  - 07-files-and-exceptions
+  - 08-oop
+  - 09-typing-and-tools
+  - 10-practice-data-script
+  - 11-next-steps
+  - 90-answers-part1
+  - 91-answers-part2

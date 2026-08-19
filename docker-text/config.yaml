@@ -1,0 +1,21 @@
+title: "プログラミング未経験から始める Docker"
+summary: |
+  3回の環境構築で苦労した人のための Docker 入門書です。
+  コンテナの考え方から始めて、Dockerfile、ボリューム、ネットワーク、Docker Compose を学び、
+  最後に React + FastAPI + MySQL を1コマンドで起動できるところまで進みます。
+
+  生成 AI にサポートしてもらいながら学ぶ構成です。
+topics: ["docker", "dockercompose", "初心者", "環境構築"]
+published: false
+price: 0
+chapters:
+  - 00-introduction
+  - 01-why-docker
+  - 02-install-and-basics
+  - 03-dockerfile
+  - 04-volumes-and-networks
+  - 05-compose
+  - 06-practice-full-stack
+  - 07-optimization
+  - 08-next-steps
+  - 90-answers
