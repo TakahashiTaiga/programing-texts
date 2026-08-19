@@ -1,0 +1,29 @@
+title: "プログラミング未経験から始める React"
+summary: |
+  プログラミングを一度もやったことがない人向けの React 入門書です。
+  「Web ページが表示される仕組み」から始めて、HTML・CSS・JavaScript を学び、
+  React でアプリを作れるようになるところまでを扱います。
+
+  環境構築やエラーで止まらないよう、生成 AI にサポートしてもらいながら学ぶ構成にしています。
+  第0章で AI の準備をしてから読み進めてください。
+
+  各章は 2.2.1 のように細かく番号を振ってあります。
+  詰まったときは章番号を AI に伝えるだけで、ちょうどよい助けが得られます。
+topics: ["react", "javascript", "html", "css", "初心者"]
+published: false
+price: 0
+chapters:
+  - 00-introduction
+  - 01-web-and-environment
+  - 02-html
+  - 03-css
+  - 04-javascript-basics
+  - 05-javascript-advanced
+  - 06-react-start
+  - 07-props-and-state
+  - 08-state-design-and-effects
+  - 09-routing-and-architecture
+  - 10-practice-task-app
+  - 11-next-steps
+  - 90-answers-part1
+  - 91-answers-part2

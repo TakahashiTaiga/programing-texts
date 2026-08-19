@@ -1,0 +1,19 @@
+# Node / Zenn CLI
+node_modules/
+package-lock.json
+.zenn/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# エディタ
+.vscode/
+.idea/
+*.swp
+
+# 作業用
+.tmp/
+scratch/
+*.local.md
