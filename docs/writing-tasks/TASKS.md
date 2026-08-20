@@ -22,12 +22,12 @@
 
 | 本 | 完了 / 全体 |
 |----|-----------|
-| react-text | 4 / 13 |
+| react-text | 6 / 13 |
 | python-text | 0 / 13 |
 | fastapi-text | 0 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **4 / 59** |
+| **合計** | **6 / 59** |
 
 ---
 
@@ -41,9 +41,9 @@
 | R-01 | 完了 | 第1章 Web の仕組みと開発環境 | `react-text/01-web-and-environment.md` | part1 | 大 | |
 | R-02 | 完了 | 第2章 HTML | `react-text/02-html.md` | part1 | 大 | |
 | R-03 | 完了 | 第3章 CSS | `react-text/03-css.md` | part1 | 大 | |
-| **R-04** | **未着手** | 第4章 JavaScript の基礎（前半） | `react-text/04-javascript-basics.md` | part1 | 大 | ★このテキストの山場。下の注記を必ず読む |
-| R-05 | 未着手 | 第5章 JavaScript の基礎（後半） | `react-text/05-javascript-advanced.md` | part1 | 大 | ★山場。5.7.7 が第6章への橋渡し |
-| R-06 | 未着手 | 第6章 React をはじめる | `react-text/06-react-start.md` | part2 | 中 | |
+| R-04 | 完了 | 第4章 JavaScript の基礎（前半） | `react-text/04-javascript-basics.md` | part1 | 大 | ★このテキストの山場。下の注記を必ず読む（PR #1 でマージ待ち。TASKS.md の反映漏れを補正） |
+| R-05 | 完了 | 第5章 JavaScript の基礎（後半） | `react-text/05-javascript-advanced.md` | part1 | 大 | ★山場。5.7.7 が第6章への橋渡し |
+| **R-06** | **未着手** | 第6章 React をはじめる | `react-text/06-react-start.md` | part2 | 中 | |
 | R-07 | 未着手 | 第7章 props と state | `react-text/07-props-and-state.md` | part2 | 大 | ★React の中核 |
 | R-08 | 未着手 | 第8章 状態設計と副作用 | `react-text/08-state-design-and-effects.md` | part2 | 大 | |
 | R-09 | 未着手 | 第9章 ルーティングと全体設計 | `react-text/09-routing-and-architecture.md` | part2 | 中 | |
