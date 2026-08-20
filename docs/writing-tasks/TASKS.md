@@ -41,7 +41,7 @@
 | R-01 | 完了 | 第1章 Web の仕組みと開発環境 | `react-text/01-web-and-environment.md` | part1 | 大 | |
 | R-02 | 完了 | 第2章 HTML | `react-text/02-html.md` | part1 | 大 | |
 | R-03 | 完了 | 第3章 CSS | `react-text/03-css.md` | part1 | 大 | |
-| R-04 | 完了 | 第4章 JavaScript の基礎（前半） | `react-text/04-javascript-basics.md` | part1 | 大 | ★このテキストの山場。下の注記を必ず読む（PR #1 でマージ待ち。TASKS.md の反映漏れを補正） |
+| R-04 | 完了 | 第4章 JavaScript の基礎（前半） | `react-text/04-javascript-basics.md` | part1 | 大 | ★このテキストの山場。下の注記を必ず読む |
 | R-05 | 完了 | 第5章 JavaScript の基礎（後半） | `react-text/05-javascript-advanced.md` | part1 | 大 | ★山場。5.7.7 が第6章への橋渡し |
 | **R-06** | **未着手** | 第6章 React をはじめる | `react-text/06-react-start.md` | part2 | 中 | |
 | R-07 | 未着手 | 第7章 props と state | `react-text/07-props-and-state.md` | part2 | 大 | ★React の中核 |
