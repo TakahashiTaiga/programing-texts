@@ -15,7 +15,7 @@
 | 3 | CSS | セレクタ、ボックスモデル、色・文字、Flexbox、レスポンシブ | CSS が効かない（読み込み・詳細度・キャッシュ）、`margin` の相殺 |
 | 4 | JavaScript 基礎（前半） | `<script>` の読み込み、`console.log`、エラーの読み方、変数（`let`/`const`、`var` は使わない）、数値・文字列・真偽値・`undefined`/`null`、`typeof`、算術演算子と `%`、`Math.floor`/`ceil`/`round`、テンプレートリテラル、`===`/`!==`、`&&`/`\|\|`/`!`、`Number()`、`if`/`else if`/`else`、三項演算子、`switch`、`for`/`while`、`break`/`continue`、関数（`function`・アロー関数・引数・戻り値）、スコープ | `=` と `==` と `===`、スコープ、`i` の意味、小数の誤差、`return` を書かず `undefined` になる、無限ループ |
 | 5 | JavaScript 基礎（後半） | 配列（`push`/`pop`/`unshift`/`shift`/`includes`/`indexOf`/`join`/`slice`/`concat`/`for...of`）、オブジェクト（読み書き・入れ子・オプショナルチェーン`?.`）、`map`/`filter`/`find`/`reduce`/`sort`とチェーン、分割代入、スプレッド構文、イミュータブルな更新、非同期処理（`setTimeout`/`Promise`/`async`/`await`）、`fetch`とエラー処理、`export`/`import`（名前付き・デフォルト）、`type="module"`、DOM 操作（`querySelector`/`textContent`/`classList`/`addEventListener`/`createElement`/`appendChild`/`remove`） | `TypeError: Cannot read properties of undefined`、`const copy = original` が複製にならない、`reduce` の初期値省略、`setTimeout` が待ってくれると誤解する、モジュールを `file://` で直接開いて動かない |
-| 6 | React をはじめる | Vite、プロジェクト構成、JSX、コンポーネント、`className` | Node バージョン非互換、JSX の1要素ルール、`class` と書いてしまう |
+| 6 | React をはじめる | 命令的と宣言的の違い、Vite（`npm create vite@latest ... -- --template react`／`npm install`／`npm run dev`／Ctrl+C）、プロジェクト構成（`src`／`index.html`／`main.jsx`／`App.jsx`／`package.json`／`node_modules`／`public`）、`createRoot`と`StrictMode`（存在のみ）、CSS を `import` で読み込む、JSX（1要素ルール、`className`、閉じタグ必須、キャメルケース属性、`{/* */}`）、`{ }` での式の埋め込み（変数・計算・三項演算子。`if`/`for` は書けない）、属性への値渡しと `style={{ }}`、フラグメント `<>`、コンポーネント（作成・`export default`/`import` でのファイル分割・分け方の基準・大文字始まりの命名） | Node バージョン非互換（Vite は Node 20.19+／22.12+ が必要）、ポート 5173 の衝突、`Missing script: "dev"`（プロジェクト外で実行）、JSX の1要素ルール、`class` と書いて CSS が効かない、オブジェクトを `{ }` に直接入れる、`style` の波かっこ1つ、コンポーネント名を小文字で始めて何も表示されない、`import` パスに `./` を付け忘れる |
 | 7 | props と state | `props`、`useState`、イベント、リスト表示と `key`、条件付きレンダリング、フォーム（制御コンポーネント） | state 直接代入、`key` 無し警告、`onClick={fn()}` と書いて即実行 |
 | 8 | 状態設計と副作用 | 状態のリフトアップ、`useEffect`、データ取得、`useRef`、`useMemo`/`useCallback`、カスタムフック | `useEffect` の無限ループ、依存配列、クリーンアップ |
 | 9 | ルーティングと全体設計 | React Router、`Context`、ディレクトリ構成、エラー処理 | ルーティングのパス指定、Context の再レンダリング |
@@ -24,6 +24,7 @@
 | 12 | 解答編 | — | — |
 
 > **注意**：4 章の学習者に `map` を使ったコードを見せないでください（5 章の内容）。
+> 6 章の学習者に `props` / `useState` / JSX 内での `map` と `key` を使わせないでください（7 章の内容）。
 > 6 章の学習者に `useEffect` の話をしないでください（8 章の内容）。
 
 ---
