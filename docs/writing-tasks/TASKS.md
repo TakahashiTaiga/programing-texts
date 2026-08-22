@@ -22,12 +22,12 @@
 
 | 本 | 完了 / 全体 |
 |----|-----------|
-| react-text | 9 / 13 |
+| react-text | 10 / 13 |
 | python-text | 0 / 13 |
 | fastapi-text | 0 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **9 / 59** |
+| **合計** | **10 / 59** |
 
 ---
 
@@ -46,8 +46,8 @@
 | R-06 | 完了 | 第6章 React をはじめる | `react-text/06-react-start.md` | part2 | 中 | |
 | R-07 | 完了 | 第7章 props と state | `react-text/07-props-and-state.md` | part2 | 大 | ★React の中核 |
 | R-08 | 完了 | 第8章 状態設計と副作用 | `react-text/08-state-design-and-effects.md` | part2 | 大 | |
-| **R-09** | **未着手** | 第9章 ルーティングと全体設計 | `react-text/09-routing-and-architecture.md` | part2 | 中 | |
-| R-10 | 未着手 | 第10章 実践：タスク管理アプリ | `react-text/10-practice-task-app.md` | part2 | 大 | |
+| R-09 | 完了 | 第9章 ルーティングと全体設計 | `react-text/09-routing-and-architecture.md` | part2 | 中 | |
+| **R-10** | **未着手** | 第10章 実践：タスク管理アプリ | `react-text/10-practice-task-app.md` | part2 | 大 | |
 | R-11 | 未着手 | 第11章 次のステップ | `react-text/11-next-steps.md` | — | 小 | |
 | R-FIN | 未着手 | 通し確認 | — | — | 小 | 下の「-FIN タスクの内容」参照 |
 

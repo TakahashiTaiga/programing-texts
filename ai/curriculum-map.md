@@ -18,7 +18,7 @@
 | 6 | React をはじめる | 命令的と宣言的の違い、Vite（`npm create vite@latest ... -- --template react`／`npm install`／`npm run dev`／Ctrl+C）、プロジェクト構成（`src`／`index.html`／`main.jsx`／`App.jsx`／`package.json`／`node_modules`／`public`）、`createRoot`と`StrictMode`（存在のみ）、CSS を `import` で読み込む、JSX（1要素ルール、`className`、閉じタグ必須、キャメルケース属性、`{/* */}`）、`{ }` での式の埋め込み（変数・計算・三項演算子。`if`/`for` は書けない）、属性への値渡しと `style={{ }}`、フラグメント `<>`、コンポーネント（作成・`export default`/`import` でのファイル分割・分け方の基準・大文字始まりの命名） | Node バージョン非互換（Vite は Node 20.19+／22.12+ が必要）、ポート 5173 の衝突、`Missing script: "dev"`（プロジェクト外で実行）、JSX の1要素ルール、`class` と書いて CSS が効かない、オブジェクトを `{ }` に直接入れる、`style` の波かっこ1つ、コンポーネント名を小文字で始めて何も表示されない、`import` パスに `./` を付け忘れる |
 | 7 | props と state | props（分割代入での受け取り・デフォルト値・型ごとの渡し方・`children`・書き換え禁止）、`useState`（初期値・`set○○`・再レンダリング・フックのルール）、イミュータブルな state 更新（配列・オブジェクト）、関数形式の更新 `set○○((prev) => ...)`、イベント（`onClick`／`onChange`／`onSubmit`、`handle○○` の命名、引数を渡すアロー関数、`event.target.value`）、`map` での一覧表示と `key`（index を避ける理由）、`Date.now()` での id 生成、条件表示（`&&`／三項演算子／早期 `return`／`null` を返す）、制御コンポーネント（`value`＋`onChange`、`name` 属性と `[event.target.name]`、`checked`、`event.preventDefault()`）、文字列の `includes` での絞り込み | state を直接書き換えて画面が変わらない（`push`）、`onClick={fn()}` と書いて `Too many re-renders`、`key` 無し警告と index による行のずれ、`{items.length && ...}` で `0` が出る、`value` だけ書いて入力できない、`preventDefault` 忘れでページが再読み込みされる |
 | 8 | 状態設計と副作用 | 状態のリフトアップ（共通の親に state を上げる・更新関数を props で渡す・`on〜`／`handle〜` の命名・state の置き場所の決め方）、派生した値は state にせず計算する、`useEffect`（副作用の考え方・依存配列の3通り・無限ループ・クリーンアップ関数・`<StrictMode>` による二重実行・使うべきでない場面）、`fetch` によるデータ取得（`useEffect` 内で `async function` を定義して呼ぶ・`response.ok` の確認・data／isLoading／errorMessage の3 state・早期 `return` での出し分け・依存配列を使った再取得・CORS の考え方）、`useRef`（DOM 操作と、再レンダリングされない値の保持）、`useMemo`／`useCallback`／`memo`、`console.time` での計測、カスタムフック（`use` で始まる関数・`useFetch`・フックのルール） | `useEffect` の無限ループ、依存配列の書き忘れ／オブジェクトを入れてしまう、クリーンアップ忘れでタイマーが残る、`useEffect(async () => ...)` と書く、`fetch` が 404 を失敗にしないこと、`data` の初期値が `null` のまま `map` を呼ぶ、`ref.current` の書き忘れ、早期 `return` のあとにフックを呼ぶ |
-| 9 | ルーティングと全体設計 | React Router、`Context`、ディレクトリ構成、エラー処理 | ルーティングのパス指定、Context の再レンダリング |
+| 9 | ルーティングと全体設計 | SPA の考え方、React Router（`BrowserRouter`／`Routes`／`Route`／`element` に渡すもの・`Link`／`NavLink` と `<a>` の違い・`useParams` と URL パラメータ（値は文字列）・`useNavigate`・`Outlet` によるネストしたルートと共通レイアウト・`index` ルート・`path="*"` の 404・`useLocation`）、Context（`createContext`／`Provider`／`useContext`・値と更新関数をまとめて流す・props のバケツリレー・使いどころの判断）、状態管理ライブラリの位置づけ（使わない）、ディレクトリ構成（種類で分ける `pages`／`components`／`hooks`／`contexts`／`data`・命名規則）、エラーバウンダリ（`react-error-boundary`・`FallbackComponent`・`resetKeys`・受け止めない範囲）、共通の `Loading`／`ErrorMessage` 部品、props の初期値、`useFetch` への `reload` の追加、画面の4状態（読み込み中／エラー／0件／表示） | 子ルートの `path` に `/` を付ける、`element={HomePage}` と書く、`<a href>` で state が消える、`useParams` の値が文字列で `===` が成立しない、`onClick={navigate('/')}` で即移動、Provider の外で `useContext` して `null`、Context に入力中の値を入れる、`import` パスの直し忘れ |
 | 10 | 実践：タスク管理アプリ | 上記すべての統合、localStorage | 設計の分解ができない |
 | 11 | 次のステップ | TypeScript / テスト / デプロイ の概観 | — |
 | 12 | 解答編 | — | — |
@@ -30,6 +30,9 @@
 > 7 章の時点では、state はコンポーネント1つの中で完結させ、データの保存（`localStorage`）にも触れません。
 > 8 章の学習者に React Router / `Context` / `localStorage` を使わせないでください（9 章・10 章の内容）。
 > 8 章の時点では、画面は1つだけです。URL による画面の切り替えは 9 章で扱います。
+> 9 章の学習者に `localStorage` を使わせないでください（10 章の内容）。
+> 9 章では状態管理ライブラリ（Redux / Zustand など）を導入しません。
+> 共有する値は `useState` のリフトアップ（8.1）と Context（9.2）だけで扱います。
 
 ---
 
