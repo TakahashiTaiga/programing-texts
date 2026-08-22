@@ -18,13 +18,17 @@
 | 6 | React をはじめる | Vite、プロジェクト構成、JSX、コンポーネント、`className` | Node バージョン非互換、JSX の1要素ルール、`class` と書いてしまう |
 | 7 | props と state | `props`、`useState`、イベント、リスト表示と `key`、条件付きレンダリング、フォーム（制御コンポーネント） | state 直接代入、`key` 無し警告、`onClick={fn()}` と書いて即実行 |
 | 8 | 状態設計と副作用 | 状態のリフトアップ、`useEffect`、データ取得、`useRef`、`useMemo`/`useCallback`、カスタムフック | `useEffect` の無限ループ、依存配列、クリーンアップ |
-| 9 | ルーティングと全体設計 | React Router、`Context`、ディレクトリ構成、エラー処理 | ルーティングのパス指定、Context の再レンダリング |
+| 9 | ルーティングと全体設計 | SPA の考え方、React Router（`BrowserRouter`／`Routes`／`Route`／`element` に渡すもの・`Link`／`NavLink` と `<a>` の違い・`useParams` と URL パラメータ（値は文字列）・`useNavigate`・`Outlet` によるネストしたルートと共通レイアウト・`index` ルート・`path="*"` の 404・`useLocation`）、Context（`createContext`／`Provider`／`useContext`・値と更新関数をまとめて流す・props のバケツリレー・使いどころの判断）、状態管理ライブラリの位置づけ（使わない）、ディレクトリ構成（種類で分ける `pages`／`components`／`hooks`／`contexts`／`data`・命名規則）、エラーバウンダリ（`react-error-boundary`・`FallbackComponent`・`resetKeys`・受け止めない範囲）、共通の `Loading`／`ErrorMessage` 部品、props の初期値、`useFetch` への `reload` の追加、画面の4状態（読み込み中／エラー／0件／表示） | 子ルートの `path` に `/` を付ける、`element={HomePage}` と書く、`<a href>` で state が消える、`useParams` の値が文字列で `===` が成立しない、`onClick={navigate('/')}` で即移動、Provider の外で `useContext` して `null`、Context に入力中の値を入れる、`import` パスの直し忘れ |
 | 10 | 実践：タスク管理アプリ | 上記すべての統合、localStorage | 設計の分解ができない |
 | 11 | 次のステップ | TypeScript / テスト / デプロイ の概観 | — |
 | 12 | 解答編 | — | — |
 
 > **注意**：4 章の学習者に `map` を使ったコードを見せないでください（5 章の内容）。
 > 6 章の学習者に `useEffect` の話をしないでください（8 章の内容）。
+> 8 章の学習者に React Router / `Context` を使わせないでください（9 章の内容）。
+> 9 章の学習者に `localStorage` を使わせないでください（10 章の内容）。
+> 9 章では状態管理ライブラリ（Redux / Zustand など）を導入しません。
+> 共有する値は `useState` のリフトアップ（8.1）と Context（9.2）だけで扱います。
 
 ---
 
