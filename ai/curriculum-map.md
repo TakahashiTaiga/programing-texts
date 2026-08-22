@@ -17,7 +17,7 @@
 | 5 | JavaScript 基礎（後半） | 配列（`push`/`pop`/`unshift`/`shift`/`includes`/`indexOf`/`join`/`slice`/`concat`/`for...of`）、オブジェクト（読み書き・入れ子・オプショナルチェーン`?.`）、`map`/`filter`/`find`/`reduce`/`sort`とチェーン、分割代入、スプレッド構文、イミュータブルな更新、非同期処理（`setTimeout`/`Promise`/`async`/`await`）、`fetch`とエラー処理、`export`/`import`（名前付き・デフォルト）、`type="module"`、DOM 操作（`querySelector`/`textContent`/`classList`/`addEventListener`/`createElement`/`appendChild`/`remove`） | `TypeError: Cannot read properties of undefined`、`const copy = original` が複製にならない、`reduce` の初期値省略、`setTimeout` が待ってくれると誤解する、モジュールを `file://` で直接開いて動かない |
 | 6 | React をはじめる | Vite、プロジェクト構成、JSX、コンポーネント、`className` | Node バージョン非互換、JSX の1要素ルール、`class` と書いてしまう |
 | 7 | props と state | `props`、`useState`、イベント、リスト表示と `key`、条件付きレンダリング、フォーム（制御コンポーネント） | state 直接代入、`key` 無し警告、`onClick={fn()}` と書いて即実行 |
-| 8 | 状態設計と副作用 | 状態のリフトアップ、`useEffect`、データ取得、`useRef`、`useMemo`/`useCallback`、カスタムフック | `useEffect` の無限ループ、依存配列、クリーンアップ |
+| 8 | 状態設計と副作用 | 状態のリフトアップ（共通の親に state を上げる・更新関数を props で渡す・`on〜`／`handle〜` の命名・state の置き場所の決め方）、派生した値は state にせず計算する、`useEffect`（副作用の考え方・依存配列の3通り・無限ループ・クリーンアップ関数・`<StrictMode>` による二重実行・使うべきでない場面）、`fetch` によるデータ取得（`useEffect` 内で `async function` を定義して呼ぶ・`response.ok` の確認・data／isLoading／errorMessage の3 state・早期 `return` での出し分け・依存配列を使った再取得・CORS の考え方）、`useRef`（DOM 操作と、再レンダリングされない値の保持）、`useMemo`／`useCallback`／`memo`、`console.time` での計測、カスタムフック（`use` で始まる関数・`useFetch`・フックのルール） | `useEffect` の無限ループ、依存配列の書き忘れ／オブジェクトを入れてしまう、クリーンアップ忘れでタイマーが残る、`useEffect(async () => ...)` と書く、`fetch` が 404 を失敗にしないこと、`data` の初期値が `null` のまま `map` を呼ぶ、`ref.current` の書き忘れ、早期 `return` のあとにフックを呼ぶ |
 | 9 | ルーティングと全体設計 | React Router、`Context`、ディレクトリ構成、エラー処理 | ルーティングのパス指定、Context の再レンダリング |
 | 10 | 実践：タスク管理アプリ | 上記すべての統合、localStorage | 設計の分解ができない |
 | 11 | 次のステップ | TypeScript / テスト / デプロイ の概観 | — |
@@ -25,6 +25,8 @@
 
 > **注意**：4 章の学習者に `map` を使ったコードを見せないでください（5 章の内容）。
 > 6 章の学習者に `useEffect` の話をしないでください（8 章の内容）。
+> 8 章の学習者に React Router / `Context` / `localStorage` を使わせないでください（9 章・10 章の内容）。
+> 8 章の時点では、画面は1つだけです。URL による画面の切り替えは 9 章で扱います。
 
 ---
 
