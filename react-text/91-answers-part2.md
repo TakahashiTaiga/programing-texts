@@ -1,8 +1,8 @@
 ---
-title: "解答編 その2（第6章〜第10章）"
+title: "解答編 その2（第6章〜第11章）"
 ---
 
-# 解答編 その2（第6章〜第10章）
+# 解答編 その2（第6章〜第11章）
 
 **先に自分で解いてから読んでください。**
 
@@ -4100,3 +4100,795 @@ setTasks(tasks.filter((task) => task.id !== id))      // それから消す
 >
 > ただし「何件までさかのぼれるか」を決めないと、削除したデータが増え続けます。
 > **どこまでやるかを決めるのも設計です**（10.1.3）。
+
+---
+
+## 第11章
+
+### 理解度チェック
+
+**問 11.1 の解答**
+
+- A = **ビルド**
+- B = **`dist`**
+- C = **`npm run preview`**
+- D = **4173**
+
+**解説**
+
+`npm run dev` で見えている画面は、**Vite がその場で変換しながら配っているもの**です。
+`src/App.jsx` の JSX は、ブラウザがそのままでは読めません（6.4.1）。
+
+公開するには、ブラウザが読める形に変換してまとめる必要があります。これが**ビルド**です（11.3.2）。
+
+```bash
+npm run build     # dist ができる
+npm run preview   # dist の中身を http://localhost:4173/ で確認する
+```
+
+**ポート番号が違うのは、わざとです。**
+開発サーバー（5173）と同時に起動しても衝突せず、
+「いま見ているのはどちらか」を区別できます。
+
+**公開サービスに置くのは `dist` の中身だけ**で、`src` は置きません。
+
+---
+
+**問 11.2 の解答**
+
+**TypeScript が見つけてくれるのは 1・3・5 です。**
+
+| | 判定 | 理由 |
+|--|-----|------|
+| 1. `onTogle` と書いた | **見つかる** | `TaskItemProps` にない名前だから |
+| 2. 条件を逆に書いた | 見つからない | `boolean` どうしの比較として型は正しい |
+| 3. `count` に `'3'` を入れた | **見つかる** | `number` に `string` は入らない |
+| 4. 保存処理を書き忘れた | 見つからない | 書かれていないコードは検査できない |
+| 5. `fliter` と書いた | **見つかる** | 配列にそんなメソッドはないから |
+
+**解説**
+
+見分ける基準は1つです。**「型の食い違いか、考え方の間違いか」**（11.2.1）。
+
+1・3・5 は、すべて**型の情報だけで判定できる**間違いです。
+`TaskItemProps` に `onTogle` はない、`number` に文字列は入らない、
+配列に `fliter` というメソッドはない——プログラムを動かさなくても言えます。
+
+2 と 4 は違います。
+
+```ts
+if (task.isDone === true) {   // 型としては完全に正しい
+```
+
+`isDone` は `boolean`、`true` も `boolean` です。**型は完璧に合っています。**
+「あなたが本当は `false` と書きたかった」ことを、TypeScript は知りようがありません。
+
+4 も同じです。**書かれていないコードは、検査のしようがありません。**
+
+> **ここが重要です**
+> 「TypeScript を入れたからバグがなくなる」ということはありません。
+> 減るのは**打ち間違いと渡し忘れ**であって、**設計の間違いは自分で見つけるしかありません。**
+>
+> 2 と 4 を見つけるための道具が、11.3.1 の**テスト**です。
+> 型とテストは、守備範囲が違う2つの道具です。
+
+---
+
+**問 11.3 の解答**
+
+- **`git add`** — 今回の記録に含めるファイルを**選ぶ**
+- **`git commit`** — 選んだものを、説明文を付けて**履歴に刻む**
+
+**2段階に分かれている理由：直したファイルの一部だけを、1つのまとまりとして記録したいことがあるから。**
+
+**解説**
+
+ファイルは3つの場所を順に移動します（11.4.2）。
+
+```text
+作業ディレクトリ  --git add-->  ステージ  --git commit-->  ローカルリポジトリ
+（編集中）                   （記録する予定）              （履歴）
+```
+
+たとえば、こんな状況を考えてください。
+
+- 「絞り込み機能」を作るために `App.jsx` と `TaskFilter.jsx` を直した
+- ついでに気になっていた `App.css` の色も直した
+
+この3つを1回のコミットにすると、履歴には
+「絞り込み機能を追加（あと色も変えた）」という**混ざった記録**が残ります。
+あとで「絞り込みだけ取り消したい」と思ったとき、色の変更まで巻き込むことになります。
+
+`git add` があると、**先に2つだけ選んで**コミットし、色は次のコミットに回せます。
+
+```bash
+git add src/App.jsx src/components/TaskFilter.jsx
+git commit -m "絞り込み機能を追加"
+
+git add src/App.css
+git commit -m "見出しの色を調整"
+```
+
+**一人で作っているうちは `git add .`（全部選ぶ）で構いません。**
+「そのために2段階になっている」と知っておけば十分です。
+
+> **よくある間違い**
+> `git add` しただけで安心して、`git commit` を忘れる。
+> この状態では、**履歴にはまだ何も残っていません。**
+>
+> `git status` を実行すると、`Changes to be committed:`（コミット予定）と表示されます。
+> 「予定」のままなので、`git restore` などの操作で失われる可能性があります。
+
+---
+
+**問 11.4 の解答**
+
+**原因：`file://` で開いたため、JavaScript と CSS のファイルが見つからないから。**
+**正しい確認方法：`npm run preview` を実行し、`http://localhost:4173/` を開く。**
+
+**解説**
+
+`dist/index.html` をダブルクリックすると、URL がこうなります。
+
+```text
+file:///Users/taro/Documents/dev/task-app/dist/index.html
+```
+
+このとき、`index.html` の中には次のような指定が入っています。
+
+```html
+<script type="module" src="/assets/index-Dq7mXe1a.js"></script>
+```
+
+先頭の `/` は**絶対パス**で、「いちばん上の階層から見た場所」を意味します（2.3.4）。
+`file://` で開いた場合、これは**パソコンのルート**を指してしまうため、
+`/assets/...` などというファイルは存在せず、読み込みに失敗します。
+
+```text
+Failed to load resource: net::ERR_FILE_NOT_FOUND
+```
+
+JavaScript が1行も動かないので、`<div id="root"></div>` が空のまま残り、**真っ白**になります。
+
+`npm run preview` は、`dist` を**サーバーとして配る**コマンドです（11.3.2）。
+`http://localhost:4173/assets/index-Dq7mXe1a.js` が正しく解決されるので、そのまま動きます。
+
+> **補足**
+> 公開サービス（Vercel / Netlify）も、同じくサーバーとして配ります。
+> **`npm run preview` で動けば、公開しても動きます。** だからこの確認に意味があります。
+
+---
+
+**問 11.5 の解答**
+
+**表示されません。友人の画面には、タスクが0件のアプリが表示されます。**
+
+**解説**
+
+理由は、データの保存先です。
+
+`localStorage` の保存先は、**それを開いている人のブラウザの中**です（10.4.2）。
+サーバーではありません。**公開したのはアプリ（プログラム）であって、データではありません。**
+
+```text
+あなたのブラウザ      : task-app.tasks → [牛乳を買う, 部屋を片づける]
+友人のブラウザ        : task-app.tasks → 何も保存されていない（null）
+```
+
+10.4.3 のとおり、読み込み時に `null` だった場合は初期値が使われます。
+友人の画面には、10.5.2 の「タスクがありません」が表示されます。
+
+**同じことは、あなた自身にも起きます。**
+スマートフォンで同じ URL を開いても、パソコンで登録したタスクは出てきません。
+別のブラウザだからです。
+
+これが、第10章の最後と 11.5.1 で書いた「いまのアプリの限界」です。
+**複数の端末や複数の人でデータを共有するには、サーバーにデータを置く必要があります。**
+そこを作るのが、2冊目以降です。
+
+> **補足：プライバシーの観点では利点でもあります**
+> 「他人に自分のタスクが見えてしまう」という事故は起こりません。
+> ただし裏返すと、**ブラウザのデータを消すとタスクも消えます。**
+
+---
+
+**問 11.6 の解答**
+
+**共通する性質：どちらも、コマンドでいつでも作り直せるから。**
+
+- `node_modules` → `npm install` で作り直せる
+- `dist` → `npm run build` で作り直せる
+
+**解説**
+
+Git に記録すべきなのは、**失うと二度と戻らないもの**、つまり**自分が書いたもの**です。
+自動で作られるものは、**作り方さえ記録してあれば十分**です。
+
+その「作り方」は、すでに記録されています。
+
+- `package.json` — 必要なライブラリの一覧（これがあれば `node_modules` を再現できる）
+- `src` の中身 — これがあれば `dist` を再現できる
+
+さらに、`node_modules` には実害もあります。
+
+```text
+node_modules のファイル数: 数万〜十数万
+```
+
+これを記録すると、コミットにも `git push` にも長い時間がかかり、
+GitHub 上で自分のコードを探すこともできなくなります。
+
+> **よくある間違い**
+> `.gitignore` を作る**前**に `git add .` してしまい、`node_modules` を記録してしまう。
+>
+> `git status` の一覧に `node_modules/` が出ていたら、この状態です。
+> コミット前なら、次で取り消せます。
+>
+> ```bash
+> git rm -r --cached node_modules
+> ```
+>
+> `--cached` は「**ステージから外すだけで、実物は消さない**」という指定です。
+> これを付け忘れると、`node_modules` そのものが削除されます（`npm install` で戻せます）。
+
+---
+
+### 演習 11.1 の解答
+
+`task-app` のディレクトリで、次を順に実行します。
+
+**Windows（PowerShell）**
+
+```powershell
+cd ~\Documents\dev\task-app
+npm run build
+npm run preview
+```
+
+**macOS / Linux**
+
+```bash
+cd ~/Documents/dev/task-app
+npm run build
+npm run preview
+```
+
+```text
+実行結果（npm run build）:
+vite v7.1.0 building for production...
+✓ 41 modules transformed.
+dist/index.html                   0.46 kB │ gzip:  0.30 kB
+dist/assets/index-BhY2kf8p.css    2.14 kB │ gzip:  0.81 kB
+dist/assets/index-Dq7mXe1a.js   192.87 kB │ gzip: 61.05 kB
+✓ built in 738ms
+
+実行結果（npm run preview）:
+  ➜  Local:   http://localhost:4173/
+```
+
+`http://localhost:4173/` を開き、10.5.4 のチェックリストを通します。
+確認が終わったら `Ctrl` + `C` で停止します。
+
+**解説**
+
+**この演習の目的は、コマンドを打つことではなく「`src` と `dist` は別物だ」と体感すること**です（11.3.2）。
+
+`dist/assets` の中を見てください。
+
+```text
+dist/
+├── index.html
+└── assets/
+    ├── index-BhY2kf8p.css
+    └── index-Dq7mXe1a.js
+```
+
+`src` には `App.jsx`、`components/TaskItem.jsx`、`hooks/useLocalStorage.js`……と
+10 個以上のファイルがあったはずです。それが**`.js` 1つにまとまっています。**
+
+まとめる理由は、**ブラウザが1ファイルずつ取りに行く回数を減らすため**です。
+ファイルが 15 個あれば 15 回の往復（1.2.2 のリクエストとレスポンス）が発生します。
+
+ファイル名の `Dq7mXe1a` の部分は、**中身から計算された文字列**です。
+コードを1文字でも変えるとこの部分が変わるため、
+ブラウザが古いファイルを使い回してしまう事故（3.7 のキャッシュ問題）が起きません。
+
+> **よくある間違い**
+> `npm run preview` を実行しても `http://localhost:5173/` を開いてしまう。
+>
+> 5173 は**開発サーバー**のポートです。もし開発サーバーを起動したままなら、
+> そちらが表示されるので「ビルドを確認した」ことになりません。
+>
+> **表示されたポート番号（4173）を必ず確認してください。**
+
+> **`npm run preview` で表示がおかしいとき**
+> 開発サーバーでは動いていたのにビルドすると崩れる場合、
+> **ファイル名の大文字小文字の違い**が原因のことがあります。
+>
+> ```jsx
+> import TaskItem from './components/taskItem.jsx'   // 実物は TaskItem.jsx
+> ```
+>
+> Windows と macOS の標準設定では、これでも動いてしまいます。
+> 一方、公開サービスの多くは Linux で動いており、**大文字小文字を厳密に区別します。**
+> ここで気づけるのが、公開前に `preview` を通す価値です。
+
+---
+
+### 演習 11.2 の解答
+
+**手順1：Git に記録する**
+
+```bash
+cd ~/Documents/dev/task-app
+git init
+git status
+```
+
+`git status` の一覧に `node_modules/` と `dist/` が**出ていないこと**を確認します。
+出ていなければ `.gitignore` が効いています（11.4.2 手順5）。
+
+```bash
+git add .
+git commit -m "タスク管理アプリの初回コミット"
+```
+
+**手順2：GitHub に置く**
+
+GitHub で `task-app` リポジトリを作り（README のチェックはすべて外す）、
+表示されたコマンドを実行します。
+
+```bash
+git remote add origin https://github.com/<ユーザー名>/task-app.git
+git branch -M main
+git push -u origin main
+```
+
+**手順3：Vercel で公開する**
+
+11.3.3 の「方法2」のとおり、GitHub アカウントで Vercel にサインアップし、
+`task-app` を Import して Deploy します。Framework Preset が「Vite」であることだけ確認します。
+
+**手順4：更新が自動で反映されることを確かめる**
+
+`src/App.jsx` の見出しを変えます。
+
+```diff
+-       <h1>タスク管理</h1>
++       <h1>わたしのタスク管理</h1>
+```
+
+```bash
+git add .
+git commit -m "見出しの文言を変更"
+git push
+```
+
+```text
+実行結果:
+...
+To https://github.com/taro/task-app.git
+   8f3c1a2..b71e9d4  main -> main
+```
+
+1〜2分待ってから公開 URL を再読み込みすると、**見出しが変わっています。**
+
+```bash
+git log --oneline
+```
+
+```text
+実行結果:
+b71e9d4 (HEAD -> main, origin/main) 見出しの文言を変更
+8f3c1a2 タスク管理アプリの初回コミット
+```
+
+**解説**
+
+この演習で確認してほしいことは3つあります。
+
+**1. `git push` だけで公開が更新される**
+
+`npm run build` も、ファイルのアップロードも、自分ではやっていません。
+Vercel が GitHub の更新を検知し、**サーバー側で `npm run build` を実行して差し替えています**（11.3.3）。
+
+これが、Netlify Drop（手でドラッグする方法）との決定的な違いです。
+**更新を続けるつもりなら、必ずこちらを選んでください。**
+
+**2. シークレットウィンドウでは0件になる**
+
+問 11.5 と同じ理由です。`localStorage` は**見ている人のブラウザの中**にあります（10.4.2）。
+シークレットウィンドウは保存内容を引き継がないので、他人が開いたのと同じ状態になります。
+
+**3. リポジトリに `node_modules` が入っていない**
+
+`git init` した時点で `.gitignore` がすでに存在していたおかげです（11.4.2 手順5）。
+
+> **よくある間違い：`git push` が拒否される**
+>
+> ```text
+> ! [rejected]        main -> main (fetch first)
+> error: failed to push some refs to '...'
+> ```
+>
+> GitHub でリポジトリを作るときに **「Add a README file」にチェックを入れた**場合に起きます。
+> GitHub 側にだけコミットが1つあり、手元の履歴とつながっていない状態です。
+>
+> 次で、向こうの履歴を取り込んでからもう一度送れます。
+>
+> ```bash
+> git pull --rebase origin main
+> git push -u origin main
+> ```
+>
+> これを避けるために、11.4.2 手順7 では**チェックをすべて外す**ことをすすめています。
+
+> **よくある間違い：Vercel のビルドが失敗する**
+> ビルドログに次のような行が出ていたら、`import` のパスの打ち間違いです。
+>
+> ```text
+> Could not resolve "./components/Taskitem.jsx" from "src/App.jsx"
+> ```
+>
+> 演習 11.1 の解説で書いた、**大文字小文字の問題**です。
+> 手元（Windows / macOS）では動き、Vercel（Linux）では失敗します。
+> ファイル名と `import` の綴りを1文字ずつ見比べてください。
+
+> **別解：Netlify Drop で公開する**
+> Git をまだ使いたくない場合は、`npm run build` して `dist` をドラッグするだけでも公開できます（11.3.3 方法1）。
+> ただし**更新のたびに手でドラッグし直す**ことになり、
+> 「コードが消えても復旧できない」という問題も残ります。
+>
+> この演習では、**Git に記録すること自体が目的の半分**です。
+
+---
+
+### 演習 11.3 の解答
+
+`src/utils/sortByNewest.js`（新規作成）
+
+```js
+// createdAt が大きい順（新しい順）に並べた、新しい配列を返す
+export function sortByNewest(tasks) {
+  // sort は元の配列を書き換えるので、コピーしてから並べ替える（10.3.7）
+  return [...tasks].sort((a, b) => b.createdAt - a.createdAt)
+}
+```
+
+`src/utils/sortByNewest.test.js`（新規作成）
+
+```js
+import { expect, test } from 'vitest'
+import { sortByNewest } from './sortByNewest'
+
+const tasks = [
+  { id: 1, title: '牛乳を買う', isDone: false, createdAt: 1000 },
+  { id: 2, title: '部屋を片づける', isDone: false, createdAt: 3000 },
+  { id: 3, title: '本を返す', isDone: false, createdAt: 2000 },
+]
+
+test('createdAt が大きい順に並ぶ', () => {
+  const result = sortByNewest(tasks)
+
+  expect(result.map((task) => task.id)).toEqual([2, 3, 1])
+})
+
+test('空の配列を渡すと、空の配列が返る', () => {
+  expect(sortByNewest([])).toEqual([])
+})
+
+test('元の配列を書き換えない', () => {
+  sortByNewest(tasks)
+
+  expect(tasks.map((task) => task.id)).toEqual([1, 2, 3])
+})
+```
+
+```bash
+npm test
+```
+
+```text
+実行結果:
+ ✓ src/utils/countActive.test.js (3 tests) 4ms
+ ✓ src/utils/sortByNewest.test.js (3 tests) 3ms
+
+ Test Files  2 passed (2)
+      Tests  6 passed (6)
+```
+
+**わざと壊して、赤くなることを確認します。**
+
+```js
+return [...tasks].sort((a, b) => a.createdAt - b.createdAt)   // 向きを逆にした
+```
+
+```text
+実行結果:
+ ❯ src/utils/sortByNewest.test.js (3 tests | 1 failed) 6ms
+   × createdAt が大きい順に並ぶ
+     → expected [ 1, 3, 2 ] to deeply equal [ 2, 3, 1 ]
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  1 failed | 5 passed (6)
+```
+
+確認したら `b.createdAt - a.createdAt` に戻し、`npm test` が全部緑になることを確かめます。
+
+**解説**
+
+**なぜ `id` を並べて比べたのか**
+
+タスクのオブジェクトをそのまま比べても間違いではありませんが、
+失敗したときの表示が長くなり、**どう間違ったのかが読み取りにくくなります。**
+
+```js
+expect(result.map((task) => task.id)).toEqual([2, 3, 1])
+```
+
+`id` の並びだけを見れば、`[1, 3, 2]` と `[2, 3, 1]` の違いが一目でわかります。
+**テストは、失敗したときに読みやすいことが大事です。**
+
+**`toBe` ではなく `toEqual` を使う理由**
+
+`sortByNewest` は**新しい配列**を返します。
+`toBe`（まったく同じ1つの配列か）では、中身が合っていても必ず失敗します（11.3.1）。
+
+**3件目のテストがいちばん大事です**
+
+```js
+test('元の配列を書き換えない', () => {
+  sortByNewest(tasks)
+  expect(tasks.map((task) => task.id)).toEqual([1, 2, 3])
+})
+```
+
+戻り値を使わず、**渡した側の配列を確認している**ところに注目してください。
+
+`[...tasks]` のコピーを外して `tasks.sort(...)` と書くと、**このテストだけが赤くなります。**
+
+```text
+   × 元の配列を書き換えない
+     → expected [ 2, 3, 1 ] to deeply equal [ 1, 2, 3 ]
+```
+
+10.3.7 で「コピーしてから並べ替える癖をつけてください」と書いた内容が、
+**このテストによって、以後ずっと自動で見張られる**ことになります。
+これがテストを書く価値です。
+
+> **よくある間違い**
+> `import { sortByNewest } from './sortByNewest'` の `./` を忘れる。
+>
+> ```text
+> Error: Failed to load url sortByNewest
+> ```
+>
+> 6.5.3 で出てきたのと同じ間違いです。**自分で作ったファイルには `./` が必要**です。
+
+> **別解：`App.jsx` から使う場合**
+> この関数を実際に画面へ組み込むなら、10.3.7 の並べ替えのうち
+> 「新しい順」の場合だけを差し替えます。
+>
+> ```jsx
+> import { sortByNewest } from './utils/sortByNewest'
+>
+> const visibleTasks =
+>   sort === 'newest'
+>     ? sortByNewest(filteredTasks)
+>     : [...filteredTasks].sort((a, b) => {
+>         if (sort === 'oldest') {
+>           return a.createdAt - b.createdAt
+>         }
+>         return a.title.localeCompare(b.title, 'ja')
+>       })
+> ```
+>
+> 動きは今までと同じです。**画面が変わらないことを確認してから**次に進んでください。
+
+---
+
+### 演習 11.4 の解答
+
+`ts-practice/src/components/TaskForm.tsx`（新規作成）
+
+```tsx
+import { useState } from 'react'
+
+type TaskFormProps = {
+  // 文字列を1つ受け取り、何も返さない関数
+  onAdd: (title: string) => void
+}
+
+function TaskForm({ onAdd }: TaskFormProps) {
+  const [title, setTitle] = useState('')
+
+  function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    // 送信でページが再読み込みされるのを止める（7.6.5）
+    event.preventDefault()
+
+    if (title.trim() === '') {
+      return
+    }
+
+    onAdd(title)
+    setTitle('')
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        type="text"
+        value={title}
+        onChange={(event) => setTitle(event.target.value)}
+        placeholder="やることを入力"
+      />
+      <button type="submit">追加</button>
+    </form>
+  )
+}
+
+export default TaskForm
+```
+
+`ts-practice/src/App.tsx`（`TaskForm` の読み込みと `handleAdd` を追加する）
+
+```diff
+  import { useState } from 'react'
+  import TaskItem from './components/TaskItem'
++ import TaskForm from './components/TaskForm'
+```
+
+```diff
+    function handleToggle(id: number) {
+      ...
+    }
+
++   function handleAdd(title: string) {
++     const newTask: Task = {
++       id: Date.now(),
++       title: title,
++       isDone: false,
++     }
++     setTasks([...tasks, newTask])
++   }
++
+```
+
+```diff
+        <h1>TypeScript の練習</h1>
++       <TaskForm onAdd={handleAdd} />
+        <ul>
+```
+
+```text
+画面に表示される内容:
+TypeScript の練習
+[やることを入力] [追加]
+□ 牛乳を買う
+☑ 部屋を片づける
+
+（「本を返す」と入力して「追加」を押すと）
+TypeScript の練習
+[            ] [追加]     ← 入力欄が空に戻る
+□ 牛乳を買う
+☑ 部屋を片づける
+□ 本を返す
+```
+
+型のチェックを通します。
+
+```bash
+npm run build
+```
+
+```text
+実行結果:
+vite v7.1.0 building for production...
+✓ 36 modules transformed.
+✓ built in 664ms
+```
+
+**わざと壊して、止まることを確認します。**
+
+```tsx
+<TaskForm onAdd={"文字列"} />
+```
+
+エディタが赤い波線を出し、ビルドも失敗します。
+
+```text
+実行結果:
+src/App.tsx:38:18 - error TS2322: Type 'string' is not assignable to
+type '(title: string) => void'.
+
+Found 1 error.
+```
+
+確認したら `onAdd={handleAdd}` に戻してください。
+
+**解説**
+
+**React の中身は 7.6 と 10.3.3 のままです。**
+`value` と `onChange` の制御コンポーネント、`preventDefault`、`trim()` での空チェック、
+追加後に入力欄を空に戻す `setTitle('')` ——どれも新しくありません。
+
+**増えたのは、次の3箇所の型だけです。**
+
+**1. props の型**
+
+```tsx
+type TaskFormProps = {
+  onAdd: (title: string) => void
+}
+```
+
+11.2.2 で見た `() => void` の、**かっこの中に引数の型を書いた形**です。
+「文字列を1つ受け取り、何も返さない関数」を要求しています。
+
+だから `onAdd={"文字列"}` は通りません。**関数ではないからです。**
+
+**2. 関数の引数の型**
+
+```tsx
+function handleAdd(title: string) {
+```
+
+TypeScript は、関数の引数の型だけは自分で判断できません（11.2.2）。
+ここを書き忘れると、次のエラーになります。
+
+```text
+Parameter 'title' implicitly has an 'any' type.
+（引数 title の型がわかりません）
+```
+
+**3. イベントの型**
+
+```tsx
+function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+```
+
+ここが、TypeScript を始めたばかりの人がいちばん戸惑う箇所です。
+`event` に何の型を書けばいいのか、覚えようがありません。
+
+**覚える必要はありません。** 次のどちらかで解決します。
+
+- `onSubmit={(event) => ...}` のように**その場に直接書けば、型は自動で決まります**（型推論）
+- 関数として切り出したときは、**エディタの補完**（VS Code で `event` にマウスを乗せると型が表示される）を見るか、AI に聞く
+
+```text
+React + TypeScript で、form の onSubmit に渡す関数を
+別の関数として切り出しました。event に付ける型を教えてください。
+（コードを貼る）
+```
+
+**これが 11.2.3 で「難しい型は、その都度 AI に聞く」と書いた場面です。**
+型の名前を暗記することに時間を使う必要はありません。
+
+> **よくある間違い**
+> `npm run dev` の画面は動いているのに、`npm run build` が失敗する。
+>
+> Vite は開発中、**型を無視して変換だけ行います**（11.2.2）。
+> 赤い波線が出たまま進めると、ビルドのときにまとめて出てきます。
+>
+> **エディタの赤い波線は、出たその場で直してください。**
+
+> **別解：`Task` の型を1箇所にまとめる**
+> `App.tsx` に書いた `type Task` は、コンポーネントが増えると各ファイルで必要になります。
+> そのときは、型だけのファイルを作って共有します。
+>
+> `src/types.ts`
+>
+> ```ts
+> export type Task = {
+>   id: number
+>   title: string
+>   isDone: boolean
+> }
+> ```
+>
+> ```tsx
+> import type { Task } from '../types'
+> ```
+>
+> `import type` は「型だけを読み込む」という書き方です。
+> **この演習の範囲では不要**ですが、ファイルが増えてきたら思い出してください。
