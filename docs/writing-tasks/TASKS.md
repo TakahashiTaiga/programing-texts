@@ -23,13 +23,14 @@
 | 本 | 完了 / 全体 |
 |----|-----------|
 | react-text | 12 / 13 |
-| python-text | 0 / 13 |
+| python-text | 1 / 13 |
 | fastapi-text | 0 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **12 / 59** |
+| **合計** | **13 / 59** |
 
-> R-07〜R-10 は1本の PR（#9）にまとめて含まれており、`main` にマージ済みです。
+> R-11 は PR #10 で執筆済みですが、マージ前のため `main` 上の
+> `react-text/11-next-steps.md` はまだプレースホルダのままです。
 
 ---
 
@@ -50,8 +51,8 @@
 | R-08 | 完了 | 第8章 状態設計と副作用 | `react-text/08-state-design-and-effects.md` | part2 | 大 | |
 | R-09 | 完了 | 第9章 ルーティングと全体設計 | `react-text/09-routing-and-architecture.md` | part2 | 中 | |
 | R-10 | 完了 | 第10章 実践：タスク管理アプリ | `react-text/10-practice-task-app.md` | part2 | 大 | |
-| R-11 | 完了 | 第11章 次のステップ | `react-text/11-next-steps.md` | part2 | 小 | 演習を4問置いたため、解答は `91-answers-part2.md` に追記した |
-| **R-FIN** | **未着手** | 通し確認 | — | — | 小 | 下の「-FIN タスクの内容」参照 |
+| R-11 | 完了 | 第11章 次のステップ | `react-text/11-next-steps.md` | — | 小 | PR #10 で執筆済み（マージ待ち）。反映漏れを補正 |
+| R-FIN | 未着手 | 通し確認 | — | — | 小 | 下の「-FIN タスクの内容」参照 |
 
 ### R-04 の注記
 
@@ -77,7 +78,7 @@
 
 | ID | 状態 | 章 | 出力ファイル | 解答編 | 規模 | 備考 |
 |----|------|----|------------|--------|------|------|
-| P-00 | 未着手 | 第0章 はじめに | `python-text/00-introduction.md` | — | 中 | 0.3 の JS 対応表が肝 |
+| P-00 | 完了 | 第0章 はじめに | `python-text/00-introduction.md` | — | 中 | 0.3 の JS 対応表が肝 |
 | P-01 | 未着手 | 第1章 環境構築 | `python-text/01-environment.md` | part1 | 大 | ★要検証（下の注記） |
 | P-02 | 未着手 | 第2章 基本文法 | `python-text/02-basics.md` | part1 | 大 | |
 | P-03 | 未着手 | 第3章 制御構文 | `python-text/03-control-flow.md` | part1 | 中 | |
