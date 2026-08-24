@@ -48,7 +48,7 @@
 | 章 | タイトル | 既習範囲（累積） |
 |----|---------|----------------|
 | 0 | はじめに | （コードなし）AI サポートの準備、JavaScript / Python 対応表（`let`/`const`→代入のみ、`===`→`==`、`{}`→インデント、配列→リスト、オブジェクト→辞書、`map`→内包表記、`null`/`undefined`→`None` の「地図」。詳細は各章で扱う） |
-| 1 | Python の環境構築 | Python インストール、`python` コマンド、REPL、`venv`、`pip` |
+| 1 | Python の環境構築 | Python 3.13 のインストール、`python`（Windows）/ `python3`（macOS）の呼び分け、`--version` での確認、`py` ランチャー（Windows）、REPL（`>>>`・`exit()`）、`.py` ファイルの実行（`python ファイル名`）、`print`（存在のみ。詳細は 2.5）、トレースバックの読み方（下から上・種類・行番号・`NameError`）、仮想環境 venv（`python -m venv .venv`・有効化 `Activate.ps1` / `source .venv/bin/activate`・`deactivate`）、実行ポリシー（`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`）、pip（`pip install`・`pip list`・`pip freeze > requirements.txt`・`-r`）、`import`（存在のみ。詳細は第6章）、VS Code の Python 拡張・インタプリタ選択・▷ 実行・ブレークポイントでのステップ実行 |
 | 2 | 基本文法 | 変数、型、演算子、文字列、`input`/`print`、インデント |
 | 3 | 制御構文 | `if`、`for`、`while`、`range`、`break`/`continue` |
 | 4 | データ構造 | list、tuple、dict、set、内包表記 |
@@ -59,6 +59,10 @@
 | 9 | 型ヒントとモダン Python | 型ヒント、`typing`、`mypy`、ツール（ruff / uv） |
 | 10 | 実践：データ処理スクリプト | CSV / JSON、外部 API |
 | 11 | 解答編 | — |
+
+> **注意**：第1章の学習者は、まだ変数・型・条件分岐・繰り返し・関数を学んでいません（第2章以降）。
+> 第1章の範囲は「環境を用意し、REPL とファイル実行で Python を動かし、venv と pip を扱える」までです。
+> 環境構築・エラー（トレースバック）・venv・pip のトラブルは、レベル C（第7節）として全部解決してあげてください。
 
 ## 3. fastapi-text
 
