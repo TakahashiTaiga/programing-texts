@@ -22,15 +22,14 @@
 
 | 本 | 完了 / 全体 |
 |----|-----------|
-| react-text | 11 / 13 |
+| react-text | 12 / 13 |
 | python-text | 0 / 13 |
 | fastapi-text | 0 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **11 / 59** |
+| **合計** | **12 / 59** |
 
-> R-07〜R-10 は本 PR にまとめて含まれています（元は R-07 / R-08 / R-09 / R-10 の4本の PR）。
-> マージ前のため `main` 上のファイルにはまだ反映されていません。
+> R-07〜R-10 は1本の PR（#9）にまとめて含まれており、`main` にマージ済みです。
 
 ---
 
@@ -51,8 +50,8 @@
 | R-08 | 完了 | 第8章 状態設計と副作用 | `react-text/08-state-design-and-effects.md` | part2 | 大 | |
 | R-09 | 完了 | 第9章 ルーティングと全体設計 | `react-text/09-routing-and-architecture.md` | part2 | 中 | |
 | R-10 | 完了 | 第10章 実践：タスク管理アプリ | `react-text/10-practice-task-app.md` | part2 | 大 | |
-| **R-11** | **未着手** | 第11章 次のステップ | `react-text/11-next-steps.md` | — | 小 | |
-| R-FIN | 未着手 | 通し確認 | — | — | 小 | 下の「-FIN タスクの内容」参照 |
+| R-11 | 完了 | 第11章 次のステップ | `react-text/11-next-steps.md` | part2 | 小 | 演習を4問置いたため、解答は `91-answers-part2.md` に追記した |
+| **R-FIN** | **未着手** | 通し確認 | — | — | 小 | 下の「-FIN タスクの内容」参照 |
 
 ### R-04 の注記
 
