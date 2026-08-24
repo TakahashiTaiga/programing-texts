@@ -20,7 +20,7 @@
 | 8 | 状態設計と副作用 | 状態のリフトアップ（共通の親に state を上げる・更新関数を props で渡す・`on〜`／`handle〜` の命名・state の置き場所の決め方）、派生した値は state にせず計算する、`useEffect`（副作用の考え方・依存配列の3通り・無限ループ・クリーンアップ関数・`<StrictMode>` による二重実行・使うべきでない場面）、`fetch` によるデータ取得（`useEffect` 内で `async function` を定義して呼ぶ・`response.ok` の確認・data／isLoading／errorMessage の3 state・早期 `return` での出し分け・依存配列を使った再取得・CORS の考え方）、`useRef`（DOM 操作と、再レンダリングされない値の保持）、`useMemo`／`useCallback`／`memo`、`console.time` での計測、カスタムフック（`use` で始まる関数・`useFetch`・フックのルール） | `useEffect` の無限ループ、依存配列の書き忘れ／オブジェクトを入れてしまう、クリーンアップ忘れでタイマーが残る、`useEffect(async () => ...)` と書く、`fetch` が 404 を失敗にしないこと、`data` の初期値が `null` のまま `map` を呼ぶ、`ref.current` の書き忘れ、早期 `return` のあとにフックを呼ぶ |
 | 9 | ルーティングと全体設計 | SPA の考え方、React Router（`BrowserRouter`／`Routes`／`Route`／`element` に渡すもの・`Link`／`NavLink` と `<a>` の違い・`useParams` と URL パラメータ（値は文字列）・`useNavigate`・`Outlet` によるネストしたルートと共通レイアウト・`index` ルート・`path="*"` の 404・`useLocation`）、Context（`createContext`／`Provider`／`useContext`・値と更新関数をまとめて流す・props のバケツリレー・使いどころの判断）、状態管理ライブラリの位置づけ（使わない）、ディレクトリ構成（種類で分ける `pages`／`components`／`hooks`／`contexts`／`data`・命名規則）、エラーバウンダリ（`react-error-boundary`・`FallbackComponent`・`resetKeys`・受け止めない範囲）、共通の `Loading`／`ErrorMessage` 部品、props の初期値、`useFetch` への `reload` の追加、画面の4状態（読み込み中／エラー／0件／表示） | 子ルートの `path` に `/` を付ける、`element={HomePage}` と書く、`<a href>` で state が消える、`useParams` の値が文字列で `===` が成立しない、`onClick={navigate('/')}` で即移動、Provider の外で `useContext` して `null`、Context に入力中の値を入れる、`import` パスの直し忘れ |
 | 10 | 実践：タスク管理アプリ | 上記すべての統合に加えて、設計の手順（完成イメージ→機能一覧→MVP の切り出し→画面を描く→コンポーネント分解→データの形→state の置き場所）、派生値を state にしない判断（10.2.4）、`Date.now()` による id、配列 state の更新パターン（追加は `[...tasks, newTask]`／1件変更は `map` + スプレッド／削除は `filter`）、`[...配列].sort()`、`localeCompare(相手, 'ja')`、対応表オブジェクトと `オブジェクト[変数]` での参照、`localStorage`（`setItem`／`getItem`／`removeItem`・保存できるのは文字列だけ）、`JSON.stringify` / `JSON.parse`、読み込み前の上書きを防ぐガード、`useLocalStorage` カスタムフック、0件表示の出し分け（未登録／絞り込み結果0件）、`trim()`、`disabled` 属性、エラー時の早期 return | 設計の分解ができない、`push` で更新して画面が変わらない、`sort` が元の配列を書き換える、`localStorage` にオブジェクトを直接入れて `[object Object]` になる、保存の `useEffect` が読み込みより先に走って初期値で上書きされる、`Date.now()` の id と `useParams` の文字列を `===` で比較する |
-| 11 | 次のステップ | TypeScript / テスト / デプロイ の概観 | — |
+| 11 | 次のステップ | 上記すべてに加えて、TypeScript の基礎（`.tsx`／型注釈 `: string` `: number` `: boolean`／型推論／関数の引数と戻り値の型／`type` によるオブジェクトの型／props の型 `({ ... }: Props)`／`(引数: 型) => void`／`useState<Task[]>`／`npm create vite@latest ... -- --template react-ts`／`tsc -b` による型チェック）、テスト（Vitest のインストール・`test`／`expect().toBe()`／`toEqual()`・`npm test`・値を返す関数に切り出してからテストする）、ビルド（`npm run build`／`dist` の中身／`npm run preview`（4173））、デプロイ（Netlify Drop／Vercel + GitHub の自動デプロイ）、Git（`git init`／`status`／`add`／`commit -m`／`push`／`restore`／`log --oneline`／`remote add origin`／`.gitignore`） | `dist/index.html` を `file://` で開いて真っ白になる、`npm run preview` を 5173 で開く、`node_modules` をコミットしてしまう、GitHub 側に README を作って `git push` が拒否される、`import` パスの大文字小文字の違いが公開環境でだけ失敗する、型エラーを放置したまま `npm run dev` で進めてビルドで詰まる、`localStorage` のデータが公開先で共有されると誤解する |
 | 12 | 解答編 | — | — |
 
 > **注意**：4 章の学習者に `map` を使ったコードを見せないでください（5 章の内容）。
@@ -35,6 +35,11 @@
 > 9 章までの学習者に `localStorage` / `JSON.stringify` / `JSON.parse` を使わせないでください（10 章の内容）。
 > 10 章で作るのは `my-first-react` ではなく、新しく作る `task-app` プロジェクトです。
 > 10 章では React Router を使いません（10.6.4 の発展課題としてのみ触れています）。
+> 11 章の TypeScript は**入口だけ**です。ジェネリクス・`interface`・ユニオン型・`unknown` などは
+> 扱っていないので、11 章の学習者に前提として使わせないでください。
+> 11 章のテストも入口だけです。React Testing Library による画面のテストは扱っていません
+> （テストするのは「値を渡すと値が返る関数」に限っています）。
+> 11 章で `ts-practice` という練習用プロジェクトを新しく作ります（`task-app` は JavaScript のままです）。
 
 ---
 
