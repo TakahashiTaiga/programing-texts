@@ -23,11 +23,11 @@
 | 本 | 完了 / 全体 |
 |----|-----------|
 | react-text | 12 / 13 |
-| python-text | 2 / 13 |
+| python-text | 3 / 13 |
 | fastapi-text | 0 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **14 / 59** |
+| **合計** | **15 / 59** |
 
 ---
 
@@ -77,7 +77,7 @@
 |----|------|----|------------|--------|------|------|
 | P-00 | 完了 | 第0章 はじめに | `python-text/00-introduction.md` | — | 中 | 0.3 の JS 対応表が肝 |
 | P-01 | 完了 | 第1章 環境構築 | `python-text/01-environment.md` | part1 | 大 | ★要検証（下の注記）。PATH 復旧・実行ポリシー・pip 例は review-notes.md に検証依頼あり |
-| P-02 | 未着手 | 第2章 基本文法 | `python-text/02-basics.md` | part1 | 大 | |
+| P-02 | 完了 | 第2章 基本文法 | `python-text/02-basics.md` | part1 | 大 | 2.6 でインデント説明のため `if` を書き方だけ先取り（詳細は第3章）。第3章のスタブを新規作成 |
 | P-03 | 未着手 | 第3章 制御構文 | `python-text/03-control-flow.md` | part1 | 中 | |
 | P-04 | 未着手 | 第4章 データ構造 | `python-text/04-data-structures.md` | part1 | 大 | |
 | P-05 | 未着手 | 第5章 関数 | `python-text/05-functions.md` | part1 | 中 | |
