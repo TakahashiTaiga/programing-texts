@@ -74,6 +74,18 @@
   `#123-add-python-to-pathを必ずチェックする`（`path` の直後にハイフンが入らない）と一致していません。
   同ファイル内の2か所と目次から参照されています。`P-FIN` での一括修正か、単独の修正 PR をお願いします。
 
+- `python-text` 第3章のコード・実行結果・エラーメッセージは、**Python 3.11 で実際に実行して確認**しました
+  （`SyntaxError: expected ':'` / `IndentationError: expected an indented block after 'if' statement on line 3` /
+  `ZeroDivisionError: division by zero` / `TypeError: '>=' not supported between instances of 'str' and 'int'` /
+  `KeyboardInterrupt`）。3.13 系では文言が変わる可能性があります。
+- `python-text` 3.2.5 の**無限ループの止め方は、実機での確認をお願いします**。
+  とくに次の2点は VS Code のバージョンや設定で見え方が変わります。
+  - ターミナルにフォーカスがない状態で `Ctrl` + `C` を押すと「コピー」になる、という記述
+  - 「ターミナル右上のゴミ箱アイコン」でターミナルごと閉じられる、という記述（アイコンの位置・有無）
+- `python-text` 3.2.5 は**学習者が意図的に無限ループを実行する項**です。
+  止め方の説明が実機と食い違っていると、そこで完全に詰まります。
+  第1〜2章と同じ優先度で確認してください。
+
 ---
 
 ## 用語のブレ

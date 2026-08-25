@@ -50,7 +50,7 @@
 | 0 | はじめに | （コードなし）AI サポートの準備、JavaScript / Python 対応表（`let`/`const`→代入のみ、`===`→`==`、`{}`→インデント、配列→リスト、オブジェクト→辞書、`map`→内包表記、`null`/`undefined`→`None` の「地図」。詳細は各章で扱う） |
 | 1 | Python の環境構築 | Python 3.13 のインストール、`python`（Windows）/ `python3`（macOS）の呼び分け、`--version` での確認、`py` ランチャー（Windows）、REPL（`>>>`・`exit()`）、`.py` ファイルの実行（`python ファイル名`）、`print`（存在のみ。詳細は 2.5）、トレースバックの読み方（下から上・種類・行番号・`NameError`）、仮想環境 venv（`python -m venv .venv`・有効化 `Activate.ps1` / `source .venv/bin/activate`・`deactivate`）、実行ポリシー（`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`）、pip（`pip install`・`pip list`・`pip freeze > requirements.txt`・`-r`）、`import`（存在のみ。詳細は第6章）、VS Code の Python 拡張・インタプリタ選択・▷ 実行・ブレークポイントでのステップ実行 |
 | 2 | 基本文法 | 変数と代入（`=`・再代入・`NameError`）、`let`/`const` がないこと、snake_case・予約語、定数の慣習（UPPER_SNAKE_CASE）、型（`int` / `float` / `str` / `bool` / `NoneType`）、`True`/`False`/`None`（先頭大文字）、`type()`、型変換（`int()` / `float()` / `str()`・`ValueError`・`int("08")` → `8`）、浮動小数点の誤差、桁区切り `1_000`、算術演算子（`+ - * / // % **`・`round()`・`ZeroDivisionError`）、代入演算子（`+=` など。`++` はない）、比較演算子（`==` / `!=` / `<=` など。`===` はない）、論理演算子（`and` / `or` / `not`）、文字列（連結 `+`・繰り返し `*`・`len()`・インデックス（0 始まり・負の添字）・スライス `[開始:終了]`・イミュータブル・`IndexError`）、文字列メソッド（`strip` / `upper` / `lower` / `replace` / `startswith` / `endswith` / `count` / `zfill`）、f-string（`{}`・書式指定 `:,` `:.2f` `:>5` `:05`）、エスケープ（`\n` `\t` `\\` `\"`）・複数行文字列 `"""`・raw string `r"..."`、`print`（複数引数・`sep`・`end`・空行）、`input`（戻り値は必ず `str`・`int(input(...))`）、インデント（`:` とブロック・半角スペース4つ・入れ子・`IndentationError` / `TabError`・VS Code の空白可視化設定）、コメント `#` とコメントアウト、PEP 8、Black による自動整形 |
-| 3 | 制御構文 | `if`、`for`、`while`、`range`、`break`/`continue` |
+| 3 | 制御構文 | 条件分岐（`if` / `elif` / `else`・`:` と字下げ・`( )` が不要なこと・`SyntaxError: expected ':'`・`elif` は上から順に最初の1つだけ・範囲は狭い条件から書く・`if` を並べた場合との違い）、条件の組み合わせ（`and` / `or` の優先順位とかっこ・比較の連鎖 `0 <= x <= 100`）、`in` / `not in`（文字列・リスト。`== ... or ...` の置き換え）、真偽値として扱われる値（偽になるのは `False` / `0` / `0.0` / `""` / `[]` / `None` だけ・`bool()`・`if name:` での空入力判定・`== True` と書かない・数値の 0 の落とし穴）、条件式 `A if 条件 else B`（JS とは順番が逆）、`for`（文字列・リストを回す・ループ変数・入れ子・JS の `for...of` に相当）、`range`（`range(終了)` / `range(開始, 終了)` / `range(開始, 終了, 増分)`・終了を含まない・逆順・off-by-one）、累積パターン（`total = 0` をループの外で用意し `total += x`）、`enumerate`（`start=1`・変数を2つ書く。アンパックは第4章）、`while`（条件が真のあいだ・変数は自分で進める・`for` との使い分け）、無限ループと `Ctrl` + `C`（`KeyboardInterrupt`・VS Code のターミナル）、`break`（`while True:` + `break`・入れ子では内側だけ抜ける）、`continue`（不正入力の読み飛ばし・`continue` の位置で何が飛ぶか変わる）、`str.isdigit()`、`for ... else`（`break` されなかったとき・フラグ変数を使う書き方との比較）、`pass`（空ブロックはエラー・コメントは処理として数えない）、ネストの解消（字下げ3段が見直しの合図・ガード節＝早期 `continue`・条件の反転表・`and` と `or` が入れ替わること・`elif` で平らにする） |
 | 4 | データ構造 | list、tuple、dict、set、内包表記 |
 | 5 | 関数 | 定義、引数（デフォルト・可変長・キーワード）、戻り値、スコープ |
 | 6 | モジュールとパッケージ | `import`、標準ライブラリ、自作モジュール、`__name__` |
@@ -71,6 +71,19 @@
 > リスト・辞書は第4章、関数（`def`）は第5章です。**それより先の道具を使った回答をしないでください。**
 > 第2章までで使えるのは `print` / `input` / `int` / `float` / `str` / `type` / `len` / `round` と、
 > 文字列メソッド（`strip` / `upper` / `lower` / `replace` / `startswith` / `endswith` / `count` / `zfill`）です。
+
+> **注意**：第3章の学習者は、**リストの操作・辞書・関数（`def`）・例外処理をまだ学んでいません**。
+> 第3章の範囲は「条件分岐・繰り返し・ループの制御・ネストの解消」までです。
+> 第3章 3.1.4 では、`in` と `for` のために**リストを次の3つの使い方だけ**先取りしています。
+> - `[ ]` に値を並べて**作る**（`["S", "M", "L"]`）
+> - `in` / `not in` で**含まれているか調べる**
+> - `for` で**1つずつ取り出す**、`len()` で**個数を数える**
+>
+> `append` / `remove` / `sort` / スライスなどのリスト操作、タプル・辞書・集合・内包表記は第4章です。
+> 3.2.3 の `enumerate` で使う「変数を2つ書く」書き方（アンパック）も、詳細は第4章（4.2.3）です。
+> 関数（`def` / `return`）は第5章、`try` / `except` は第7章なので、**それより先の道具を使った回答をしないでください。**
+> 入力値の検査は、**`try` / `except` ではなく `str.isdigit()` と `if` で行います**（3.3.2）。
+> 第3章までで新しく使えるようになったのは `bool()` / `range()` / `enumerate()` と `str.isdigit()` です。
 
 ## 3. fastapi-text
 
