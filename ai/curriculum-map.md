@@ -51,7 +51,7 @@
 | 1 | Python の環境構築 | Python 3.13 のインストール、`python`（Windows）/ `python3`（macOS）の呼び分け、`--version` での確認、`py` ランチャー（Windows）、REPL（`>>>`・`exit()`）、`.py` ファイルの実行（`python ファイル名`）、`print`（存在のみ。詳細は 2.5）、トレースバックの読み方（下から上・種類・行番号・`NameError`）、仮想環境 venv（`python -m venv .venv`・有効化 `Activate.ps1` / `source .venv/bin/activate`・`deactivate`）、実行ポリシー（`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`）、pip（`pip install`・`pip list`・`pip freeze > requirements.txt`・`-r`）、`import`（存在のみ。詳細は第6章）、VS Code の Python 拡張・インタプリタ選択・▷ 実行・ブレークポイントでのステップ実行 |
 | 2 | 基本文法 | 変数と代入（`=`・再代入・`NameError`）、`let`/`const` がないこと、snake_case・予約語、定数の慣習（UPPER_SNAKE_CASE）、型（`int` / `float` / `str` / `bool` / `NoneType`）、`True`/`False`/`None`（先頭大文字）、`type()`、型変換（`int()` / `float()` / `str()`・`ValueError`・`int("08")` → `8`）、浮動小数点の誤差、桁区切り `1_000`、算術演算子（`+ - * / // % **`・`round()`・`ZeroDivisionError`）、代入演算子（`+=` など。`++` はない）、比較演算子（`==` / `!=` / `<=` など。`===` はない）、論理演算子（`and` / `or` / `not`）、文字列（連結 `+`・繰り返し `*`・`len()`・インデックス（0 始まり・負の添字）・スライス `[開始:終了]`・イミュータブル・`IndexError`）、文字列メソッド（`strip` / `upper` / `lower` / `replace` / `startswith` / `endswith` / `count` / `zfill`）、f-string（`{}`・書式指定 `:,` `:.2f` `:>5` `:05`）、エスケープ（`\n` `\t` `\\` `\"`）・複数行文字列 `"""`・raw string `r"..."`、`print`（複数引数・`sep`・`end`・空行）、`input`（戻り値は必ず `str`・`int(input(...))`）、インデント（`:` とブロック・半角スペース4つ・入れ子・`IndentationError` / `TabError`・VS Code の空白可視化設定）、コメント `#` とコメントアウト、PEP 8、Black による自動整形 |
 | 3 | 制御構文 | 条件分岐（`if` / `elif` / `else`・`:` と字下げ・`( )` が不要なこと・`SyntaxError: expected ':'`・`elif` は上から順に最初の1つだけ・範囲は狭い条件から書く・`if` を並べた場合との違い）、条件の組み合わせ（`and` / `or` の優先順位とかっこ・比較の連鎖 `0 <= x <= 100`）、`in` / `not in`（文字列・リスト。`== ... or ...` の置き換え）、真偽値として扱われる値（偽になるのは `False` / `0` / `0.0` / `""` / `[]` / `None` だけ・`bool()`・`if name:` での空入力判定・`== True` と書かない・数値の 0 の落とし穴）、条件式 `A if 条件 else B`（JS とは順番が逆）、`for`（文字列・リストを回す・ループ変数・入れ子・JS の `for...of` に相当）、`range`（`range(終了)` / `range(開始, 終了)` / `range(開始, 終了, 増分)`・終了を含まない・逆順・off-by-one）、累積パターン（`total = 0` をループの外で用意し `total += x`）、`enumerate`（`start=1`・変数を2つ書く。アンパックは第4章）、`while`（条件が真のあいだ・変数は自分で進める・`for` との使い分け）、無限ループと `Ctrl` + `C`（`KeyboardInterrupt`・VS Code のターミナル）、`break`（`while True:` + `break`・入れ子では内側だけ抜ける）、`continue`（不正入力の読み飛ばし・`continue` の位置で何が飛ぶか変わる）、`str.isdigit()`、`for ... else`（`break` されなかったとき・フラグ変数を使う書き方との比較）、`pass`（空ブロックはエラー・コメントは処理として数えない）、ネストの解消（字下げ3段が見直しの合図・ガード節＝早期 `continue`・条件の反転表・`and` と `or` が入れ替わること・`elif` で平らにする） |
-| 4 | データ構造 | list、tuple、dict、set、内包表記 |
+| 4 | データ構造 | リスト（`[ ]`・`len()`・`sum()` / `max()` / `min()`・インデックスと負の添字・`IndexError`・要素の書き換え＝ミュータブル・スライス（新しいリストを返す・`[::2]` / `[::-1]`）・`append` / `insert` / `remove` / `pop`（`pop` 以外は戻り値なし・`ValueError: list.remove(x): x not in list`・`IndexError: pop from empty list`）・`sort()` と `sorted()`（破壊的か否か・`reverse=True`・`sort()` の戻り値は `None`・漢字は文字コード順・`key` は第5章）・コピー（`b = a` は同じ実体・`copy()` / `[:]` / `list()`）、タプル（`( )`・変更不可 `TypeError: 'tuple' object does not support item assignment`・要素1つは `(1,)`・定数の組・アンパック `x, y = point`・`ValueError: not enough values to unpack`・`a, b = b, a`）、辞書（`{"キー": 値}`・`[ ]` での読み書き・`KeyError`・代入で追加／上書き・`del`・`in` は**キーだけ**を調べる・`get(キー)` / `get(キー, 既定値)`・`counts[x] = counts.get(x, 0) + 1` の数える型・`for` はキーが回る・`keys()` / `values()` / `items()`・`sorted(辞書)` はキーのリスト・**辞書のリスト**と集計3型（合計／絞り込み／最大は1件目を仮の答えにする）・f-string 内は引用符を変える）、集合（`{1, 2}`・**空集合は `set()`**・順番なし・`[ ]` で取り出せない・`|` / `&` / `-`・`set(リスト)` で重複除去・`sorted()` で表示順を決める・順序を保つ重複除去は `not in` + `append`）、内包表記（`[式 for 変数 in 元]`・絞り込みの `if` は**うしろ**・値の出し分けの `A if 条件 else B` は**前**・辞書内包表記 `{k: v for ...}`・`items()` との組み合わせ・読みにくければ `for` に戻す）、使い分けの比較表と判断フロー |
 | 5 | 関数 | 定義、引数（デフォルト・可変長・キーワード）、戻り値、スコープ |
 | 6 | モジュールとパッケージ | `import`、標準ライブラリ、自作モジュール、`__name__` |
 | 7 | ファイル操作と例外 | `open`、`with`、`try`/`except`、`pathlib` |
@@ -84,6 +84,19 @@
 > 関数（`def` / `return`）は第5章、`try` / `except` は第7章なので、**それより先の道具を使った回答をしないでください。**
 > 入力値の検査は、**`try` / `except` ではなく `str.isdigit()` と `if` で行います**（3.3.2）。
 > 第3章までで新しく使えるようになったのは `bool()` / `range()` / `enumerate()` と `str.isdigit()` です。
+
+> **注意**：第4章の学習者は、**関数（`def` / `return`）・ラムダ式・例外処理・`import` をまだ学んでいません**。
+> 第4章の範囲は「リスト・タプル・辞書・集合・内包表記と、その使い分け」までです。
+> 第4章までで新しく使えるようになったのは
+> `sum()` / `max()` / `min()` / `list()` / `set()` / `sorted()` と、
+> リストのメソッド（`append` / `insert` / `remove` / `pop` / `sort` / `copy`）、
+> 辞書のメソッド（`get` / `keys` / `values` / `items`）、`del` です。
+> **`sorted()` の `key`（並べ替えの基準指定）は第5章（5.5.3）なので使わないでください。**
+> 「点数の高い順に生徒を並べる」のような処理は、
+> 第4章の範囲では**値だけを取り出して並べる**形で答えてください。
+> 関数は第5章、`import` と標準ライブラリは第6章、`try` / `except` は第7章です。
+> f-string の中で辞書を読むときは、**外側と違う引用符**を使わせてください
+> （`f"{student['name']}"`。同じ引用符は Python 3.11 以前でエラーになります）。
 
 ## 3. fastapi-text
 
