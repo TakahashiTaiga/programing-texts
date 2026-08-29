@@ -54,7 +54,7 @@
 | 4 | データ構造 | リスト（`[ ]`・`len()`・`sum()` / `max()` / `min()`・インデックスと負の添字・`IndexError`・要素の書き換え＝ミュータブル・スライス（新しいリストを返す・`[::2]` / `[::-1]`）・`append` / `insert` / `remove` / `pop`（`pop` 以外は戻り値なし・`ValueError: list.remove(x): x not in list`・`IndexError: pop from empty list`）・`sort()` と `sorted()`（破壊的か否か・`reverse=True`・`sort()` の戻り値は `None`・漢字は文字コード順・`key` は第5章）・コピー（`b = a` は同じ実体・`copy()` / `[:]` / `list()`）、タプル（`( )`・変更不可 `TypeError: 'tuple' object does not support item assignment`・要素1つは `(1,)`・定数の組・アンパック `x, y = point`・`ValueError: not enough values to unpack`・`a, b = b, a`）、辞書（`{"キー": 値}`・`[ ]` での読み書き・`KeyError`・代入で追加／上書き・`del`・`in` は**キーだけ**を調べる・`get(キー)` / `get(キー, 既定値)`・`counts[x] = counts.get(x, 0) + 1` の数える型・`for` はキーが回る・`keys()` / `values()` / `items()`・`sorted(辞書)` はキーのリスト・**辞書のリスト**と集計3型（合計／絞り込み／最大は1件目を仮の答えにする）・f-string 内は引用符を変える）、集合（`{1, 2}`・**空集合は `set()`**・順番なし・`[ ]` で取り出せない・`|` / `&` / `-`・`set(リスト)` で重複除去・`sorted()` で表示順を決める・順序を保つ重複除去は `not in` + `append`）、内包表記（`[式 for 変数 in 元]`・絞り込みの `if` は**うしろ**・値の出し分けの `A if 条件 else B` は**前**・辞書内包表記 `{k: v for ...}`・`items()` との組み合わせ・読みにくければ `for` に戻す）、使い分けの比較表と判断フロー |
 | 5 | 関数 | 関数の定義（`def 名前():`・`:` と字下げ・空行2つの慣習・定義しただけでは動かない・呼び出しは定義より後（`NameError`）・`()` を書き忘れると何も起きない）、**`print` と `return` の違い**（`return` のない関数は `None` を返す・`return` を実行した時点で関数が終わる・戻り値をそのまま式に使える）、引数（位置引数・順番違いはエラーにならない・`TypeError: ... missing 1 required positional argument`・キーワード引数・`SyntaxError: positional argument follows keyword argument`・デフォルト引数と「省略できるものは後ろ」・**デフォルト引数にリスト／辞書を書かない**（定義時に1回だけ作られて使い回される・`items=None` + `if items is None: items = []`）・**`is None` による判定**・可変長引数 `*args`（タプル）と `**kwargs`（辞書））、戻り値（`if` で返り値を出し分ける・リストを返す関数・`return a, b` はタプル→アンパックで受け取る・返す値が増えるなら辞書1つを返す・**早期 `return`**（ガード節。`ZeroDivisionError` を先に弾く・`return` だけ書くと `None`））、スコープ（ローカル／グローバル・関数の中の変数は外から見えない（`NameError`）・外の定数は中から読める・代入しようとすると `UnboundLocalError`・**引数で受け取り `return` で返す**形にする・ただしリスト／辞書は中身を変えられる（同じ実体）・`global` は使わない）、関数を値として扱う（`()` を付けなければ関数そのもの・`f = double`・ラムダ式 `lambda 引数: 式`（`return` を書かない・式1つだけ・名前を付けるなら `def`）・**`sorted(データ, key=lambda x: x["キー"])` / `key=len` / `reverse=True`**・`max()` / `min()` にも `key` を渡せる）、良い関数（1つの関数は1つのこと・計算する関数と表示を分ける・docstring `"""..."""` と `help()`・切り出しの3つの合図） |
 | 6 | モジュールとパッケージ | モジュール＝1つの `.py` ファイル（自作モジュールの作成と読み込み・`import` に `.py` は書かない・関数だけでなく変数も取り出せる）、`import モジュール`（`モジュール名.関数名()` の形。`with_tax()` だけで呼ぶと `NameError`）、`from モジュール import 名前`（モジュール名は取り込まれない）、`as` による別名（ぶつかったときと慣習の短縮名だけ）、**`from ... import *` は使わない**（同じ名前が静かに上書きされる実例）、モジュールの探索順（**実行した `.py` の場所** → 標準ライブラリ → pip。`cd` した場所ではない・`sys.path[0]` で確認・`ModuleNotFoundError` の切り分け3手順・`random.py` などの名前を自作モジュールに付けない・`__pycache__`）、標準ライブラリ（インストール不要）：`datetime`（`date` / `datetime` / `timedelta`・`.year` などの属性は `()` なし・日付の加減算・`.days`・`strftime` と `%Y %m %d %H %M`・`date.today()`・`weekday()` は月曜が 0）、`random`（`randint` は**上限を含む**・`choice` / `sample` / `shuffle`（破壊的・戻り値 `None`）・`seed`・パスワード用途には使わない）、`math`（`floor` / `ceil` / `sqrt` / `pi`・**`round(2.5)` は `2`**（偶数丸め）・`int()` との違い）、`collections`（`Counter`（キーがなくても `0`・`most_common(n)` はタプルのリスト）・`defaultdict(list)`（`()` を付けずに関数を渡す）・`", ".join(リスト)`（中身は文字列だけ））、`import` は読み込んだファイルを**上から下まで実行する**、`__name__`（直接実行なら `"__main__"`、`import` ならモジュール名）と `if __name__ == "__main__":`、`__doc__`、パッケージ（ディレクトリ＋`__init__.py`・`shop.taxes` のドット表記・`__init__.py` を窓口にする）、絶対 import と相対 import（`.` は同じディレクトリ・**このテキストは絶対 import を基本**・`ImportError: attempted relative import with no known parent package`） |
-| 7 | ファイル操作と例外 | `open`、`with`、`try`/`except`、`pathlib` |
+| 7 | ファイル操作と例外 | ファイルを読む（`open(パス, encoding="utf-8")`・**探す基準はターミナルの現在地**（`import` とは逆）・`f.read()` は1本の文字列・`f.close()`・`for line in f:` は改行が付いたまま（`rstrip()`）・`read().splitlines()`（改行なしのリスト）・`readlines()`（改行あり））、**`with open(...) as f:`**（ブロックを抜けると自動で閉じる・`f.closed`・`ValueError: I/O operation on closed file.`）、**`encoding="utf-8"` を必ず書く**（文字コード＝文字と番号の対応表・UTF-8 と cp932・`UnicodeDecodeError`・エラーにならず文字化けする場合もある）、モード（`"r"` / `"w"`（**開いた時点で中身が消える**）/ `"a"`（追記）/ `"x"`（`FileExistsError`）・`f.write` の戻り値は文字数）、**`write` は改行を付けない**（`+ "\n"` か `"\n".join(...) + "\n"`）、`repr()`、改行の OS 差（`\r\n` / `\n`。テキストモードが自動変換する）、`pathlib`（`Path`・`.name` / `.stem` / `.suffix` / `.parent`（属性なので `()` なし）・`read_text` / `write_text`・**`/` でパスをつなぐ**（両方が文字列だと `TypeError`）・`Path.cwd()`・`exists` / `is_file` / `is_dir`・`mkdir(exist_ok=True)` / `parents=True`・`iterdir` / `glob("*.txt")`（順番は不定なので `sorted()` で囲む）・`unlink` は使わない）、Windows のパス（`\` はエスケープ記号・raw string `r"..."`・`Path` で組み立てる・`/` 区切りも動く・**絶対パスをコードに書かない**）、CSV（`split(",")` では引用符内のカンマを扱えない・`csv.reader` と `next()`・**`csv.DictReader` で辞書のリストに**・**`newline=""` を付ける**（Windows で空行が入る）・**値はすべて文字列なので `int()` する**・`csv.DictWriter` と `fieldnames` / `writeheader` / `writerow`）、JSON（Python の辞書との対応表（`true`/`false`/`null`・キーはダブルクォート）・`json.load` / `loads` / `dump` / `dumps`（**`s` は文字列の `s`**）・`json.JSONDecodeError`（末尾カンマ・コメント不可）・**`ensure_ascii=False` と `indent=2`**・`encoding="utf-8"` とセット・「集計 → 辞書のリストに組み立て → `sorted` → `json.dump`」の5段階）、例外（**プログラムの間違いと外の世界の事情を区別する**・例外の一覧表・`try` / `except 種類:`・`as e` で `print(e)`・`isdigit()` より `try` のほうが確実・`except` は上から順に最初の1つ・タプルでまとめる・**広い例外を先に書かない**・`else`（例外が起きなかったときだけ）・`finally`（`return` があっても必ず）・**`except:` と裸で書かない / `pass` で終わらせない / それらしい値を返して隠さない**）、`raise 例外("メッセージ")`（ガード節の形・`return 0` との比較・対処は呼び出し側が決める・迷ったら `ValueError`）、`class 名前(Exception):`（**例外の種類を増やすための決まった書き方**として導入。`class` と継承の詳細は第8章）、**例外は捕まえられなければ呼び出し元へ戻る**（部品の関数では捕まえない・`main` など「どうするか決められる場所」で捕まえる） |
 | 8 | オブジェクト指向 | クラス、インスタンス、継承、特殊メソッド、`dataclass` |
 | 9 | 型ヒントとモダン Python | 型ヒント、`typing`、`mypy`、ツール（ruff / uv） |
 | 10 | 実践：データ処理スクリプト | CSV / JSON、外部 API |
@@ -130,6 +130,29 @@
 > 相対 import（`from .taxes import ...`）も 6.5.3 で「読めれば十分」としているので、
 > **回答のコードは絶対 import（`from shop.taxes import ...`）で書いてください。**
 > `itertools` / `functools` / `secrets` など、6.3 で扱っていない標準ライブラリも使わないでください。
+
+> **注意**：第7章の学習者は、**クラス・型ヒントをまだ学んでいません**。
+> 第7章の範囲は「ファイルの読み書き・`pathlib`・CSV / JSON・例外処理」までです。
+> 第7章までで新しく使えるようになったのは、`open` / `with` / `repr()` と、
+> **標準ライブラリのうち次の3つ**です。
+> - `pathlib`（`Path` / `read_text` / `write_text` / `cwd` / `exists` / `is_file` / `is_dir` /
+>   `mkdir` / `iterdir` / `glob`。**`unlink` は使わせないでください**）
+> - `csv`（`reader` / `DictReader` / `writer` / `DictWriter`）
+> - `json`（`load` / `loads` / `dump` / `dumps`）
+>
+> あわせて `str.rstrip` / `str.splitlines` と `next()` が使えます。
+> **`class` は第8章**、型ヒントと `ruff` / `mypy` / `uv` は第9章、
+> `requests` と `argparse` は第10章です。
+> **それより先の道具を使った回答をしないでください。**
+> とくに `pandas` や `openpyxl` のような外部ライブラリを勧めないでください。
+> CSV は `csv` モジュール、集計は `collections`（6.3.5）の範囲で答えてください。
+>
+> 7.6.2 で `class ConfigError(Exception):` だけは先取りしていますが、
+> **「例外の種類を1つ増やすための決まった書き方」としてのみ**扱っています。
+> `__init__` や `self`、属性・メソッドの説明はまだしないでください（第8章）。
+> ファイルを開く回答には、**必ず `with` と `encoding="utf-8"` を付けてください**（7.1.3 / 7.1.4）。
+> CSV を開く回答には `newline=""` も付けてください（7.4.1）。
+> `except:` と裸で書いた例や `except: pass` は、7.5.5 で「使わない」と決めています。
 
 ## 3. fastapi-text
 

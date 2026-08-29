@@ -763,3 +763,711 @@ return {"subtotal": subtotal, "shipping": fee, "total": subtotal + fee}
 > 内包表記（[4.5](./04-data-structures.md#45-内包表記)）で税込価格のリストを作り、
 > `sum()` で合計しています。3行が1行になりますが、
 > **読みにくいと感じるなら `for` のままでかまいません。**
+
+---
+
+## 第7章
+
+### 理解度チェック
+
+**問 7.1 の解答**
+
+- A = **ターミナルがいまいるディレクトリ**（カレントディレクトリ）
+- B = **実行した `.py` ファイルが置かれているディレクトリ**
+
+**解説**
+
+**この2つは基準が違います。** ここが第7章で最初につまずくところです。
+
+| 何を探すとき | 基準になる場所 | 確認方法 |
+|-------------|--------------|---------|
+| `open("memo.txt")` のファイル | ターミナルの現在地 | `Path.cwd()`（[7.3.2](./07-files-and-exceptions.md#732-パスを組み立てる)） |
+| `import price_utils` のモジュール | 実行した `.py` の場所 | `sys.path[0]`（[6.1.3](./06-modules.md#613-同じディレクトリにないと読み込めない問題)） |
+
+そのため、`python-lesson` の1つ上のディレクトリから
+
+```powershell
+python python-lesson/read_all.py
+```
+
+と実行すると、**スクリプトそのものは動くのに `memo.txt` だけが見つからない**、
+という一見不可解な状態になります。
+
+対策は、**必ず `cd` してから実行する**ことです。
+どうしても分からなくなったら、プログラムの先頭に次の2行を入れて確かめてください。
+
+```python
+from pathlib import Path
+
+print(Path.cwd())
+```
+
+---
+
+**問 7.2 の解答**
+
+**直す点**：`open("memo.txt")` を `open("memo.txt", encoding="utf-8")` にする。
+
+**直さないと何が起きるか**：Windows では既定の文字コードが cp932 になることがあり、
+UTF-8 で保存されたファイルを読むと `UnicodeDecodeError` になるか、文字化けした文字列が返ってくる。
+
+**解説**
+
+厄介なのは、**書いた本人の環境では動いてしまう**ことです。
+macOS と Linux の既定は UTF-8 なので、このコードは問題なく動きます。
+壊れるのは、それを Windows の人に渡したときです（[7.1.4](./07-files-and-exceptions.md#714-文字コードの指定encodingutf-8)）。
+
+```text
+UnicodeDecodeError: 'cp932' codec can't decode byte 0x94 in position 8: illegal multibyte sequence
+```
+
+さらに悪いのは、**エラーにならず文字化けするだけ**の場合です。
+`繧翫ｓ縺` のような文字列がそのまま集計に流れ込み、
+結果を見るまで誰も気づきません。
+
+> **よくある間違い**
+> 書き込み側だけ `encoding="utf-8"` を付けて、読み込み側を忘れるパターンが多いです。
+> **読むときも書くときも、両方に付けてください。**
+
+---
+
+**問 7.3 の解答**
+
+```text
+① ['りんご', 'みかん', 'ぶどう']
+② ['りんご\n', 'みかん\n', 'ぶどう\n']
+```
+
+**解説**
+
+どちらもリストを返しますが、**改行を残すかどうか**が違います
+（[7.1.2](./07-files-and-exceptions.md#712-1行ずつ読む)）。
+
+- `splitlines()` … 改行で区切り、**改行は捨てる**
+- `readlines()` … 1行ずつに分けるが、**改行は付いたまま**
+
+②のまま `print` すると、行のあいだに空行が入ります。
+また、`"りんご\n" == "りんご"` は `False` なので、
+**比較や `in` による検索も期待どおりに動きません。**
+
+このテキストでは、**行の一覧がほしいときは `splitlines()`** を使います。
+`readlines()` を使ってしまった場合は、
+`[line.rstrip() for line in f.readlines()]` のように内包表記
+（[4.5.1](./04-data-structures.md#451-リスト内包表記)）で取り除いてください。
+
+---
+
+**問 7.4 の解答**
+
+**中身**：空になる（0文字のファイルになる）。
+
+**理由**：`"w"` は**開いた時点で中身を空にする**モードだから。書き込む前に消える。
+
+**解説**
+
+`pass` は「何もしない」という文（[3.3.4](./03-control-flow.md#334-pass)）なので、
+一見すると何も起きないように見えます。
+しかし、消しているのは `pass` ではなく **`open` のほう**です
+（[7.2.2](./07-files-and-exceptions.md#722-w-で開くと中身が消える)）。
+
+**しかもエラーは1つも出ません。** ここが `"w"` の怖いところです。
+
+| やりたいこと | 使うモード |
+|-------------|-----------|
+| 末尾に書き足したい | `"a"` |
+| 作り直したい（消えてよい） | `"w"` |
+| すでにあるなら止まってほしい | `"x"`（`FileExistsError` が出る） |
+
+> **よくある間違い**
+> 「ファイルを読んでから、同じファイルに追記しよう」と考えて
+> `open(path, "w")` と書いてしまう事故が非常に多いです。
+> **読んだ内容を変数に持っていても、`"w"` で開いた時点で元ファイルは空になります。**
+> 元に戻せません。大事なファイルを扱うときは、
+> まず `"x"` で別名に書いてみて、意図どおりか確かめてください。
+
+---
+
+**問 7.5 の解答**
+
+**理由**：`csv.DictReader` が返す値は**すべて文字列**なので、
+`row["price"]` は `180` ではなく `"180"` であり、
+`"180" * 3` は掛け算ではなく**文字列の3回繰り返し**になるため。
+
+**実際の結果**
+
+```text
+180180180
+```
+
+**正しい書き方**
+
+```python
+print(int(row["price"]) * 3)
+```
+
+**解説**
+
+`*` は、左が数値なら掛け算、左が文字列なら繰り返しになります（[2.4.1](./02-basics.md#241-連結と繰り返し)）。
+**そのため、エラーが出ません。** これが最もたちの悪いパターンです。
+
+CSV から読んだ値を計算に使うときは、必ず `int()` か `float()` で変換してください
+（[2.2.6](./02-basics.md#226-型を変換する) / [7.4.1](./07-files-and-exceptions.md#741-csv-モジュール)）。
+
+> **補足**
+> `+` でも同じことが起きます。
+> `row["price"] + row["quantity"]` は `"1803"` という文字列になります。
+> 「合計がやたら大きい」「数字が横に並んでいる」と感じたら、
+> **`int()` の付け忘れ**を疑ってください。
+
+---
+
+**問 7.6 の解答**
+
+```text
+memo.txt: 3行
+----
+menu.txt: なし
+----
+```
+
+**解説**
+
+1回目（`memo.txt`）は例外が起きないので、`except` は飛ばされ **`else` が実行**されます。
+2回目（`menu.txt`）は `FileNotFoundError` が起きるので **`except` が実行**され、`else` は飛ばされます。
+
+そして **`finally` は、どちらの場合も実行されます**
+（[7.5.4](./07-files-and-exceptions.md#754-else-と-finally)）。だから `----` が2回出ます。
+
+| ブロック | 1回目（成功） | 2回目（失敗） |
+|---------|-------------|-------------|
+| `try` | 実行される | 実行される（途中で中断） |
+| `except` | 飛ばされる | **実行される** |
+| `else` | **実行される** | 飛ばされる |
+| `finally` | **実行される** | **実行される** |
+
+`else` と `except` は、**必ずどちらか片方だけ**が動きます。両方動くことはありません。
+
+---
+
+**問 7.7 の解答**
+
+問題は次の2つです。
+
+1. **`except:` と種類を書いていない（裸の `except`）**
+   … `KeyboardInterrupt`（`Ctrl` + `C` による中断）まで捕まえてしまい、
+   プログラムを止められなくなることがある。想定外の例外も一緒に隠してしまう
+2. **`except` の中が `pass` で、`return 0` を返している**
+   … 失敗したのに何も記録されず、`0` という**それらしい値**が返るため、
+   呼び出し側は「ファイルが空だった」のか「読めなかった」のかを区別できない
+
+**解説**
+
+このコードでファイル名を打ち間違えると、次のようになります。
+
+```python
+print(read_count("shoping.txt"))   # p が1つ足りない
+```
+
+```text
+0
+```
+
+**エラーも警告も出ません。** 「0行のファイルだった」という顔をして返ってきます
+（[7.5.5](./07-files-and-exceptions.md#755-握りつぶさないexcept-pass-の危険)）。
+
+書き直すなら、次のどちらかです。
+
+**案1：捕まえない（呼び出し側に任せる）**
+
+```python
+def read_count(path):
+    """ファイルの行数を返す。読めなければ例外はそのまま呼び出し元へ渡す。"""
+    with open(path, encoding="utf-8") as f:
+        return len(f.read().splitlines())
+```
+
+**案2：種類を指定して、何が起きたかを残す**
+
+```python
+def read_count(path):
+    """ファイルの行数を返す。ファイルがなければメッセージを出して -1 を返す。"""
+    try:
+        with open(path, encoding="utf-8") as f:
+            return len(f.read().splitlines())
+    except FileNotFoundError as e:
+        print(f"読み込めませんでした: {e}")
+        return -1
+```
+
+案2で `0` ではなく `-1` を返しているのは、
+**「正常な結果としてありえない値」**にして、失敗と区別できるようにするためです。
+どちらを選ぶかは、[7.6.3](./07-files-and-exceptions.md#763-どこで例外を捕まえるべきか) の基準
+（その場で対処を決められるか）で判断してください。
+
+---
+
+### 演習 7.1 の解答
+
+`python-lesson/shopping.txt`
+
+```text
+牛乳
+食パン
+たまご
+バター
+```
+
+`python-lesson/line_report.py`
+
+```python
+with open("shopping.txt", encoding="utf-8") as f:
+    items = f.read().splitlines()
+
+lines = []
+for i, item in enumerate(items, start=1):
+    lines.append(f"{i}. {item}（{len(item)}文字）")
+lines.append(f"合計: {len(items)}件")
+
+for line in lines:
+    print(line)
+
+# "w" で開く（"a" だと実行のたびに内容が積み上がってしまうため）
+with open("report.txt", "w", encoding="utf-8") as f:
+    f.write("\n".join(lines) + "\n")
+```
+
+```text
+実行結果:
+1. 牛乳（2文字）
+2. 食パン（3文字）
+3. たまご（3文字）
+4. バター（3文字）
+合計: 4件
+```
+
+`report.txt` の中身も同じ5行になります。
+
+**解説**
+
+この演習の要点は3つです。
+
+**1. 表示用の行を、いったんリストに貯める**
+
+画面表示とファイル書き出しで**同じ内容**を使うので、
+先に `lines` に組み立ててしまうと、
+表示も書き出しもそのリストを使うだけで済みます。
+`print` の中で文字列を組み立ててしまうと、書き出し側でもう一度同じ式を書くことになります。
+
+**2. モードは `"w"`**
+
+`"a"` にすると、2回目の実行で `report.txt` が10行になります。
+「2回実行しても2倍にならないこと」という条件が、
+`"w"` を指定させるための条件でした（[7.2.1](./07-files-and-exceptions.md#721-上書きモードと追記モード)）。
+
+**3. 末尾の改行を自分で足す**
+
+`"\n".join(lines)` は**要素のあいだ**にだけ改行を入れるので、
+最後の行のうしろには何も付きません（[7.2.3](./07-files-and-exceptions.md#723-改行の扱い)）。
+`+ "\n"` を忘れると、`report.txt` の最終行に改行がない状態になります。
+
+> **別解：1行ずつ `write` する**
+>
+> ```python
+> with open("report.txt", "w", encoding="utf-8") as f:
+>     for line in lines:
+>         f.write(line + "\n")
+> ```
+>
+> こちらでも結果は同じです。行数が非常に多い場合（数十万行など）は、
+> `join` で巨大な文字列を1つ作らずに済むこちらのほうが向いています。
+
+> **よくある間違い**
+> `f.write(lines)` と、**リストをそのまま渡す**間違いが多いです。
+>
+> ```text
+> TypeError: write() argument must be str, not list
+> ```
+>
+> `write` に渡せるのは**文字列だけ**です。
+> リストを渡したいときは、`join` で1本の文字列にしてください。
+
+---
+
+### 演習 7.2 の解答
+
+`python-lesson/make_notes.py`
+
+```python
+from pathlib import Path
+
+notes_dir = Path("notes")
+# exist_ok=True: 2回目以降の実行で FileExistsError にしないため
+notes_dir.mkdir(exist_ok=True)
+
+(notes_dir / "monday.txt").write_text("会議は10時から\n資料を印刷する\n", encoding="utf-8")
+(notes_dir / "tuesday.txt").write_text("見積もりを送る\n", encoding="utf-8")
+(notes_dir / "wednesday.txt").write_text("在庫を数える\n発注する\n", encoding="utf-8")
+(notes_dir / "settings.json").write_text("{}\n", encoding="utf-8")
+
+print("作成しました")
+```
+
+`python-lesson/list_notes.py`
+
+```python
+from pathlib import Path
+
+notes_dir = Path("notes")
+
+if not notes_dir.exists():
+    print("notes ディレクトリがありません")
+else:
+    # sorted で名前順に固定する（glob の順番は決まっていないため）
+    txt_paths = sorted(notes_dir.glob("*.txt"))
+    for path in txt_paths:
+        first_line = path.read_text(encoding="utf-8").splitlines()[0]
+        print(f"{path.name}: {first_line}")
+    print(f"テキストファイルは{len(txt_paths)}個です")
+```
+
+```text
+python make_notes.py の実行結果:
+作成しました
+
+python list_notes.py の実行結果:
+monday.txt: 会議は10時から
+tuesday.txt: 見積もりを送る
+wednesday.txt: 在庫を数える
+テキストファイルは3個です
+```
+
+**解説**
+
+**`(notes_dir / "monday.txt")` のかっこ**
+
+かっこがないと `notes_dir / "monday.txt".write_text(...)` と解釈され、
+**文字列に対して `write_text` を呼ぼうとして** `AttributeError` になります。
+`/` でつないだ結果に対してメソッドを呼ぶときは、かっこで囲んでください
+（[7.3.2](./07-files-and-exceptions.md#732-パスを組み立てる)）。
+
+**`exist_ok=True`**
+
+これがないと、2回目の実行で次のエラーになります
+（[7.3.3](./07-files-and-exceptions.md#733-存在確認作成一覧)）。
+
+```text
+FileExistsError: [Errno 17] File exists: 'notes'
+```
+
+**`glob("*.txt")` と `sorted`**
+
+`iterdir()` を使うと `settings.json` まで一覧に入ってしまい、
+「3個です」の条件を満たせません。`glob("*.txt")` で絞り込みます。
+
+そして `glob` の**取り出し順は決まっていません。**
+環境によって順番が変わるので、`sorted()` で囲んで名前順に固定します。
+
+**`len()` を使うために変数に入れる**
+
+`for path in sorted(notes_dir.glob("*.txt")):` と直接書いてしまうと、
+あとで件数を数えられません。**いったん `txt_paths` に入れる**のがポイントです。
+
+> **よくある間違い**
+> `path.read_text(...).splitlines()[0]` は、**中身が空のファイルだと `IndexError`** になります。
+>
+> ```text
+> IndexError: list index out of range
+> ```
+>
+> この演習では中身が必ずあると分かっているのでこのままで問題ありませんが、
+> 実際のデータを扱うときは、空ファイルが混ざる可能性を考えてください。
+> 第7章の道具だけでも、次のように書けます。
+>
+> ```python
+> lines = path.read_text(encoding="utf-8").splitlines()
+> first_line = lines[0] if lines else "（空です）"
+> ```
+
+---
+
+### 演習 7.3 の解答
+
+`python-lesson/item_summary.py`
+
+```python
+import csv
+import json
+from collections import defaultdict
+from pathlib import Path
+
+
+def read_sales(path):
+    """売上 CSV を読み込んで、辞書のリストで返す。"""
+    with open(path, encoding="utf-8", newline="") as f:
+        return list(csv.DictReader(f))
+
+
+def summarize(sales):
+    """商品ごとの個数と金額を集計し、金額の多い順のリストで返す。"""
+    # 合計したい値が2種類あるので、defaultdict も2つ用意する
+    quantities = defaultdict(int)
+    amounts = defaultdict(int)
+    for row in sales:
+        quantity = int(row["quantity"])
+        price = int(row["price"])
+        quantities[row["item"]] += quantity
+        amounts[row["item"]] += quantity * price
+
+    summary = []
+    for item in quantities:
+        summary.append({
+            "item": item,
+            "quantity": quantities[item],
+            "amount": amounts[item],
+        })
+    return sorted(summary, key=lambda row: row["amount"], reverse=True)
+
+
+def main():
+    sales = read_sales(Path("data") / "sales.csv")
+    summary = summarize(sales)
+
+    for i, row in enumerate(summary, start=1):
+        print(f"{i}. {row['item']}: {row['quantity']}個 / {row['amount']}円")
+
+    out_path = Path("data") / "item_summary.json"
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(summary, f, ensure_ascii=False, indent=2)
+
+    print(f"{out_path} に書き出しました")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+```text
+実行結果:
+1. ボールペン: 14個 / 1680円
+2. ノート: 6個 / 1080円
+3. 消しゴム: 5個 / 450円
+data/item_summary.json に書き出しました
+```
+
+`data/item_summary.json`
+
+```json
+[
+  {
+    "item": "ボールペン",
+    "quantity": 14,
+    "amount": 1680
+  },
+  {
+    "item": "ノート",
+    "quantity": 6,
+    "amount": 1080
+  },
+  {
+    "item": "消しゴム",
+    "quantity": 5,
+    "amount": 450
+  }
+]
+```
+
+**解説**
+
+[7.4.3](./07-files-and-exceptions.md#743-日本語を含む-json-の書き出し) の `json_records.py` と、
+**まったく同じ5段階**で書けます。題材が図書室の貸出記録から売上に変わっただけです。
+
+| 段階 | やること | 本文の対応 |
+|------|---------|-----------|
+| 1 | CSV を辞書のリストにする | [7.4.1](./07-files-and-exceptions.md#741-csv-モジュール) の `DictReader` |
+| 2 | `defaultdict` を2つ用意して集計する | [7.4.3](./07-files-and-exceptions.md#743-日本語を含む-json-の書き出し) の段階1 |
+| 3 | 辞書のリストに組み立て直す | 同 段階2 |
+| 4 | `key` を指定して並べ替える | [5.5.3](./05-functions.md#553-sorted-の-key-に渡す) |
+| 5 | `ensure_ascii=False, indent=2` で書き出す | [7.4.3](./07-files-and-exceptions.md#743-日本語を含む-json-の書き出し) |
+
+**なぜ `defaultdict` を2つ使うのか**
+
+「個数の合計」と「金額の合計」は**別々の集計**です。
+1つの辞書に両方入れようとすると、
+`totals[item] = {"quantity": ..., "amount": ...}` のような入れ子になり、
+`defaultdict(int)` では扱えなくなります。
+**集計したい値の種類だけ `defaultdict` を並べる**のが、いちばん素直な書き方です。
+
+**なぜ辞書ではなくリストで返すのか**
+
+辞書のままだと、`sorted` で並べ替えた結果を保持しにくくなります。
+**辞書のリスト**（[4.3.5](./04-data-structures.md#435-辞書のリスト実務で最頻出の形)）にすれば、
+`key=lambda row: row["amount"]` で好きな列を基準に並べられ、
+`json.dump` にもそのまま渡せます。
+JSON の世界でも、この形（オブジェクトの配列）が最も一般的です。
+
+**`newline=""` を忘れると**
+
+読み込みだけなら、多くの場合は動いてしまいます。
+しかし値の中に改行を含む CSV では行がずれるため、
+**CSV を開くときは常に付ける**と決めておくのが安全です
+（[7.4.1](./07-files-and-exceptions.md#741-csv-モジュール)）。
+
+> **よくある間違い**
+> `int()` を忘れると、次のように**エラーが出ないまま**おかしな結果になります。
+>
+> ```python
+> amounts[row["item"]] += row["quantity"] * row["price"]
+> ```
+>
+> ```text
+> TypeError: can't multiply sequence by non-int of type 'str'
+> ```
+>
+> この場合は運よく `TypeError` になりますが（文字列どうしは掛けられないため）、
+> `row["quantity"] * 3` のように**片方が数値**だと、
+> 文字列の繰り返しとして成立してしまい、エラーが出ません。
+> **CSV から取り出したら、まず `int()`。** これを習慣にしてください。
+
+> **別解：`summarize` の中で内包表記を使う**
+>
+> ```python
+> summary = [
+>     {"item": item, "quantity": quantities[item], "amount": amounts[item]}
+>     for item in quantities
+> ]
+> ```
+>
+> リスト内包表記（[4.5.1](./04-data-structures.md#451-リスト内包表記)）で書けますが、
+> 1行が長くなるので、**読みにくいと感じたら `for` のままでかまいません**
+> （[4.5.4](./04-data-structures.md#454-読みにくくなったら-for-に戻す)）。
+
+---
+
+### 演習 7.4 の解答
+
+`python-lesson/load_settings.py`
+
+```python
+import json
+from pathlib import Path
+
+
+class SettingsError(Exception):
+    """設定ファイルの内容が正しくないことを表す例外。"""
+
+
+def load_settings(path):
+    """設定ファイルを読み込んで辞書で返す。内容が不正なら SettingsError を投げる。"""
+    text = Path(path).read_text(encoding="utf-8")
+    settings = json.loads(text)
+
+    for key in ["shop_name", "tax_rate"]:
+        if key not in settings:
+            raise SettingsError(f"{key} がありません")
+
+    if settings["tax_rate"] < 0 or settings["tax_rate"] > 1:
+        raise SettingsError(f"tax_rate は0以上1以下にしてください: {settings['tax_rate']}")
+
+    return settings
+
+
+def main():
+    paths = [
+        "settings/shop_ok.json",
+        "settings/shop_missing.json",
+        "settings/shop_bad_rate.json",
+        "settings/shop_none.json",
+    ]
+    for path in paths:
+        try:
+            settings = load_settings(path)
+        except FileNotFoundError:
+            print(f"{path}: ファイルが見つかりません")
+        except SettingsError as e:
+            print(f"{path}: 設定を直してください（{e}）")
+        else:
+            print(f"{path}: {settings['shop_name']} / 税率 {settings['tax_rate']}")
+        finally:
+            print("  --- 1件終わり ---")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+```text
+実行結果:
+settings/shop_ok.json: みどり文具店 / 税率 0.1
+  --- 1件終わり ---
+settings/shop_missing.json: 設定を直してください（shop_name がありません）
+  --- 1件終わり ---
+settings/shop_bad_rate.json: 設定を直してください（tax_rate は0以上1以下にしてください: 1.5）
+  --- 1件終わり ---
+settings/shop_none.json: ファイルが見つかりません
+  --- 1件終わり ---
+```
+
+**解説**
+
+**なぜ `load_settings` の中で `try` を書かないのか**
+
+`load_settings` は「設定を読んで返す係」です。
+ファイルが見つからなかったときに、
+**既定値を使うのか、利用者に知らせるのか、プログラムを止めるのかを決める材料を持っていません。**
+決められるのは `main` だけです（[7.6.3](./07-files-and-exceptions.md#763-どこで例外を捕まえるべきか)）。
+
+`Path(path).read_text(...)` が投げた `FileNotFoundError` は、
+`load_settings` を素通りして `main` の `except` まで戻ってきます。
+**途中の関数に `try` を書かなくても、例外はちゃんと届きます。**
+
+**なぜ自作の例外にするのか**
+
+`ValueError` を投げてしまうと、`main` 側の `except ValueError:` が
+「設定が不正だった」のか「JSON の中の数値変換に失敗した」のかを区別できません。
+`SettingsError` という専用の種類を作ることで、
+**この処理が意図的に投げたものだけ**を狙って捕まえられます
+（[7.6.2](./07-files-and-exceptions.md#762-自作の例外クラス)）。
+
+クラスの本体は docstring 1行だけで、処理は書きません。
+`(Exception)` の意味（継承）は第8章で扱います。
+
+**`except` を2つ並べる順番**
+
+`FileNotFoundError` と `SettingsError` は、
+どちらも `Exception` の下にありますが**親子関係ではない**ので、順番はどちらが先でもかまいません。
+ただし `except Exception:` を先に書くと両方ともそこに吸い込まれます
+（[7.5.3](./07-files-and-exceptions.md#753-例外の種類を指定する)）。
+
+**`else` と `finally` の使い分け**
+
+- 正常なときだけ表示したい → **`else`**
+- どの場合でも表示したい → **`finally`**
+
+`try` のブロックには `load_settings(path)` の**1行だけ**を入れています。
+表示の `print` を `try` の中に入れてしまうと、
+`settings['shop_name']` の `KeyError` まで巻き込みかねません
+（[7.5.4](./07-files-and-exceptions.md#754-else-と-finally)）。
+
+> **よくある間違い**
+> `tax_rate` の範囲チェックを、キーの存在チェックより**前**に書くと、
+> `shop_missing.json` で `KeyError` になります。
+>
+> ```text
+> KeyError: 'tax_rate'
+> ```
+>
+> **「あるかどうか」を先に、「値が正しいか」をあとに。** この順番は変えられません。
+> 第5章のガード節（[5.3.3](./05-functions.md#533-早期-return)）と同じで、
+> **前提が崩れる条件から順に弾いていく**のが基本です。
+
+> **別解：`get` を使って1つの `if` にまとめる**
+>
+> ```python
+> rate = settings.get("tax_rate")
+> if rate is None or rate < 0 or rate > 1:
+>     raise SettingsError(f"tax_rate が正しくありません: {rate}")
+> ```
+>
+> `get`（[4.3.3](./04-data-structures.md#433-get-で安全に取り出す)）を使えば `KeyError` を避けられます。
+> ただし「ない」と「範囲外」でメッセージを分けられなくなるため、
+> **利用者に何を直せばよいか伝えたい場面では、解答例のように分けたほうが親切です。**
