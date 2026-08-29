@@ -1471,3 +1471,885 @@ settings/shop_none.json: ファイルが見つかりません
 > `get`（[4.3.3](./04-data-structures.md#433-get-で安全に取り出す)）を使えば `KeyError` を避けられます。
 > ただし「ない」と「範囲外」でメッセージを分けられなくなるため、
 > **利用者に何を直せばよいか伝えたい場面では、解答例のように分けたほうが親切です。**
+
+---
+
+## 第8章
+
+### 理解度チェック
+
+**問 8.1 の解答**
+
+- A = **`__init__`**
+- B = **いま作られたインスタンスそのもの**（`Product("ノート", 180)` の結果として返ってくるもの）
+
+**解説**
+
+`Product("ノート", 180)` と書いたときに起きることを、順番に並べると次のようになります。
+
+1. Python が空のインスタンスを1つ作る
+2. そのインスタンスを第1引数にして `__init__` を呼ぶ（`self` がそれを受け取る）
+3. `__init__` の中で `self.name = name` などが実行され、属性が付く
+4. できあがったインスタンスが返り、`note` に代入される
+
+**`__init__` を自分で呼び出す必要はありません。**
+書いておけば、インスタンスを作るたびに自動で呼ばれます
+（[8.2.1](./08-oop.md#821-__init__-で初期化する)）。
+
+「`self` に何が入るのか」が曖昧なら、
+[8.2.2](./08-oop.md#822-self-とは何か) の
+`Product.price_with_tax(note)` と書いた例をもう一度見てください。
+**ドットの左側にあるものが `self` に入る**、と覚えると混乱しません。
+
+---
+
+**問 8.2 の解答**
+
+```text
+2 0 0
+```
+
+**理由**：`self.count += 1` は「読む」と「書く」を同時にしている。
+読むときはクラス変数の `0` が使われるが、**書くときはインスタンス変数が新しく作られる**ため、
+`a` にだけ `count` が生え、クラス変数と `b` は `0` のまま。
+
+**解説**
+
+この問題は、[8.2.4](./08-oop.md#824-クラス変数とインスタンス変数) の
+**属性を探す順番**を理解しているかを確かめるものです。
+
+`self.count += 1` は、次の2行に分けて書いたのと同じ意味です。
+
+```python
+self.count = self.count + 1
+```
+
+右辺と左辺で、起きていることが違います。
+
+| | 何が起きるか |
+|--|------------|
+| 右辺の `self.count` | インスタンスに `count` がないので、**クラス変数の `0`** が読まれる |
+| 左辺の `self.count =` | **インスタンス変数 `count` が新しく作られて**、`1` が入る |
+
+1回目の `a.add()` で `a` に `count = 1` が生えます。
+2回目の `a.add()` では、もう `a` に `count` があるので、
+今度はインスタンス変数の `1` が読まれて `2` になります。
+
+`b` は一度も `add()` を呼んでいないので、インスタンス変数を持ちません。
+`b.count` はクラス変数を読みに行き、`0` が返ります。
+`Counter.count` も、誰も書き換えていないので `0` のままです。
+
+> **よくある間違い**
+> 「全インスタンスで数を共有したい」つもりでこのコードを書くと、期待どおりに動きません。
+> 共有したいなら、クラス変数を**クラス名で**書き換えます。
+>
+> ```python
+> def add(self):
+>     Counter.count += 1
+> ```
+>
+> ただし、この形が本当に必要になる場面はまれです。
+> **クラス変数は書き換えない値のために使う**、という原則
+> （[8.2.4](./08-oop.md#824-クラス変数とインスタンス変数)）を守るほうが安全です。
+
+---
+
+**問 8.3 の解答**
+
+`price_with_tax` の**第1引数に `self` を書く**。
+
+```python
+    def price_with_tax(self):
+        return round(self.price * 1.1)
+```
+
+**解説**
+
+出るエラーはこれです。
+
+```text
+TypeError: Product.price_with_tax() takes 0 positional arguments but 1 was given
+```
+
+「引数を0個しか受け取らないのに、1個渡された」と言われています。
+呼び出し側は `note.price_with_tax()` と、**何も渡していないように見える**のが厄介なところです。
+
+渡している1個は `note` そのものです。
+`note.price_with_tax()` は、Python の中では
+`Product.price_with_tax(note)` として実行されるからです
+（[8.2.2](./08-oop.md#822-self-とは何か)）。
+
+**引数を書いていないのにこのメッセージが出たら、`self` の書き忘れ。**
+これはそのまま覚えてしまってかまいません。
+
+なお、`self` を書き忘れたまま `self.price` を読もうとしても
+`NameError` にはなりません。**その手前の `TypeError` で止まる**ためです。
+
+---
+
+**問 8.4 の解答**
+
+```text
+#文具
+[<__main__.Tag object at 0x000001F3A2B4C7D0>, <__main__.Tag object at 0x000001F3A2B4C910>]
+```
+
+（`0x...` の部分は実行のたびに変わります）
+
+**解説**
+
+1行目は `print(tags[0])` なので、`Tag` のインスタンスをそのまま `print` しています。
+`__str__` が定義してあるので `#文具` になります。
+
+2行目は**リストを `print`** しています。
+このとき、リストの中身の表示に使われるのは
+**`__repr__` のほう**です（[8.4.1](./08-oop.md#841-__str__-と-__repr__)）。
+`Tag` には `__repr__` がないので、既定の `<__main__.Tag object at ...>` が出ます。
+
+`__str__` を書いたのに効かない、と悩むのはこの場面です。
+
+**直し方**：`__repr__` も定義します。どちらか1つだけ書くなら `__repr__` にしてください。
+`__str__` がないときは `__repr__` が代わりに使われるため、`print(tags[0])` も動きます。
+
+```python
+    def __repr__(self):
+        return f"Tag(name='{self.name}')"
+```
+
+```text
+#文具
+[Tag(name='文具'), Tag(name='食品')]
+```
+
+---
+
+**問 8.5 の解答**
+
+```text
+商品です
+食品です
+```
+
+**解説**
+
+`Food` には `show` メソッドがないので、親の `Base` の `show` が使われます
+（[8.3.2](./08-oop.md#832-親クラスを継承する)）。
+
+ポイントは、その `show` の中の `self.LABEL` が**どこを見るか**です。
+`Food().show()` のとき、`self` は `Food` のインスタンスなので、
+[8.2.4](./08-oop.md#824-クラス変数とインスタンス変数) の順番どおりに探されます。
+
+1. インスタンスに `LABEL` はない
+2. **そのインスタンスのクラス（`Food`）に `LABEL` がある** → `"食品"` を使う
+
+**メソッドは親のものを使いながら、値だけ子のものが使われた**わけです。
+
+これが、[8.3.2](./08-oop.md#832-親クラスを継承する) の `FoodProduct` が
+`TAX_RATE = 0.08` の1行だけで税率を変えられた理由です。
+
+> **補足**
+> `Base().show()` のように、**変数に入れずにその場でインスタンスを作って**
+> メソッドを呼ぶ書き方もできます。
+> 1回しか使わないインスタンスなら、この書き方で問題ありません。
+
+---
+
+**問 8.6 の解答**
+
+**理由**：`dataclass` では、リストのように**中身を変えられる値**を
+デフォルト値に直接書けないため。
+
+```text
+ValueError: mutable default <class 'list'> for field tags is not allowed: use default_factory
+```
+
+**正しい書き方**：
+
+```python
+from dataclasses import dataclass, field
+
+
+@dataclass
+class Member:
+    name: str
+    tags: list = field(default_factory=list)
+```
+
+**解説**
+
+もし `tags: list = []` が許されると、
+**1回だけ作られたリストが全インスタンスで共有される**ことになります。
+1人の会員にタグを付けると、全員に付いてしまう状態です。
+
+これはこのテキストで3回目に出てくる、同じ形の落とし穴です。
+
+| どこで出たか | 形 |
+|------------|----|
+| [5.2.4](./05-functions.md#524-デフォルト引数にリストを使ってはいけない) | `def f(items=[]):` |
+| [8.2.4](./08-oop.md#824-クラス変数とインスタンス変数) | クラス変数の `tags = []` |
+| ここ | `dataclass` の `tags: list = []` |
+
+原因はすべて同じで、**リストが1回しか作られないこと**です。
+
+`dataclass` だけは、実行した瞬間にエラーで止めてくれます。
+`field(default_factory=list)` は
+「インスタンスを作るたびに `list()` を呼んで、**新しい空のリストを作れ**」という指定です
+（[8.5.3](./08-oop.md#853-デフォルト値と型)）。
+
+> **よくある間違い**
+> `field(default_factory=list())` と、**`list` にかっこを付けてしまう**間違いがあります。
+> ここで渡すのは「呼び出した結果」ではなく**関数そのもの**です
+> （[5.5.1](./05-functions.md#551-関数を変数に入れる)）。かっこは付けません。
+
+---
+
+**問 8.7 の解答**
+
+**クラスにする必要はありません。** 関数で十分です。
+
+```python
+def to_yen(amount):
+    """金額を「1,234円」の形の文字列にして返す。"""
+    return f"{amount:,}円"
+```
+
+**理由**：`Formatter` には属性が1つもなく、`to_yen` の中に `self.` が出てこない。
+つまりインスタンスは何も覚えておらず、作る意味がない。
+
+**解説**
+
+判断の基準は [8.6.1](./08-oop.md#861-関数で足りるならクラスは不要) のこれです。
+
+> **メソッドの中に `self.` が1つも出てこないなら、それは関数でよい。**
+
+クラスのままだと、使う側は毎回こう書くことになります。
+
+```python
+formatter = Formatter()
+print(formatter.to_yen(1234))
+```
+
+関数なら1行です。
+
+```python
+print(to_yen(1234))
+```
+
+```text
+実行結果:
+1,234円
+```
+
+**インスタンスを作る行が、まるごと不要になっています。**
+
+`f"{amount:,}"` の `:,` は、3桁ごとにカンマを入れる書式指定です
+（[2.4.4](./02-basics.md#244-f-string)）。
+
+> **補足**
+> 「関連する関数をまとめたいからクラスにする」という動機もありますが、
+> Python にはそのための仕組みが別にあります。**モジュール**（第6章）です。
+> `formatters.py` というファイルに関数を並べ、
+> `from formatters import to_yen` で使うほうが Python らしい書き方です。
+
+---
+
+### 演習 8.1 の解答
+
+`python-lesson/member.py`
+
+```python
+class Member:
+    """会員を表すクラス。"""
+
+    SHOP_NAME = "みどり文具店"
+    POINT_RATE = 100
+
+    def __init__(self, member_id, name):
+        """会員番号と名前を受け取り、ポイントを0で初期化する。"""
+        self.member_id = member_id
+        self.name = name
+        self.points = 0
+
+    def earn(self, amount):
+        """購入金額 amount 円に応じてポイントを加える。"""
+        self.points += amount // self.POINT_RATE
+
+    def use(self, points):
+        """ポイントを使う。足りなければ ValueError を投げる。"""
+        if points > self.points:
+            raise ValueError(f"{self.name}さんのポイントが足りません（残り{self.points}ポイント）")
+        self.points -= points
+
+    def rank(self):
+        """現在のポイントからランク名を返す。"""
+        if self.points >= 1000:
+            return "ゴールド"
+        if self.points >= 500:
+            return "シルバー"
+        return "ブロンズ"
+
+    def label(self):
+        """一覧表示用の1行を返す。"""
+        return f"[{self.SHOP_NAME}] {self.member_id} {self.name}さん: {self.points}ポイント（{self.rank()}）"
+
+
+def main():
+    """会員を2人作り、ポイントを増減して一覧表示する。"""
+    sato = Member("M001", "佐藤")
+    suzuki = Member("M002", "鈴木")
+
+    sato.earn(62000)
+    suzuki.earn(153000)
+    suzuki.use(200)
+
+    for member in [sato, suzuki]:
+        print(member.label())
+
+    try:
+        sato.use(1000)
+    except ValueError as e:
+        print(f"使えませんでした: {e}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+```text
+実行結果:
+[みどり文具店] M001 佐藤さん: 620ポイント（シルバー）
+[みどり文具店] M002 鈴木さん: 1330ポイント（ゴールド）
+使えませんでした: 佐藤さんのポイントが足りません（残り620ポイント）
+```
+
+**解説**
+
+**1. `points` は引数で受け取らない**
+
+`__init__` の引数は `member_id` と `name` の2つだけで、
+`self.points = 0` は**中で決め打ち**しています。
+
+「作った直後は必ず0ポイント」というルールを、`__init__` に閉じ込めた形です
+（[8.2.3](./08-oop.md#823-メソッドを定義する) の `self.stock = 0` と同じ考え方）。
+外から `Member("M001", "佐藤", 99999)` と好きなポイントを渡せてしまうと、
+このルールが守られません。
+
+**2. `//` を使う**
+
+`62000 // 100` は `620` です。`/` を使うと `620.0` という**小数**になり
+（[2.3.2](./02-basics.md#232--と--と-)）、表示が `620.0ポイント` になってしまいます。
+ポイントのように「個数」を数えるものには `//` を使ってください。
+
+**3. `self.POINT_RATE` と書く**
+
+`100` を直接書かず、クラス変数にしています。
+こうしておくと、演習 8.3 で**この1行を書き換えるだけ**でポイント2倍の会員が作れます
+（[8.2.4](./08-oop.md#824-クラス変数とインスタンス変数)）。
+
+**4. `use` は自分で対処しない**
+
+ポイントが足りないとき、`use` は `print` もしなければ `return` もせず、
+`ValueError` を投げるだけです。
+
+「足りなかったらどうするか」は、呼び出す側でないと決められません
+（[7.6.3](./07-files-and-exceptions.md#763-どこで例外を捕まえるべきか)）。
+画面にメッセージを出すのか、別の支払い方法に切り替えるのかは、`use` の知るところではないからです。
+
+**5. `rank` は `elif` を使わなくてよい**
+
+`return` を実行した時点で関数は終わるので
+（[5.1.3](./05-functions.md#513-return-がないとどうなるか)）、
+`if` を並べるだけで `elif` と同じ動きになります。
+もちろん `elif` で書いてもかまいません。
+
+> **よくある間違い**
+> `earn` の中で `self.points = amount // self.POINT_RATE` と、
+> **`+=` ではなく `=` を書いてしまう**間違いが多いです。
+> これだと2回目の買い物でポイントが上書きされ、たまっていきません。
+> 「増やす」なのか「置き換える」なのかを、毎回はっきりさせてください。
+
+> **よくある間違い**
+> `label()` の中で `Member.SHOP_NAME` と書いてもこの演習では動きますが、
+> **`self.SHOP_NAME` と書くほうを勧めます。**
+> 演習 8.3 で継承したとき、`self.` なら子クラスで上書きした値が使われるからです
+> （[8.3.2](./08-oop.md#832-親クラスを継承する)）。
+
+---
+
+### 演習 8.2 の解答
+
+`python-lesson/member.py`（演習 8.1 から `label` を `__str__` に置き換え、2つ追加）
+
+```python
+class Member:
+    """会員を表すクラス。"""
+
+    SHOP_NAME = "みどり文具店"
+    POINT_RATE = 100
+
+    def __init__(self, member_id, name):
+        """会員番号と名前を受け取り、ポイントを0で初期化する。"""
+        self.member_id = member_id
+        self.name = name
+        self.points = 0
+
+    def earn(self, amount):
+        """購入金額 amount 円に応じてポイントを加える。"""
+        self.points += amount // self.POINT_RATE
+
+    def use(self, points):
+        """ポイントを使う。足りなければ ValueError を投げる。"""
+        if points > self.points:
+            raise ValueError(f"{self.name}さんのポイントが足りません（残り{self.points}ポイント）")
+        self.points -= points
+
+    def rank(self):
+        """現在のポイントからランク名を返す。"""
+        if self.points >= 1000:
+            return "ゴールド"
+        if self.points >= 500:
+            return "シルバー"
+        return "ブロンズ"
+
+    def __str__(self):
+        """利用者向けの1行を返す。"""
+        return f"[{self.SHOP_NAME}] {self.member_id} {self.name}さん: {self.points}ポイント（{self.rank()}）"
+
+    def __repr__(self):
+        """開発者向けの表示を返す。"""
+        return f"Member(member_id='{self.member_id}', name='{self.name}', points={self.points})"
+
+    def __eq__(self, other):
+        """会員番号が同じなら、同じ会員とみなす。"""
+        if not isinstance(other, Member):
+            return False
+        return self.member_id == other.member_id
+
+
+def main():
+    """会員の表示と、同一判定を確認する。"""
+    sato = Member("M001", "佐藤")
+    suzuki = Member("M002", "鈴木")
+    sato.earn(62000)
+    suzuki.earn(153000)
+
+    members = [sato, suzuki]
+    for member in members:
+        print(member)
+
+    print(members)
+
+    sato_again = Member("M001", "佐藤")
+    print(sato == sato_again)
+    print(sato == suzuki)
+    print(sato_again in members)
+    print(sato == "M001")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+```text
+実行結果:
+[みどり文具店] M001 佐藤さん: 620ポイント（シルバー）
+[みどり文具店] M002 鈴木さん: 1530ポイント（ゴールド）
+[Member(member_id='M001', name='佐藤', points=620), Member(member_id='M002', name='鈴木', points=1530)]
+True
+False
+True
+False
+```
+
+**解説**
+
+**1. `label()` を `__str__` にすると、呼び出し側が短くなる**
+
+```python
+print(member.label())   # 前
+print(member)           # あと
+```
+
+やっていることは同じですが、**`Member` を使う側が `label` という名前を覚えなくてよくなりました。**
+`print` すればいい、というのは Python を使う人なら誰でも知っています。
+特殊メソッドの価値は、**自作クラスを Python の標準の書き方になじませる**ところにあります。
+
+**2. リストの表示に使われたのは `__repr__`**
+
+3行目の `print(members)` の結果を見てください。
+`[みどり文具店] ...` ではなく `Member(member_id=...)` のほうが並んでいます。
+
+**リストの中身の表示には `__repr__` が使われる**からです
+（[8.4.1](./08-oop.md#841-__str__-と-__repr__)）。
+`__repr__` は開発者が中身を確認するためのものなので、
+**属性の値がそのまま読める形**にしてあります。
+
+**3. `__eq__` の判定は「会員番号だけ」でよい**
+
+会員は、名前が同じでも別人のことがあり、
+ポイントは買い物のたびに変わります。
+**変わらず、その人を一意に決めるもの**は会員番号だけです。
+
+```python
+return self.member_id == other.member_id
+```
+
+一方、[8.4.2](./08-oop.md#842-__eq__-で比較する) の `Product` では
+`name` と `price` の両方を比べていました。
+**何が同じなら「同じもの」なのかは、扱う対象ごとに違います。**
+`__eq__` は、その判断を自分で書き込む場所です。
+
+**4. `isinstance` のガードを忘れない**
+
+```python
+if not isinstance(other, Member):
+    return False
+```
+
+これがないと、`sato == "M001"` のときに
+`"M001".member_id` を読もうとして `AttributeError` になります。
+比較で例外が飛ぶのは想定外の動きなので、**必ず先に弾いてください**
+（[5.3.3](./05-functions.md#533-早期-return) のガード節）。
+
+> **よくある間違い**
+> `__str__` や `__repr__` の中で `print` してしまう間違いがあります。
+>
+> ```python
+> def __str__(self):
+>     print(f"...")      # ← return ではない
+> ```
+>
+> ```text
+> TypeError: __str__ returned non-string (type NoneType)
+> ```
+>
+> `print` は画面に出すだけで、戻り値は `None` です
+> （[5.1.3](./05-functions.md#513-return-がないとどうなるか)）。
+> **特殊メソッドは、必ず文字列を `return` してください。**
+
+> **補足**
+> `__eq__` を定義したので、`Member` は集合（set）に入れられなくなりました
+> （[8.4.2](./08-oop.md#842-__eq__-で比較する) の補足）。
+>
+> ```text
+> TypeError: unhashable type: 'Member'
+> ```
+>
+> この演習では使っていないので問題ありませんが、
+> 会員を `set` で重複除去したくなったときは、演習 8.4 のように
+> `@dataclass` にすると解決します。
+
+---
+
+### 演習 8.3 の解答
+
+`python-lesson/premium_member.py`
+
+```python
+from member import Member
+
+
+class PremiumMember(Member):
+    """有料会員を表すクラス。ポイントが2倍たまる。"""
+
+    POINT_RATE = 50
+
+    def __init__(self, member_id, name, expires_on):
+        """親の初期化に加えて、会員資格の有効期限を保存する。"""
+        super().__init__(member_id, name)
+        self.expires_on = expires_on
+
+    def rank(self):
+        """親のランク名の先頭に「プレミアム」を付けて返す。"""
+        return f"プレミアム{super().rank()}"
+
+    def __str__(self):
+        """親の1行に、有効期限を足して返す。"""
+        return f"{super().__str__()} / 有効期限 {self.expires_on}"
+
+
+def main():
+    """一般会員と有料会員を並べて表示する。"""
+    sato = Member("M001", "佐藤")
+    tanaka = PremiumMember("P001", "田中", "2027-03-31")
+
+    for member in [sato, tanaka]:
+        member.earn(62000)
+
+    for member in [sato, tanaka]:
+        print(member)
+
+    print(isinstance(tanaka, PremiumMember), isinstance(tanaka, Member))
+
+
+if __name__ == "__main__":
+    main()
+```
+
+```text
+実行結果:
+[みどり文具店] M001 佐藤さん: 620ポイント（シルバー）
+[みどり文具店] P001 田中さん: 1240ポイント（プレミアムゴールド） / 有効期限 2027-03-31
+True True
+```
+
+**解説**
+
+**1. `earn` を1文字も書いていないのに、ポイントが2倍になっている**
+
+`PremiumMember` に書いたのは `POINT_RATE = 50` の1行だけです。
+`earn` は親から引き継いだものがそのまま動いています。
+
+なぜ変わったかというと、親の `earn` が
+`amount // self.POINT_RATE` と、**`self.` 経由で読んでいる**からです。
+`self` が `PremiumMember` のインスタンスなら、
+探す順番（[8.2.4](./08-oop.md#824-クラス変数とインスタンス変数)）にしたがって
+`PremiumMember.POINT_RATE` が先に見つかります。
+
+`62000 // 50` は `1240`。一般会員の2倍になりました。
+
+**2. `super()` を3回使っている**
+
+| 場所 | 何のため |
+|------|---------|
+| `super().__init__(member_id, name)` | 親に `member_id` / `name` / `points` の設定を任せる |
+| `super().rank()` | ランクの**判定条件**を書き直さずに、結果だけもらう |
+| `super().__str__()` | 表示の**組み立て方**を書き直さずに、結果だけもらう |
+
+`rank` を見てください。「1000以上ならゴールド」という条件は、子クラスに1つも書いていません。
+もし条件を書き写していたら、**判定を変えたいときに2か所直す**ことになります
+（[8.3.1](./08-oop.md#831-共通部分をまとめる) で避けたかった状態そのものです）。
+
+`__str__` も同じで、`super().__str__()` と**メソッド名をそのまま書く**だけです
+（[8.3.4](./08-oop.md#834-super) の補足）。
+
+**3. 2種類のインスタンスが、同じ `for` で回せる**
+
+```python
+for member in [sato, tanaka]:
+    member.earn(62000)
+```
+
+`sato` は `Member`、`tanaka` は `PremiumMember` です。
+それでも同じループで扱えて、**それぞれが自分にふさわしい動きをします**
+（[8.3.3](./08-oop.md#833-メソッドを上書きする)）。
+
+`if isinstance(member, PremiumMember):` のような分岐は要りません。
+これが継承を使う目的です。
+
+**4. `isinstance` が両方 `True` になる**
+
+`tanaka` は `PremiumMember` であり、同時に `Member` でもあります。
+「有料会員は会員の一種である」——
+[8.3.5](./08-oop.md#835-継承を使いすぎない) の
+「〜は〜の一種である」がきれいに成り立つので、継承してよい場面でした。
+
+> **よくある間違い**
+> `super().__init__(member_id, name)` を忘れると、次のようになります。
+>
+> ```text
+> AttributeError: 'PremiumMember' object has no attribute 'points'
+> ```
+>
+> しかも、このエラーが出るのは**インスタンスを作った行ではなく、`earn()` を呼んだ行**です。
+> **子クラスで `__init__` を書いたら、まず `super().__init__(...)` を書く。**
+> 自分の分の代入は、そのあとに足してください（[8.3.4](./08-oop.md#834-super)）。
+
+> **よくある間違い**
+> `super().__init__(self, member_id, name)` と、**`self` を渡してしまう**間違いがあります。
+>
+> ```text
+> TypeError: Member.__init__() takes 3 positional arguments but 4 were given
+> ```
+>
+> `super()` を通すときは、`self` は自動的に渡されます。書いてはいけません。
+
+> **別解：`rank` を上書きしない**
+> 「プレミアム」を付けるのを `__str__` 側だけで行い、`rank` は触らない書き方もできます。
+>
+> ```python
+> def __str__(self):
+>     return f"{super().__str__()} / プレミアム / 有効期限 {self.expires_on}"
+> ```
+>
+> どちらが良いかは、**「ランク名そのものが変わる」のか
+> 「表示に情報を足したいだけ」なのか**で決まります。
+> 会員証にランク名として印字するなら、解答例のように `rank` を上書きするほうが素直です。
+
+---
+
+### 演習 8.4 の解答
+
+`python-lesson/data/members.json`
+
+```json
+[
+  {"member_id": "M001", "name": "佐藤", "points": 620},
+  {"member_id": "M002", "name": "鈴木", "points": 1530},
+  {"member_id": "M003", "name": "高橋", "points": 180},
+  {"member_id": "M004", "name": "伊藤", "points": 940}
+]
+```
+
+`python-lesson/member_report.py`
+
+```python
+import json
+from dataclasses import dataclass
+
+
+@dataclass
+class Member:
+    """会員を表すクラス。"""
+
+    member_id: str
+    name: str
+    points: int = 0
+
+    def rank(self):
+        """現在のポイントからランク名を返す。"""
+        if self.points >= 1000:
+            return "ゴールド"
+        if self.points >= 500:
+            return "シルバー"
+        return "ブロンズ"
+
+
+def load_members(path):
+    """JSON ファイルを読み込んで、Member のリストを返す。"""
+    with open(path, encoding="utf-8") as f:
+        rows = json.load(f)
+    return [Member(row["member_id"], row["name"], row["points"]) for row in rows]
+
+
+def to_rows(members):
+    """Member のリストを、書き出し用の辞書のリストに変換して返す。"""
+    return [
+        {"member_id": m.member_id, "name": m.name, "points": m.points, "rank": m.rank()}
+        for m in members
+    ]
+
+
+def main():
+    """会員をポイントの多い順に表示し、結果を JSON に書き出す。"""
+    members = load_members("data/members.json")
+    members = sorted(members, key=lambda m: m.points, reverse=True)
+
+    for i, member in enumerate(members, start=1):
+        print(f"{i}. {member.name}: {member.points}ポイント（{member.rank()}）")
+
+    with open("data/member_report.json", "w", encoding="utf-8") as f:
+        json.dump(to_rows(members), f, ensure_ascii=False, indent=2)
+    print("data/member_report.json に書き出しました")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+```text
+実行結果:
+1. 鈴木: 1530ポイント（ゴールド）
+2. 伊藤: 940ポイント（シルバー）
+3. 佐藤: 620ポイント（シルバー）
+4. 高橋: 180ポイント（ブロンズ）
+data/member_report.json に書き出しました
+```
+
+`python-lesson/data/member_report.json`（先頭部分）
+
+```json
+[
+  {
+    "member_id": "M002",
+    "name": "鈴木",
+    "points": 1530,
+    "rank": "ゴールド"
+  },
+```
+
+**解説**
+
+**1. `@dataclass` で消えた行**
+
+演習 8.2 の `Member` と見比べてください。
+`__init__` の5行と `__repr__` の2行が、**まるごと消えています。**
+それでいて `print(members)` すれば中身が読める形で表示されます
+（[8.5.2](./08-oop.md#852-dataclass-の使い方)）。
+
+一方、`rank()` は自分で書いています。
+`@dataclass` が用意してくれるのは**定型のメソッドだけ**で、
+そのクラス独自の処理には手を出しません。
+
+**2. `points: int = 0` は最後に置く**
+
+既定値のある項目は、**必ずうしろにまとめます**（[8.5.3](./08-oop.md#853-デフォルト値と型)）。
+`member_id` より前に書くと、こうなります。
+
+```text
+TypeError: non-default argument 'member_id' follows default argument
+```
+
+[5.2.3](./05-functions.md#523-デフォルト引数) の「省略できるものは後ろ」と同じルールです。
+
+**3. 読み込みと書き出しは、逆向きの変換**
+
+| 関数 | 変換の向き |
+|------|-----------|
+| `load_members` | 辞書のリスト → `Member` のリスト |
+| `to_rows` | `Member` のリスト → 辞書のリスト |
+
+`to_rows` が必要なのは、`json.dump` が**自作クラスを書き出せない**からです
+（[8.5.3](./08-oop.md#853-デフォルト値と型)）。
+
+```text
+TypeError: Object of type Member is not JSON serializable
+```
+
+そして `to_rows` では、元のデータになかった `rank` を足しています。
+**読み込む形と書き出す形は、同じである必要がありません。**
+
+**4. `key` にメソッドではなく属性を渡している**
+
+```python
+sorted(members, key=lambda m: m.points, reverse=True)
+```
+
+[8.5.3](./08-oop.md#853-デフォルト値と型) の例では
+`key=lambda p: p.stock_value()` とメソッドを呼んでいましたが、
+今回は `points` という属性をそのまま使うので `()` は付けません。
+**計算が要るならメソッド、そのままの値なら属性**、と使い分けてください。
+
+> **よくある間違い**
+> `json.dump(members, f, ...)` と、**`Member` のリストをそのまま渡してしまう**間違いが多いです。
+>
+> ```text
+> TypeError: Object of type Member is not JSON serializable
+> ```
+>
+> 「シリアライズできない」は「**この型は JSON の形に直せない**」という意味です。
+> `to_rows` のように、**自分で辞書に変換してから**渡してください。
+
+> **別解：`dataclasses.asdict` を使う**
+>
+> ```python
+> from dataclasses import asdict
+>
+> rows = [asdict(m) for m in members]
+> ```
+>
+> `asdict` は `dataclass` のインスタンスを辞書に変換する関数です。
+> ただし、これで得られる辞書に `rank` は入りません（`rank` は項目ではなくメソッドだからです）。
+> **計算結果も一緒に書き出したい**今回の課題では、解答例のように自分で組み立てるほうが確実です。
+
+> **よくある間違い**
+> `ensure_ascii=False` を書き忘れると、書き出した JSON がこうなります。
+>
+> ```json
+> "name": "\u9234\u6728"
+> ```
+>
+> 壊れているわけではなく、日本語が番号で書かれているだけですが、
+> 人が開いて確認できません。
+> **`ensure_ascii=False` と `encoding="utf-8"` はセットで指定してください**
+> （[7.4.3](./07-files-and-exceptions.md#743-日本語を含む-json-の書き出し)）。
