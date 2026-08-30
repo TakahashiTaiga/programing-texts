@@ -22,12 +22,12 @@
 
 | 本 | 完了 / 全体 |
 |----|-----------|
-| react-text | 12 / 13 |
-| python-text | 7 / 13 |
+| react-text | 13 / 13 |
+| python-text | 8 / 13 |
 | fastapi-text | 0 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **19 / 59** |
+| **合計** | **21 / 59** |
 
 ---
 
@@ -49,7 +49,7 @@
 | R-09 | 完了 | 第9章 ルーティングと全体設計 | `react-text/09-routing-and-architecture.md` | part2 | 中 | |
 | R-10 | 完了 | 第10章 実践：タスク管理アプリ | `react-text/10-practice-task-app.md` | part2 | 大 | |
 | R-11 | 完了 | 第11章 次のステップ | `react-text/11-next-steps.md` | — | 小 | |
-| R-FIN | 未着手 | 通し確認 | — | — | 小 | 下の「-FIN タスクの内容」参照 |
+| R-FIN | 完了 | 通し確認 | — | — | 小 | 下の「-FIN タスクの内容」参照。TASKS.md への反映漏れを補正（RUNBOOK 4.6） |
 
 ### R-04 の注記
 
@@ -82,7 +82,7 @@
 | P-04 | 完了 | 第4章 データ構造 | `python-text/04-data-structures.md` | part1 | 大 | 4.4.2 のベン図を SVG→PNG で追加。第5章のスタブを新規作成 |
 | P-05 | 完了 | 第5章 関数 | `python-text/05-functions.md` | part1 | 中 | 4章で先送りした `sorted()` の `key` を 5.5.3 で回収。第6章のスタブを新規作成 |
 | P-06 | 完了 | 第6章 モジュールとパッケージ | `python-text/06-modules.md` | part2 | 中 | 解答編 その2（`91-answers-part2.md`）を新規作成。6.3.5 で `str.join` を追加説明。第7章のスタブを新規作成 |
-| P-07 | 未着手 | 第7章 ファイル操作と例外 | `python-text/07-files-and-exceptions.md` | part2 | 中 | |
+| P-07 | 完了 | 第7章 ファイル操作と例外 | `python-text/07-files-and-exceptions.md` | part2 | 中 | 7.6.2 で `class ...(Exception):` のみ「例外を増やす決まった書き方」として先取り（詳細は第8章）。第8章のスタブを新規作成 |
 | P-08 | 未着手 | 第8章 オブジェクト指向 | `python-text/08-oop.md` | part2 | 大 | |
 | P-09 | 未着手 | 第9章 型ヒントとモダン Python | `python-text/09-typing-and-tools.md` | part2 | 中 | |
 | P-10 | 未着手 | 第10章 実践：データ処理スクリプト | `python-text/10-practice-data-script.md` | part2 | 中 | |

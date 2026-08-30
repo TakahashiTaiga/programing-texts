@@ -146,6 +146,39 @@
   （実際に確認済み）。「それでも置く」という書き方にしてありますが、
   初学者に対してこの説明が必要かどうか、判断をお願いします。
 
+### 第7章（P-07）について
+
+- 第7章のコードは、すべて **Python 3.11 で実行して出力を確認済み**です
+  （本文の例・演習4問の解答すべて）。エラーメッセージも実際の出力を貼っています
+  （`FileNotFoundError` / `ValueError: I/O operation on closed file.` /
+  `UnicodeDecodeError: 'cp932' codec can't decode byte 0x94 ...` /
+  `FileExistsError` / `TypeError: unsupported operand type(s) for /: 'str' and 'str'` /
+  `TypeError: write() argument must be str, not list` /
+  `AttributeError: 'str' object has no attribute 'write_text'` /
+  `json.decoder.JSONDecodeError: Expecting property name enclosed in double quotes: ...`）。
+  **3.13 の実機での確認をお願いします。**
+- **Windows でしか再現しない記述が3か所あります。実機での確認をお願いします。**
+  1. 7.1.4 の文字化け例（`繧翫ｓ縺`）は、UTF-8 のバイト列を cp932 として解釈した結果を
+     Linux 上で再現したものです。Windows の実環境で `encoding` を省略したときに
+     `UnicodeDecodeError` になるか文字化けになるかは環境によります。
+     本文は「どちらも起こりうる」と書いてあります
+  2. 7.3.2 / 7.3.4 の「Windows の場合」の実行結果（`data\sales.csv` など）は、
+     **Linux では確認できないため、仕様に基づいて記載**しています
+  3. 7.4.1 の「`newline=""` を忘れると Windows で空行が入る」は、
+     `csv` が `\r\n` を書くこと（確認済み）とテキストモードの改行変換から導いた記述です。
+     **実際に Excel で開いて空行が入ることの確認をお願いします**
+- 7.1.4 に「将来のバージョンで UTF-8 が既定になることが検討されている」と書いています。
+  執筆時点（Python 3.13）の状況に基づく記述なので、**時点の妥当性の確認をお願いします。**
+- 7.6.2 で `class ConfigError(Exception):` を先取りしています。
+  「例外の種類を1つ増やすための決まった書き方」と明示し、
+  `class` と継承の詳細は第8章に送っていますが、
+  **第7章の学習者にこの先取りが重すぎないか、判断をお願いします。**
+- 7.3.3 で `Path.unlink()` を「このテキストでは使わない」としています。
+  読者が演習で作ったファイル（`out/` `notes/` `report.txt` など）は手元に残ります。
+  **章末に「削除してよいファイル」の案内を足すべきか、判断をお願いします。**
+- 7.2.1 の `append_log.py` は、**3回実行させる**手順になっています。
+  `log.txt` が残るので、上と同じく後始末の扱いをご確認ください。
+
 ---
 
 ## 図解（作成済み・確認のみ）
