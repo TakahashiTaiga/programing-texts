@@ -52,7 +52,7 @@
 | 2 | 基本文法 | 変数と代入（`=`・再代入・`NameError`）、`let`/`const` がないこと、snake_case・予約語、定数の慣習（UPPER_SNAKE_CASE）、型（`int` / `float` / `str` / `bool` / `NoneType`）、`True`/`False`/`None`（先頭大文字）、`type()`、型変換（`int()` / `float()` / `str()`・`ValueError`・`int("08")` → `8`）、浮動小数点の誤差、桁区切り `1_000`、算術演算子（`+ - * / // % **`・`round()`・`ZeroDivisionError`）、代入演算子（`+=` など。`++` はない）、比較演算子（`==` / `!=` / `<=` など。`===` はない）、論理演算子（`and` / `or` / `not`）、文字列（連結 `+`・繰り返し `*`・`len()`・インデックス（0 始まり・負の添字）・スライス `[開始:終了]`・イミュータブル・`IndexError`）、文字列メソッド（`strip` / `upper` / `lower` / `replace` / `startswith` / `endswith` / `count` / `zfill`）、f-string（`{}`・書式指定 `:,` `:.2f` `:>5` `:05`）、エスケープ（`\n` `\t` `\\` `\"`）・複数行文字列 `"""`・raw string `r"..."`、`print`（複数引数・`sep`・`end`・空行）、`input`（戻り値は必ず `str`・`int(input(...))`）、インデント（`:` とブロック・半角スペース4つ・入れ子・`IndentationError` / `TabError`・VS Code の空白可視化設定）、コメント `#` とコメントアウト、PEP 8、Black による自動整形 |
 | 3 | 制御構文 | 条件分岐（`if` / `elif` / `else`・`:` と字下げ・`( )` が不要なこと・`SyntaxError: expected ':'`・`elif` は上から順に最初の1つだけ・範囲は狭い条件から書く・`if` を並べた場合との違い）、条件の組み合わせ（`and` / `or` の優先順位とかっこ・比較の連鎖 `0 <= x <= 100`）、`in` / `not in`（文字列・リスト。`== ... or ...` の置き換え）、真偽値として扱われる値（偽になるのは `False` / `0` / `0.0` / `""` / `[]` / `None` だけ・`bool()`・`if name:` での空入力判定・`== True` と書かない・数値の 0 の落とし穴）、条件式 `A if 条件 else B`（JS とは順番が逆）、`for`（文字列・リストを回す・ループ変数・入れ子・JS の `for...of` に相当）、`range`（`range(終了)` / `range(開始, 終了)` / `range(開始, 終了, 増分)`・終了を含まない・逆順・off-by-one）、累積パターン（`total = 0` をループの外で用意し `total += x`）、`enumerate`（`start=1`・変数を2つ書く。アンパックは第4章）、`while`（条件が真のあいだ・変数は自分で進める・`for` との使い分け）、無限ループと `Ctrl` + `C`（`KeyboardInterrupt`・VS Code のターミナル）、`break`（`while True:` + `break`・入れ子では内側だけ抜ける）、`continue`（不正入力の読み飛ばし・`continue` の位置で何が飛ぶか変わる）、`str.isdigit()`、`for ... else`（`break` されなかったとき・フラグ変数を使う書き方との比較）、`pass`（空ブロックはエラー・コメントは処理として数えない）、ネストの解消（字下げ3段が見直しの合図・ガード節＝早期 `continue`・条件の反転表・`and` と `or` が入れ替わること・`elif` で平らにする） |
 | 4 | データ構造 | リスト（`[ ]`・`len()`・`sum()` / `max()` / `min()`・インデックスと負の添字・`IndexError`・要素の書き換え＝ミュータブル・スライス（新しいリストを返す・`[::2]` / `[::-1]`）・`append` / `insert` / `remove` / `pop`（`pop` 以外は戻り値なし・`ValueError: list.remove(x): x not in list`・`IndexError: pop from empty list`）・`sort()` と `sorted()`（破壊的か否か・`reverse=True`・`sort()` の戻り値は `None`・漢字は文字コード順・`key` は第5章）・コピー（`b = a` は同じ実体・`copy()` / `[:]` / `list()`）、タプル（`( )`・変更不可 `TypeError: 'tuple' object does not support item assignment`・要素1つは `(1,)`・定数の組・アンパック `x, y = point`・`ValueError: not enough values to unpack`・`a, b = b, a`）、辞書（`{"キー": 値}`・`[ ]` での読み書き・`KeyError`・代入で追加／上書き・`del`・`in` は**キーだけ**を調べる・`get(キー)` / `get(キー, 既定値)`・`counts[x] = counts.get(x, 0) + 1` の数える型・`for` はキーが回る・`keys()` / `values()` / `items()`・`sorted(辞書)` はキーのリスト・**辞書のリスト**と集計3型（合計／絞り込み／最大は1件目を仮の答えにする）・f-string 内は引用符を変える）、集合（`{1, 2}`・**空集合は `set()`**・順番なし・`[ ]` で取り出せない・`|` / `&` / `-`・`set(リスト)` で重複除去・`sorted()` で表示順を決める・順序を保つ重複除去は `not in` + `append`）、内包表記（`[式 for 変数 in 元]`・絞り込みの `if` は**うしろ**・値の出し分けの `A if 条件 else B` は**前**・辞書内包表記 `{k: v for ...}`・`items()` との組み合わせ・読みにくければ `for` に戻す）、使い分けの比較表と判断フロー |
-| 5 | 関数 | 定義、引数（デフォルト・可変長・キーワード）、戻り値、スコープ |
+| 5 | 関数 | 関数の定義（`def 名前():`・`:` と字下げ・空行2つの慣習・定義しただけでは動かない・呼び出しは定義より後（`NameError`）・`()` を書き忘れると何も起きない）、**`print` と `return` の違い**（`return` のない関数は `None` を返す・`return` を実行した時点で関数が終わる・戻り値をそのまま式に使える）、引数（位置引数・順番違いはエラーにならない・`TypeError: ... missing 1 required positional argument`・キーワード引数・`SyntaxError: positional argument follows keyword argument`・デフォルト引数と「省略できるものは後ろ」・**デフォルト引数にリスト／辞書を書かない**（定義時に1回だけ作られて使い回される・`items=None` + `if items is None: items = []`）・**`is None` による判定**・可変長引数 `*args`（タプル）と `**kwargs`（辞書））、戻り値（`if` で返り値を出し分ける・リストを返す関数・`return a, b` はタプル→アンパックで受け取る・返す値が増えるなら辞書1つを返す・**早期 `return`**（ガード節。`ZeroDivisionError` を先に弾く・`return` だけ書くと `None`））、スコープ（ローカル／グローバル・関数の中の変数は外から見えない（`NameError`）・外の定数は中から読める・代入しようとすると `UnboundLocalError`・**引数で受け取り `return` で返す**形にする・ただしリスト／辞書は中身を変えられる（同じ実体）・`global` は使わない）、関数を値として扱う（`()` を付けなければ関数そのもの・`f = double`・ラムダ式 `lambda 引数: 式`（`return` を書かない・式1つだけ・名前を付けるなら `def`）・**`sorted(データ, key=lambda x: x["キー"])` / `key=len` / `reverse=True`**・`max()` / `min()` にも `key` を渡せる）、良い関数（1つの関数は1つのこと・計算する関数と表示を分ける・docstring `"""..."""` と `help()`・切り出しの3つの合図） |
 | 6 | モジュールとパッケージ | `import`、標準ライブラリ、自作モジュール、`__name__` |
 | 7 | ファイル操作と例外 | `open`、`with`、`try`/`except`、`pathlib` |
 | 8 | オブジェクト指向 | クラス、インスタンス、継承、特殊メソッド、`dataclass` |
@@ -97,6 +97,19 @@
 > 関数は第5章、`import` と標準ライブラリは第6章、`try` / `except` は第7章です。
 > f-string の中で辞書を読むときは、**外側と違う引用符**を使わせてください
 > （`f"{student['name']}"`。同じ引用符は Python 3.11 以前でエラーになります）。
+
+> **注意**：第5章の学習者は、**`import`・標準ライブラリ・クラス・例外処理・型ヒントをまだ学んでいません**。
+> 第5章の範囲は「関数の定義・引数・戻り値・スコープ・関数を値として渡すこと・関数の切り出し方」までです。
+> 第5章までで新しく使えるようになったのは
+> `def` / `return` / `lambda` / `is` / `is not` / `help()` と、
+> `sorted()` / `max()` / `min()` の **`key` 引数**、`*args` / `**kwargs` です。
+> **`import` と標準ライブラリ（`datetime` / `random` / `math` / `collections`）は第6章**、
+> `open` / `with` / `try` / `except` は第7章、`class` は第8章、型ヒントは第9章です。
+> **それより先の道具を使った回答をしないでください。**
+> とくに、`collections.Counter` で数えたり、`operator.itemgetter` を `key` に渡したりしないでください。
+> 数えるのは `dict.get`（4.3.3）、並べ替えの基準はラムダ式（5.5.3）で書かせてください。
+> `global` は 5.4.3 で「使わない」と決めています。
+> 外の変数を変えたい相談には、**引数で受け取り `return` で返す**形を提案してください。
 
 ## 3. fastapi-text
 

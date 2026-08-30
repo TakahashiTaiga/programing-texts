@@ -23,11 +23,11 @@
 | 本 | 完了 / 全体 |
 |----|-----------|
 | react-text | 12 / 13 |
-| python-text | 5 / 13 |
+| python-text | 6 / 13 |
 | fastapi-text | 0 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **17 / 59** |
+| **合計** | **18 / 59** |
 
 ---
 
@@ -80,7 +80,7 @@
 | P-02 | 完了 | 第2章 基本文法 | `python-text/02-basics.md` | part1 | 大 | 2.6 でインデント説明のため `if` を書き方だけ先取り（詳細は第3章）。第3章のスタブを新規作成 |
 | P-03 | 完了 | 第3章 制御構文 | `python-text/03-control-flow.md` | part1 | 中 | 3.1.4 で `in` / `for` のためリストを「作る・含むか調べる・回す」だけ先取り（詳細は第4章）。第4章のスタブを新規作成 |
 | P-04 | 完了 | 第4章 データ構造 | `python-text/04-data-structures.md` | part1 | 大 | 4.4.2 のベン図を SVG→PNG で追加。第5章のスタブを新規作成 |
-| P-05 | 未着手 | 第5章 関数 | `python-text/05-functions.md` | part1 | 中 | |
+| P-05 | 完了 | 第5章 関数 | `python-text/05-functions.md` | part1 | 中 | 4章で先送りした `sorted()` の `key` を 5.5.3 で回収。第6章のスタブを新規作成 |
 | P-06 | 未着手 | 第6章 モジュールとパッケージ | `python-text/06-modules.md` | part2 | 中 | |
 | P-07 | 未着手 | 第7章 ファイル操作と例外 | `python-text/07-files-and-exceptions.md` | part2 | 中 | |
 | P-08 | 未着手 | 第8章 オブジェクト指向 | `python-text/08-oop.md` | part2 | 大 | |

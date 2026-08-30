@@ -2131,3 +2131,564 @@ for kind, count in counts.items():
 >   → 返るのは**キーのリスト**です。票数は `counts[kind]` で取り出します
 > - `set` を `{}` で作ろうとする
 >   → `{}` は空の辞書です。空の集合は `set()` です（[4.4.1](./04-data-structures.md#441-重複しない集まり)）
+
+---
+
+## 第5章
+
+### 理解度チェック
+
+**問 5.1 の解答**
+
+```text
+300
+None
+```
+
+**解説**
+
+`calc()` の中では `print(100 + 200)` が実行されるので、まず `300` が表示されます。
+しかし、この関数には **`return` がありません。**
+`return` を書かなかった関数は、**必ず `None` を返します**（[5.1.3](./05-functions.md#513-return-がないとどうなるか)）。
+そのため `price` には `None` が入り、2行目で `None` と表示されます。
+
+`price` に `300` を入れたいなら、次のように書きます。
+
+```python
+def calc():
+    return 100 + 200
+
+
+price = calc()
+print(price)
+```
+
+> **よくある間違い**
+> 「`print` したのだから値は返っている」と考えてしまうのが、この章で最も多い誤解です。
+> **`print` は画面に出すだけ、`return` は値を持ち帰る。** この2つは別の仕事です。
+
+---
+
+**問 5.2 の解答**
+
+エラーになるのは、**2番目と3番目**です。
+
+| 呼び出し | 結果 | 理由 |
+|---------|------|------|
+| `create_user("佐藤", 20)` | `佐藤 20 False` | `is_admin` にはデフォルト値 `False` があるので省略できる |
+| `create_user(age=20, "佐藤")` | `SyntaxError` | キーワード引数のあとに位置引数を書いている |
+| `create_user("佐藤")` | `TypeError` | 必要な位置引数 `age` が足りない |
+
+**解説**
+
+2番目のエラーメッセージは次のとおりです（[5.2.2](./05-functions.md#522-キーワード引数)）。
+
+```text
+SyntaxError: positional argument follows keyword argument
+```
+
+**位置引数は必ずキーワード引数より前**に書きます。正しくは次のように書きます。
+
+```python
+create_user("佐藤", age=20)
+```
+
+3番目は次のエラーになります（[5.2.1](./05-functions.md#521-位置引数)）。
+
+```text
+TypeError: create_user() missing 1 required positional argument: 'age'
+```
+
+`age` にはデフォルト値がないので、**省略できません。**
+デフォルト値があるのは `is_admin` だけです。
+
+---
+
+**問 5.3 の解答**
+
+```text
+['りんご']
+['りんご', 'みかん']
+```
+
+書き換え方は次のとおりです。
+
+```python
+def add_item(item, items=None):
+    if items is None:
+        items = []
+    items.append(item)
+    return items
+```
+
+**解説**
+
+デフォルト引数の `[]` が作られるのは、**関数を定義したときの1回だけ**です
+（[5.2.4](./05-functions.md#524-デフォルト引数にリストを使ってはいけない)）。
+そのため、`items` を省略した呼び出しはすべて**同じ1つのリスト**を使い回します。
+1回目に入れた `"りんご"` が、2回目にも残っているのはそのためです。
+
+`None` を初期値にすると、**呼び出されるたびに関数の中で新しいリストが作られる**ので、
+毎回からの状態から始まります。
+
+> **よくある間違い**
+> `if items == None:` と書いても動きますが、Python では **`is None`** を使います。
+> `None` はプログラム全体で1つしかない値なので、
+> 「同じ実体か」を直接調べる `is` のほうが確実です。
+
+---
+
+**問 5.4 の解答**
+
+```text
+(1, 9)
+```
+
+型は**タプル**（`tuple`）です。
+
+**解説**
+
+`return min(numbers), max(numbers)` のように `,` で区切って返すと、
+Python はそれを**タプルにまとめて**返します（[5.3.2](./05-functions.md#532-複数の値を返す)）。
+
+タプルのまま受け取ると `result[0]` / `result[1]` で取り出すことになり、
+どちらが最小か読み取りにくくなります。**アンパックで受け取るほうが実用的です。**
+
+```python
+lowest, highest = min_max([3, 9, 1])
+print(lowest)    # 1
+print(highest)   # 9
+```
+
+---
+
+**問 5.5 の解答**
+
+エラーの名前は **`UnboundLocalError`** です。
+
+```text
+UnboundLocalError: cannot access local variable 'count' where it is not associated with a value
+```
+
+**理由**：関数の中に `count = ...` という代入があるため、
+Python は **`count` をこの関数のローカル変数だ**と判断します。
+そのため `count + 1` の `count` もローカルのほうを読みに行きますが、
+その時点ではまだ何も入っていないためエラーになります
+（[5.4.2](./05-functions.md#542-関数の中から外の変数を変えられない)）。
+
+書き換え方は次のとおりです。**引数で受け取り、`return` で返します。**
+
+```python
+def increment(count):
+    return count + 1
+
+
+count = 0
+count = increment(count)
+print(count)
+```
+
+```text
+実行結果:
+1
+```
+
+> **別解と、その問題点**
+> `global count` と書いてもエラーは消えます。
+>
+> ```python
+> def increment():
+>     global count
+>     count = count + 1
+> ```
+>
+> ただし、このテキストでは `global` を使いません。
+> どこで値が変わったのか追えなくなるためです（[5.4.3](./05-functions.md#543-global-を使わない理由)）。
+
+---
+
+**問 5.6 の解答**
+
+- `f = double` … **関数そのもの**を `f` に入れています。以降 `f(5)` で呼び出せます
+- `g = double()` … その場で `double` を**呼び出して、その結果**を `g` に入れようとしています
+
+**解説**
+
+`()` が付いているかどうかで、意味がまったく変わります
+（[5.5.1](./05-functions.md#551-関数を変数に入れる)）。
+
+なお、`double` が引数を1つ必要とする関数の場合、
+`double()` は引数なしの呼び出しになるためエラーになります。
+
+```text
+TypeError: double() missing 1 required positional argument: 'x'
+```
+
+**渡したいのが「関数」なら `()` を付けない。「結果」なら付ける。**
+この区別は、`sorted()` の `key` に関数を渡すとき（[5.5.3](./05-functions.md#553-sorted-の-key-に渡す)）に必ず必要になります。
+
+---
+
+**問 5.7 の解答**
+
+```text
+みかん
+```
+
+**解説**
+
+`key=lambda item: item["price"]` は「商品（辞書）を受け取って、その `price` を返す関数」です。
+`sorted()` はこれを各要素に適用し、**返ってきた価格を基準に**並べ替えます
+（[5.5.3](./05-functions.md#553-sorted-の-key-に渡す)）。
+
+`reverse=True` を書いていないので**安い順**に並び、
+`result[0]` は最も安い `みかん`（90円）になります。
+
+高い順にしたい場合は `reverse=True` を足します。
+
+```python
+result = sorted(items, key=lambda item: item["price"], reverse=True)
+print(result[0]["name"])    # ぶどう
+```
+
+---
+
+### 演習問題
+
+### 演習 5.1 の解答
+
+`price_tax.py`
+
+```python
+def with_tax(price, rate=0.1):
+    """税込価格を整数で返す。rate を省略すると 0.1（10%）。"""
+    return int(price * (1 + rate))
+
+
+print(f"1000円 → {with_tax(1000)}円")
+print(f"1000円 → {with_tax(1000, 0.08)}円")
+print(f"1000円 → {with_tax(1000, rate=0.08)}円")
+```
+
+```text
+実行結果:
+1000円 → 1100円
+1000円 → 1080円
+1000円 → 1080円
+```
+
+**解説**
+
+3つの呼び出しは、それぞれ次の書き方です。
+
+| 呼び出し | 書き方 | `rate` に入る値 |
+|---------|--------|---------------|
+| `with_tax(1000)` | デフォルト引数にまかせる | `0.1` |
+| `with_tax(1000, 0.08)` | 位置引数で渡す | `0.08` |
+| `with_tax(1000, rate=0.08)` | キーワード引数で渡す | `0.08` |
+
+2番目と3番目は結果が同じですが、**読みやすさが違います。**
+`0.08` という数字だけを見ても意味がわかりませんが、
+`rate=0.08` と書いてあれば「税率だ」と一目でわかります。
+**引数が2つ以上ある関数を呼ぶときは、キーワード引数を使うと読みやすくなります。**
+
+`int()` は小数点以下を切り捨てます（[2.2.6](./02-basics.md#226-型を変換する)）。
+`1000 * 1.1` の結果は小数（`float`）なので、`int()` を通さないと `1100.0` と表示されてしまいます。
+
+> **よくある間違い**
+> 関数の中で `print` してしまうと、条件を満たしません。
+>
+> ```python
+> def with_tax(price, rate=0.1):
+>     print(int(price * (1 + rate)))    # ❌ 値が返らない
+> ```
+>
+> これでは `f"1000円 → {with_tax(1000)}円"` の中が `None` になり、
+> `1000円 → None円` と表示されます（[5.1.3](./05-functions.md#513-return-がないとどうなるか)）。
+> **計算する関数は値を返し、表示は呼び出し側で行う**のが基本です（[5.6.1](./05-functions.md#561-1つの関数は1つのことをする)）。
+
+---
+
+### 演習 5.2 の解答
+
+`score_stats.py`
+
+```python
+def average(scores):
+    """点数の平均を返す。scores が空なら 0 を返す。"""
+    if len(scores) == 0:
+        return 0
+    return sum(scores) / len(scores)
+
+
+def min_max(scores):
+    """最低点と最高点をまとめて返す。"""
+    return min(scores), max(scores)
+
+
+scores = [72, 85, 63, 90]
+
+print(f"平均: {average(scores):.1f}点")
+
+lowest, highest = min_max(scores)
+print(f"最低: {lowest}点 / 最高: {highest}点")
+print(f"差: {highest - lowest}点")
+
+print(f"空のとき: {average([]):.1f}点")
+```
+
+```text
+実行結果:
+平均: 77.5点
+最低: 63点 / 最高: 90点
+差: 27点
+空のとき: 0.0点
+```
+
+**解説**
+
+`average` の最初の2行が**早期 `return`** です（[5.3.3](./05-functions.md#533-早期-return)）。
+空のリストを渡されたときに `sum([]) / len([])` を計算しようとすると、
+`0 / 0` になって `ZeroDivisionError` で止まります。
+**先に弾いてしまえば、そのあとは安心して本筋だけを書けます。**
+
+`min_max` は `,` で区切って2つの値を返しています（[5.3.2](./05-functions.md#532-複数の値を返す)）。
+返ってくるのはタプルなので、`lowest, highest = ...` のアンパックで
+2つの変数に配れます（[4.2.3](./04-data-structures.md#423-アンパック)）。
+
+`{average(scores):.1f}` は、f-string の書式指定で小数第1位までにする書き方です
+（[2.4.4](./02-basics.md#244-f-string)）。
+空のときは `0`（整数）が返りますが、`:.1f` を通すと `0.0` と表示されます。
+
+> **別解：`else` を使った書き方**
+>
+> ```python
+> def average(scores):
+>     if len(scores) == 0:
+>         return 0
+>     else:
+>         return sum(scores) / len(scores)
+> ```
+>
+> これでも正解です。ただし `return` を実行した時点で関数は終わるので、
+> `else` はなくても同じ動きになります。
+> 弾く条件が2つ、3つと増えたときに、`else` のない書き方のほうが読みやすくなります。
+
+> **よくある間違い**
+> `lowest, highest = min_max(scores)` を `result = min_max(scores)` と受け取ると、
+> `result` はタプルのままです。
+> `print(f"最低: {result}点")` と書くと `最低: (63, 90)点` と表示されます。
+
+---
+
+### 演習 5.3 の解答
+
+`product_report.py`
+
+```python
+def total_stock(products):
+    """在庫数の合計を返す。"""
+    total = 0
+    for product in products:
+        total += product["stock"]
+    return total
+
+
+def in_stock_names(products):
+    """在庫が1以上ある商品名をリストで返す。"""
+    return [product["name"] for product in products if product["stock"] >= 1]
+
+
+def most_expensive(products):
+    """いちばん価格の高い商品（辞書）を返す。products が空なら None を返す。"""
+    if len(products) == 0:
+        return None
+    return max(products, key=lambda product: product["price"])
+
+
+def by_price(products):
+    """価格の高い順に並べた新しいリストを返す。元のリストは変えない。"""
+    return sorted(products, key=lambda product: product["price"], reverse=True)
+
+
+products = [
+    {"name": "りんご", "price": 180, "stock": 12},
+    {"name": "みかん", "price": 90, "stock": 0},
+    {"name": "ぶどう", "price": 450, "stock": 5},
+    {"name": "もも", "price": 320, "stock": 3},
+]
+
+print(f"在庫合計: {total_stock(products)}個")
+print(f"在庫あり: {in_stock_names(products)}")
+
+top = most_expensive(products)
+print(f"最高価格: {top['name']}（{top['price']}円）")
+
+print("価格の高い順:")
+for number, product in enumerate(by_price(products), start=1):
+    print(f"{number}. {product['name']}（{product['price']}円）")
+
+print(f"元の1件目: {products[0]['name']}")
+```
+
+```text
+実行結果:
+在庫合計: 20個
+在庫あり: ['りんご', 'ぶどう', 'もも']
+最高価格: ぶどう（450円）
+価格の高い順:
+1. ぶどう（450円）
+2. もも（320円）
+3. りんご（180円）
+4. みかん（90円）
+元の1件目: りんご
+```
+
+**解説**
+
+4つの関数は、[5.6.3](./05-functions.md#563-どこで関数に切り出すか) の `refactor_after.py` と
+同じ形をしています。**「データを受け取り、値を返す」関数を並べ、最後に組み合わせて表示する**——
+これがこの章のゴールの形です。
+
+- **`total_stock`** … 集計の「型1（合計）」（[4.3.5](./04-data-structures.md#435-辞書のリスト実務で最頻出の形)）。
+  `total = 0` を `for` の外で用意するのがポイントです
+- **`in_stock_names`** … 集計の「型2（絞り込み）」。
+  内包表記（[4.5.2](./04-data-structures.md#452-条件付き内包表記)）で1行にしていますが、
+  `for` と `append` で書いても正解です
+- **`most_expensive`** … 集計の「型3（最大）」。
+  第4章では5行かけて書きましたが、`max()` に `key` を渡せば1行です（[5.5.3](./05-functions.md#553-sorted-の-key-に渡す)）
+- **`by_price`** … `sorted()` は**新しいリストを返す**ので、元の `products` は変わりません
+  （[4.1.6](./04-data-structures.md#416-sort-と-sorted-の違い破壊的か否か)）
+
+最後の `元の1件目: りんご` が、**元のリストが並べ替えられていない証拠**です。
+
+番号付きの表示は `enumerate(..., start=1)` です（[3.2.3](./03-control-flow.md#323-enumerate-で番号付きに回す)）。
+`by_price(products)` の結果をそのまま `enumerate` に渡せます。
+
+> **よくある間違い**
+> `by_price` を `sort()` で書くと、**条件を満たしません。**
+>
+> ```python
+> def by_price(products):
+>     products.sort(key=lambda product: product["price"], reverse=True)   # ❌
+>     return products
+> ```
+>
+> `sort()` は元のリストを並べ替えてしまうので、最後の行が `ぶどう` になります。
+> さらに `sort()` は戻り値が `None` なので、`return products.sort(...)` と書くと
+> `None` が返ります（[4.1.6](./04-data-structures.md#416-sort-と-sorted-の違い破壊的か否か)）。
+
+> **よくある間違い**
+> `most_expensive` が返すのは**辞書そのもの**です。
+> 名前だけを返してしまうと、`（450円）` の部分が書けなくなります。
+>
+> ```python
+> return max(products, key=lambda product: product["price"])["name"]   # ❌ 名前しか返らない
+> ```
+>
+> **「あとで何が必要になるかわからないなら、辞書のまま返す」**ほうが使い回せます。
+
+> **別解：在庫ありの判定**
+> `if product["stock"] >= 1` は、次のようにも書けます。
+>
+> ```python
+> [product["name"] for product in products if product["stock"]]
+> ```
+>
+> `0` は偽として扱われるためです（[3.1.5](./03-control-flow.md#315-真偽値として扱われる値空文字列0空リスト)）。
+> 短くはなりますが、**何を判定しているのか読み取りにくい**ので、
+> このテキストでは `>= 1` と書くほうを勧めます。
+
+---
+
+### 演習 5.4 の解答
+
+`word_tools.py`
+
+```python
+def longest(words):
+    """いちばん文字数の多い単語を返す。words が空なら None を返す。"""
+    if len(words) == 0:
+        return None
+    return max(words, key=len)
+
+
+def sort_by_length(words):
+    """文字数の少ない順に並べた新しいリストを返す。"""
+    return sorted(words, key=len)
+
+
+def count_words(*words):
+    """渡された単語を数えて「単語 → 回数」の辞書を返す。"""
+    counts = {}
+    for word in words:
+        counts[word] = counts.get(word, 0) + 1
+    return counts
+
+
+words = ["banana", "fig", "apple", "kiwi"]
+
+print(f"いちばん長い: {longest(words)}")
+print(f"短い順: {sort_by_length(words)}")
+print(f"集計: {count_words('りんご', 'みかん', 'りんご', 'ぶどう')}")
+
+result = longest([])
+if result is None:
+    print("単語がありません")
+else:
+    print(f"いちばん長い: {result}")
+```
+
+```text
+実行結果:
+いちばん長い: banana
+短い順: ['fig', 'kiwi', 'apple', 'banana']
+集計: {'りんご': 2, 'みかん': 1, 'ぶどう': 1}
+単語がありません
+```
+
+**解説**
+
+**`key=len` がこの問題の中心です。**
+`len` は関数なので、`()` を付けずにそのまま渡します（[5.5.1](./05-functions.md#551-関数を変数に入れる)）。
+渡された関数は、要素1つずつに自動的に適用されます
+（[5.5.3](./05-functions.md#553-sorted-の-key-に渡す)）。
+
+- `max(words, key=len)` … 各単語を `len()` に通した結果（文字数）が最大のものを返す
+- `sorted(words, key=len)` … 文字数の少ない順に並べた**新しいリスト**を返す
+
+`count_words` の `*words` は可変長引数です（[5.2.5](./05-functions.md#525-可変長引数args--kwargs)）。
+渡された4つの単語がタプルにまとまって入るので、あとは `for` で回すだけです。
+数える形 `counts[word] = counts.get(word, 0) + 1` は
+[4.3.3](./04-data-structures.md#433-get-で安全に取り出す) の `dict_count.py` と同じものです。
+
+最後の `if result is None:` は、
+`longest([])` が `None` を返したかどうかの判定です
+（[5.2.4](./05-functions.md#524-デフォルト引数にリストを使ってはいけない) で出てきた `is None`）。
+
+> **よくある間違い**
+> `key=len()` と書くとエラーになります。
+>
+> ```text
+> TypeError: len() takes exactly one argument (0 given)
+> ```
+>
+> **渡すのは「関数そのもの」なので `()` は付けません。**
+
+> **よくある間違い**
+> `count_words` を `def count_words(words):` と書くと、可変長引数になりません。
+> その場合の呼び出しは `count_words(["りんご", "みかん"])` のように
+> **リストを1つ渡す**形になり、問題の条件（単語をそのまま並べて渡す）と合いません。
+> **`*` が1つあるかないかで、呼び出し方が変わります。**
+
+> **別解：`counts` を使わずに数える**
+> 集合で種類を求めてから、`count()` で数える書き方もあります。
+>
+> ```python
+> def count_words(*words):
+>     return {word: words.count(word) for word in set(words)}
+> ```
+>
+> こちらは短いのですが、**辞書の並び順が「最初に出てきた順」になりません**
+> （集合には順番がないためです。[4.4.1](./04-data-structures.md#441-重複しない集まり)）。
+> 表示する順番を決めたいときは、上の `get` を使う書き方にしてください。

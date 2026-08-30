@@ -105,6 +105,22 @@
   **本文の実行結果に、集合をそのまま `print` した例が残っていないか**（整数の `{1, 2, 3}` を除く）、
   レビュー時に確認していただけると確実です。
 
+- `python-text` 第5章のコード・実行結果・エラーメッセージも、**Python 3.11 で実際に実行して確認**しました
+  （`NameError: name 'greet' is not defined` /
+  `TypeError: introduce() missing 1 required positional argument: 'age'` /
+  `SyntaxError: positional argument follows keyword argument` /
+  `UnboundLocalError: cannot access local variable 'count' where it is not associated with a value` /
+  `TypeError: len() takes exactly one argument (0 given)` / `help()` の出力）。
+  **1か所だけ、3.11 と本文の文言が違います。**
+  5.2.3 の「初期値のある引数を先に書いた」ときの `SyntaxError` を、本文では 3.12 以降の
+  `parameter without a default follows parameter with a default` で書いています
+  （3.11 では `non-default argument follows default argument`）。
+  本文にはバージョンで文言が変わる旨の注記を入れてありますが、
+  **3.13 の実機でこの文言になるか確認をお願いします。**
+- `python-text` 5.5.1 の実行結果に `<function double at 0x0000023F1C2A4C20>` と書いています。
+  **`0x...` の値は実行のたびに変わる**ため、本文にもその旨を明記してあります。
+  読者が「同じ数字が出ない」と混乱しないか、表現の確認をお願いします。
+
 ---
 
 ## 図解（作成済み・確認のみ）
