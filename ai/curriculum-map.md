@@ -49,7 +49,7 @@
 |----|---------|----------------|
 | 0 | はじめに | （コードなし）AI サポートの準備、JavaScript / Python 対応表（`let`/`const`→代入のみ、`===`→`==`、`{}`→インデント、配列→リスト、オブジェクト→辞書、`map`→内包表記、`null`/`undefined`→`None` の「地図」。詳細は各章で扱う） |
 | 1 | Python の環境構築 | Python 3.13 のインストール、`python`（Windows）/ `python3`（macOS）の呼び分け、`--version` での確認、`py` ランチャー（Windows）、REPL（`>>>`・`exit()`）、`.py` ファイルの実行（`python ファイル名`）、`print`（存在のみ。詳細は 2.5）、トレースバックの読み方（下から上・種類・行番号・`NameError`）、仮想環境 venv（`python -m venv .venv`・有効化 `Activate.ps1` / `source .venv/bin/activate`・`deactivate`）、実行ポリシー（`Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`）、pip（`pip install`・`pip list`・`pip freeze > requirements.txt`・`-r`）、`import`（存在のみ。詳細は第6章）、VS Code の Python 拡張・インタプリタ選択・▷ 実行・ブレークポイントでのステップ実行 |
-| 2 | 基本文法 | 変数、型、演算子、文字列、`input`/`print`、インデント |
+| 2 | 基本文法 | 変数と代入（`=`・再代入・`NameError`）、`let`/`const` がないこと、snake_case・予約語、定数の慣習（UPPER_SNAKE_CASE）、型（`int` / `float` / `str` / `bool` / `NoneType`）、`True`/`False`/`None`（先頭大文字）、`type()`、型変換（`int()` / `float()` / `str()`・`ValueError`・`int("08")` → `8`）、浮動小数点の誤差、桁区切り `1_000`、算術演算子（`+ - * / // % **`・`round()`・`ZeroDivisionError`）、代入演算子（`+=` など。`++` はない）、比較演算子（`==` / `!=` / `<=` など。`===` はない）、論理演算子（`and` / `or` / `not`）、文字列（連結 `+`・繰り返し `*`・`len()`・インデックス（0 始まり・負の添字）・スライス `[開始:終了]`・イミュータブル・`IndexError`）、文字列メソッド（`strip` / `upper` / `lower` / `replace` / `startswith` / `endswith` / `count` / `zfill`）、f-string（`{}`・書式指定 `:,` `:.2f` `:>5` `:05`）、エスケープ（`\n` `\t` `\\` `\"`）・複数行文字列 `"""`・raw string `r"..."`、`print`（複数引数・`sep`・`end`・空行）、`input`（戻り値は必ず `str`・`int(input(...))`）、インデント（`:` とブロック・半角スペース4つ・入れ子・`IndentationError` / `TabError`・VS Code の空白可視化設定）、コメント `#` とコメントアウト、PEP 8、Black による自動整形 |
 | 3 | 制御構文 | `if`、`for`、`while`、`range`、`break`/`continue` |
 | 4 | データ構造 | list、tuple、dict、set、内包表記 |
 | 5 | 関数 | 定義、引数（デフォルト・可変長・キーワード）、戻り値、スコープ |
@@ -63,6 +63,14 @@
 > **注意**：第1章の学習者は、まだ変数・型・条件分岐・繰り返し・関数を学んでいません（第2章以降）。
 > 第1章の範囲は「環境を用意し、REPL とファイル実行で Python を動かし、venv と pip を扱える」までです。
 > 環境構築・エラー（トレースバック）・venv・pip のトラブルは、レベル C（第7節）として全部解決してあげてください。
+
+> **注意**：第2章の学習者は、**条件分岐・繰り返し・リスト・辞書・関数をまだ学んでいません**。
+> 第2章の範囲は「変数・型・演算子・文字列・入出力・インデント」までです。
+> 第2章 2.6 では、インデントの説明のために `if` を**書き方だけ**先取りして使っています
+> （`if 条件:` と字下げ）。`else` / `elif` / `for` / `while` は第3章、
+> リスト・辞書は第4章、関数（`def`）は第5章です。**それより先の道具を使った回答をしないでください。**
+> 第2章までで使えるのは `print` / `input` / `int` / `float` / `str` / `type` / `len` / `round` と、
+> 文字列メソッド（`strip` / `upper` / `lower` / `replace` / `startswith` / `endswith` / `count` / `zfill`）です。
 
 ## 3. fastapi-text
 
