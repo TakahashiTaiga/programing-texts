@@ -86,6 +86,35 @@
   止め方の説明が実機と食い違っていると、そこで完全に詰まります。
   第1〜2章と同じ優先度で確認してください。
 
+- `python-text` 第4章のコード・実行結果・エラーメッセージは、**Python 3.11 で実際に実行して確認**しました
+  （`IndexError: list index out of range` / `ValueError: list.remove(x): x not in list` /
+  `IndexError: pop from empty list` / `TypeError: '<' not supported between instances of 'str' and 'int'` /
+  `TypeError: object of type 'NoneType' has no len()` / `TypeError: 'tuple' object does not support item assignment` /
+  `ValueError: not enough values to unpack (expected 3, got 2)` / `KeyError: 'age'` /
+  `TypeError: 'set' object is not subscriptable` / `SyntaxError: expected 'else' after 'if' expression`）。
+  本文が想定する 3.13 系では、トレースバックの `^` の位置や文言が変わる可能性があります。
+- `python-text` 4.3.5 の「よくある間違い」で、**f-string の中で外側と同じ引用符を使うと
+  `SyntaxError: f-string: unmatched '['` になる**と書いていますが、
+  **これは Python 3.11 以前の挙動**です。3.12 以降は同じ引用符でも書けます
+  （本文にもその旨を明記済み）。3.13 の実機では**エラーにならない**ため、
+  読者が試したときに文面と食い違わないか確認をお願いします。
+- `python-text` 4.4.2 の縦棒 `|` の入力方法（Windows は `Shift` + `¥` の左隣、macOS は `Shift` + `¥`）は、
+  **キーボードの配列によって位置が変わります。** 日本語配列以外を使う読者向けの注記が要るか、判断をお願いします。
+- `python-text` 4.4.1 / 4.4.3 で「集合の表示順は決まっていない」と書き、
+  表示が必要な箇所はすべて `sorted()` を通す形にしてあります。
+  **本文の実行結果に、集合をそのまま `print` した例が残っていないか**（整数の `{1, 2, 3}` を除く）、
+  レビュー時に確認していただけると確実です。
+
+---
+
+## 図解（作成済み・確認のみ）
+
+- `python-text` 4.4.2 集合の和・積・差のベン図
+  - SVG 原本：`python-text/images/svg-src/04-set-operations.svg`
+  - 本文が参照する PNG：`python-text/images/04-set-operations.png`（幅 880px、cairosvg で変換済み）
+  - モノクロ前提で作図しています（実線の円が A、破線の円が B、灰色が結果の範囲）。
+    日本語は IPAGothic で描画されています。**フォントの見え方だけ確認をお願いします。**
+
 ---
 
 ## 用語のブレ

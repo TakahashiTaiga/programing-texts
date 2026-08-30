@@ -1514,3 +1514,620 @@ flowchart TD
 >
 > 入力された値を**すべて覚えておく**には、第4章のリストが必要になります。
 > 次の章では、まさにこの続きを扱います。
+
+---
+
+## 第4章
+
+### 理解度チェック
+
+**問 4.1 の解答**
+
+```text
+None
+```
+
+**解説**
+
+`sort()` は**リスト自身を並べ替えるメソッド**で、**戻り値がありません**
+（[4.1.6](./04-data-structures.md#416-sort-と-sorted-の違い破壊的か否か)）。
+そのため `numbers = numbers.sort()` と書くと、
+`numbers` には「戻り値なし」を表す `None` が入り、**並べ替えたリストは消えてしまいます。**
+
+やりたいことに応じて、次のどちらかを書きます。
+
+```python
+numbers = [3, 1, 2]
+numbers.sort()            # 元のリストを並べ替える（代入しない）
+print(numbers)
+```
+
+```python
+numbers = [3, 1, 2]
+result = sorted(numbers)  # 新しいリストを受け取る（元は変わらない）
+print(result)
+```
+
+どちらも `[1, 2, 3]` が表示されます。
+
+> **よくある間違い**
+> 同じ形の間違いは `append` でも起きます（[4.1.4](./04-data-structures.md#414-追加削除append--insert--remove--pop)）。
+> **`append` / `insert` / `remove` / `sort` は、代入せずにそのまま呼ぶ**と覚えてください。
+> `None` が表示されたら、まずこれを疑います。
+
+---
+
+**問 4.2 の解答**
+
+```text
+[1, 2, 3]
+```
+
+2行目は、次のいずれかに書き換えます。
+
+```python
+b = a.copy()
+```
+
+```python
+b = a[:]
+```
+
+```python
+b = list(a)
+```
+
+**解説**
+
+`b = a` は、**リストの中身をコピーしていません。**
+「同じ1つのリストに、`b` という名前をもう1つ付けた」だけです
+（[4.1.7](./04-data-structures.md#417-リストのコピーで起きる事故)）。
+
+実体は1つしかないので、`b.append(3)` は `a` から見ても中身が増えて見えます。
+
+3つの書き換えは、どれも**新しいリストを作って**そちらを `b` にします。
+
+| 書き方 | 考え方 |
+|--------|-------|
+| `a.copy()` | 「コピーする」と読めるので、いちばん意図が伝わる |
+| `a[:]` | 全体を切り出すスライス。スライスは新しいリストを返す（[4.1.3](./04-data-structures.md#413-スライス)） |
+| `list(a)` | `list()` は他の種類のデータからリストを作る関数 |
+
+> **よくある間違い**
+> 数値や文字列で同じことをしても、この事故は起きません。
+> **中身を書き換えられるもの（リスト・辞書・集合）だけ**で起きます。
+
+---
+
+**問 4.3 の解答**
+
+```text
+<class 'dict'>
+<class 'set'>
+<class 'tuple'>
+```
+
+- `{}` … **辞書**（空の集合ではありません）
+- `{1, 2}` … **集合**
+- `(1,)` … **タプル**
+
+**解説**
+
+`{ }` は、**中身が空のときだけ辞書**になります
+（[4.4.1](./04-data-structures.md#441-重複しない集まり)）。
+空の集合を作りたいときは `set()` と書きます。
+
+`(1,)` のうしろの `,` は必須です。
+`(1)` と書くと、計算のかっこと区別が付かないため**ただの整数**になります
+（[4.2.1](./04-data-structures.md#421-変更できないリスト)）。
+
+| 書き方 | 型 |
+|--------|----|
+| `{}` | 辞書 |
+| `set()` | 集合 |
+| `{1, 2}` | 集合 |
+| `(1)` | 整数 |
+| `(1,)` | タプル |
+
+---
+
+**問 4.4 の解答**
+
+- `student["age"]` … `age` というキーがないため、`KeyError: 'age'` で**プログラムが止まる**
+- `student.get("age", 0)` … キーがなければ既定値の `0` を返し、**止まらない**
+
+**解説**
+
+`[ ]` は「必ずあるはずのキー」を読むときに使います。
+なければプログラムの前提が崩れているので、**止まったほうが安全**です
+（[4.3.2](./04-data-structures.md#432-値の読み書き)）。
+
+`get` は「なくてもおかしくないキー」を読むときに使います
+（[4.3.3](./04-data-structures.md#433-get-で安全に取り出す)）。
+
+なお `get` は、既定値を省略すると `None` を返します。
+
+```python
+student = {"name": "佐藤"}
+print(student.get("age"))
+print(student.get("age", 0))
+```
+
+```text
+実行結果:
+None
+0
+```
+
+数を数える用途では、`None` ではなく `0` を返させないと足し算ができません。
+**`get(キー, 0)` と既定値を書く**のを癖にしてください。
+
+---
+
+**問 4.5 の解答**
+
+```text
+True
+False
+```
+
+**解説**
+
+辞書に対する `in` は、**キーだけを調べます**（[4.3.2](./04-data-structures.md#432-値の読み書き)）。
+
+- `"数学"` はキーなので `True`
+- `80` は値であってキーではないので `False`
+
+値の中を調べたいときは `values()` を使います（[4.3.4](./04-data-structures.md#434-キー値両方を回す)）。
+
+```python
+scores = {"数学": 80, "英語": 65}
+print(80 in scores.values())
+```
+
+```text
+実行結果:
+True
+```
+
+> **よくある間違い**
+> リストの `in` は値を調べるのに、辞書の `in` はキーを調べます。
+> 同じ記号で調べる対象が変わるので、**何に対して `in` を使っているか**を毎回確認してください。
+
+---
+
+**問 4.6 の解答**
+
+```text
+[2, 4]
+['奇数', '偶数', '奇数', '偶数']
+```
+
+**解説**
+
+`if` の**位置**が違うため、役割がまったく違います
+（[4.5.2](./04-data-structures.md#452-条件付き内包表記)）。
+
+| 書き方 | `if` の位置 | 役割 | 要素数 |
+|--------|-----------|------|-------|
+| `[n for n in numbers if n % 2 == 0]` | うしろ | **絞り込む** | 4個 → 2個に減る |
+| `["偶数" if n % 2 == 0 else "奇数" for n in numbers]` | 前 | **値を出し分ける** | 4個のまま |
+
+見分け方は **`else` があるかどうか**です。
+`else` があるものは「AかBを選ぶ」書き方（条件式。[3.1.6](./03-control-flow.md#316-条件式三項演算子)）なので、前に置きます。
+`else` がないものは絞り込みなので、うしろに置きます。
+
+---
+
+**問 4.7 の解答**
+
+**集合（set）**を使います。
+理由は、**集合は同じ値を1つしか持てないため、重複が自動的に消えるから**です。
+
+```python
+answers = ["りんご", "みかん", "りんご", "ぶどう", "みかん"]
+print(len(set(answers)))
+```
+
+```text
+実行結果:
+3
+```
+
+**解説**
+
+同じことをリストと `for` で書くこともできます
+（[4.4.3](./04-data-structures.md#443-重複除去に使う)）。
+
+```python
+answers = ["りんご", "みかん", "りんご", "ぶどう", "みかん"]
+kinds = []
+
+for answer in answers:
+    if answer not in kinds:
+        kinds.append(answer)
+
+print(len(kinds))
+```
+
+どちらも `3` になりますが、**種類の数だけが欲しいなら `len(set(...))` の1行**が読みやすくなります。
+`for` を使うほうを選ぶのは、**最初に出てきた順**を残したいときです。
+
+---
+
+### 演習問題
+
+### 演習 4.1 の解答
+
+`shopping_list.py`
+
+```python
+items = ["牛乳", "パン", "卵"]
+
+items.append("バター")
+
+if "パン" in items:
+    items.remove("パン")
+
+for number, item in enumerate(items, start=1):
+    print(f"{number}. {item}")
+
+print(f"合計 {len(items)} 点")
+```
+
+```text
+実行結果:
+1. 牛乳
+2. 卵
+3. バター
+合計 3 点
+```
+
+**解説**
+
+この演習の要点は3つです。
+
+**1. `append` と `remove` は代入しない**（[4.1.4](./04-data-structures.md#414-追加削除append--insert--remove--pop)）
+
+どちらもリスト自身を書き換えるメソッドで、戻り値がありません。
+`items = items.append("バター")` と書くと `items` が `None` になり、
+次の行で `TypeError` になります。
+
+**2. 削除の前に `in` で確認する**
+
+`remove` は、リストにない値を渡すと `ValueError: list.remove(x): x not in list` で止まります。
+
+```python
+if "パン" in items:
+    items.remove("パン")
+```
+
+この形にしておけば、`"パン"` が入っていない状態で実行しても止まりません。
+**「消す前に、あるか確かめる」**は、この先ずっと使う型です。
+
+**3. 番号付きの表示は `enumerate`**（[4.2.3](./04-data-structures.md#423-アンパック)）
+
+`start=1` を付けると、1から数えてくれます。
+
+```python
+for number, item in enumerate(items, start=1):
+```
+
+`enumerate` は「番号と値の組」を返すので、**変数を2つ**書いてアンパックします。
+
+> **別解：自分で番号を数える**
+> `enumerate` を使わずに書くこともできます。
+>
+> ```python
+> number = 1
+> for item in items:
+>     print(f"{number}. {item}")
+>     number += 1
+> ```
+>
+> 動きますが、`number += 1` を書き忘れる事故が起きやすくなります。
+> **番号が欲しいだけなら `enumerate`** を使ってください。
+
+> **よくある間違い**
+> - `items.remove("パン")` を `items.remove(1)` と書く
+>   → `remove` は**値**を指定します。番号で消すのは `pop(1)` です
+> - 表示の `print(f"合計 {len(items)} 点")` を `for` の**中**に書く
+>   → 品物の数だけ「合計」の行が出ます。字下げしない位置に書いてください
+
+---
+
+### 演習 4.2 の解答
+
+`stock.py`
+
+```python
+stock = {"りんご": 5, "みかん": 0, "ぶどう": 12}
+
+stock["ぶどう"] = 8
+stock["もも"] = 3
+
+for name, count in stock.items():
+    print(f"{name}: {count}個")
+
+for name, count in stock.items():
+    if count == 0:
+        print(f"在庫切れ: {name}")
+
+print(f"バナナ: {stock.get('バナナ', 0)}個")
+```
+
+```text
+実行結果:
+りんご: 5個
+みかん: 0個
+ぶどう: 8個
+もも: 3個
+在庫切れ: みかん
+バナナ: 0個
+```
+
+**解説**
+
+**1. 変更と追加は、同じ書き方**（[4.3.2](./04-data-structures.md#432-値の読み書き)）
+
+```python
+stock["ぶどう"] = 8      # すでにあるキー → 上書き
+stock["もも"] = 3        # ないキー       → 追加
+```
+
+リストの `append` にあたるメソッドは、辞書にはありません。
+**代入するだけ**で追加されます。
+
+**2. キーと値の両方が要るなら `items()`**（[4.3.4](./04-data-structures.md#434-キー値両方を回す)）
+
+`for name in stock:` と書くとキーだけが回るので、
+値を出すには `stock[name]` と書き直すことになります。
+**両方使うなら `items()` で変数を2つ**受け取るほうが短く読めます。
+
+**3. 辞書にないキーは `get`**（[4.3.3](./04-data-structures.md#433-get-で安全に取り出す)）
+
+`stock["バナナ"]` と書くと `KeyError: 'バナナ'` で止まります。
+`get("バナナ", 0)` なら、キーがなくても `0` を返します。
+
+f-string の中で書くときは、**外側と違う引用符**を使ってください。
+
+```python
+print(f"バナナ: {stock.get('バナナ', 0)}個")
+```
+
+> **別解：在庫切れの表示を1つのループにまとめる**
+> ループを2回書かずに、在庫切れの商品名をリストに集めてから表示する書き方もあります。
+>
+> ```python
+> sold_out = []
+> for name, count in stock.items():
+>     print(f"{name}: {count}個")
+>     if count == 0:
+>         sold_out.append(name)
+>
+> for name in sold_out:
+>     print(f"在庫切れ: {name}")
+> ```
+>
+> 表示の順番（全商品 → 在庫切れ）を守るために、いったんリストに集めています。
+> 内包表記を使えば、集める部分は1行になります（[4.5.2](./04-data-structures.md#452-条件付き内包表記)）。
+>
+> ```python
+> sold_out = [name for name, count in stock.items() if count == 0]
+> ```
+
+> **よくある間違い**
+> - `if count == 0:` を `if not count:` と書く
+>   → この場合は動きますが、**在庫が `0` でも空文字列でも `None` でも真になります**
+>     （[3.1.5](./03-control-flow.md#315-真偽値として扱われる値空文字列0空リスト)）。
+>     数値を判定するときは `== 0` と明示するほうが安全です
+> - `"みかん" in stock` で在庫切れを判定しようとする
+>   → `in` はキーがあるかどうかしか見ません。**在庫数（値）は見ていません**
+
+---
+
+### 演習 4.3 の解答
+
+`grades.py`
+
+```python
+students = [
+    {"name": "佐藤", "score": 82},
+    {"name": "鈴木", "score": 61},
+    {"name": "高橋", "score": 95},
+    {"name": "田中", "score": 74},
+    {"name": "伊藤", "score": 58},
+]
+
+scores = [student["score"] for student in students]
+
+total = sum(scores)
+average = total / len(students)
+
+print(f"人数: {len(students)}人")
+print(f"合計: {total}点")
+print(f"平均: {average:.1f}点")
+
+passed = [student["name"] for student in students if student["score"] >= 70]
+print(f"70点以上: {passed}")
+
+top = students[0]
+for student in students:
+    if student["score"] > top["score"]:
+        top = student
+
+print(f"最高点: {top['name']} さん（{top['score']}点）")
+
+print(f"点数の高い順: {sorted(scores, reverse=True)}")
+```
+
+```text
+実行結果:
+人数: 5人
+合計: 370点
+平均: 74.0点
+70点以上: ['佐藤', '高橋', '田中']
+最高点: 高橋 さん（95点）
+点数の高い順: [95, 82, 74, 61, 58]
+```
+
+**解説**
+
+**1. まず「点数だけのリスト」を作る**（[4.5.1](./04-data-structures.md#451-リスト内包表記)）
+
+```python
+scores = [student["score"] for student in students]
+```
+
+辞書のリストのままでは `sum()` や `sorted()` が使えません。
+**必要な列だけを取り出してリストにする**と、あとの処理が短く書けます。
+
+`for` で書くなら次のとおりで、意味は同じです。
+
+```python
+scores = []
+for student in students:
+    scores.append(student["score"])
+```
+
+**2. 最大を探すときは、1件目を仮の答えにする**（[4.3.5](./04-data-structures.md#435-辞書のリスト実務で最頻出の形)）
+
+```python
+top = students[0]
+```
+
+`top = None` から始めると、1回目の比較で `top["score"]` を読もうとして
+`TypeError: 'NoneType' object is not subscriptable` になります。
+**1件目を仮の答えにしておく**のが確実です。
+
+なお「最高点そのもの」は `max(scores)` で求まりますが、
+**その点数を取った人の名前**は `max` では取れません。
+名前が要るので、ここは `for` で探しています。
+
+**3. 元の並び順を変えてはいけないので `sorted()`**（[4.1.6](./04-data-structures.md#416-sort-と-sorted-の違い破壊的か否か)）
+
+```python
+print(f"点数の高い順: {sorted(scores, reverse=True)}")
+```
+
+`scores.sort(reverse=True)` と書くと `scores` 自身が並べ替わります。
+この演習では `scores` を最後に使わないので結果は同じですが、
+**「元を残す」条件があるときは `sorted()`** を選ぶ習慣を付けてください。
+
+> **補足**
+> `students` を点数順に並べたい（名前も一緒に持ったまま並べたい）場合は、
+> `sorted()` に「何を基準に並べるか」を渡す必要があります。
+> これは [第5章 5.5.3](./05-functions.md) で扱います。
+> この章の範囲では、**点数だけを取り出して並べる**のが正解です。
+
+> **よくある間違い**
+> - 平均を `:.1f` なしで表示する
+>   → このデータでは `74.0` と出ますが、割り切れない場合に長い小数が並びます
+>     （[2.4.4](./02-basics.md#244-f-string)）
+> - `total = 0` を `for` の**中**に書く → 毎回 0 に戻り、最後の1件だけになります
+> - `passed` に名前ではなく辞書ごと入れてしまう
+>   → `['佐藤', '高橋', '田中']` ではなく `[{'name': '佐藤', ...}, ...]` と表示されます。
+>     **`student["name"]` を集めているか**を確認してください
+
+---
+
+### 演習 4.4 の解答
+
+`survey.py`
+
+```python
+answers = ["りんご", "みかん", "りんご", "ぶどう", "みかん", "りんご"]
+
+kinds = set(answers)
+
+counts = {}
+for answer in answers:
+    counts[answer] = counts.get(answer, 0) + 1
+
+print(f"回答件数: {len(answers)}件")
+print(f"答えの種類: {len(kinds)}種類")
+print(f"種類一覧: {sorted(kinds)}")
+
+for kind in sorted(counts):
+    print(f"{kind}: {counts[kind]}票")
+
+many = {kind: count for kind, count in counts.items() if count >= 2}
+print(f"2票以上: {many}")
+```
+
+```text
+実行結果:
+回答件数: 6件
+答えの種類: 3種類
+種類一覧: ['ぶどう', 'みかん', 'りんご']
+ぶどう: 1票
+みかん: 2票
+りんご: 3票
+2票以上: {'りんご': 3, 'みかん': 2}
+```
+
+**解説**
+
+**1. 「件数」と「種類の数」は別物**（[4.4.3](./04-data-structures.md#443-重複除去に使う)）
+
+| 求めるもの | 書き方 | 結果 |
+|-----------|--------|------|
+| 回答の件数 | `len(answers)` | 6 |
+| 答えの種類の数 | `len(set(answers))` | 3 |
+
+`set()` に通すと重複が消えるので、**種類の数**になります。
+
+**2. 票を数えるのは `get(キー, 0)` の型**（[4.3.3](./04-data-structures.md#433-get-で安全に取り出す)）
+
+```python
+counts[answer] = counts.get(answer, 0) + 1
+```
+
+`counts[answer] + 1` と書くと、**初めて出てきた答えのところで `KeyError`** になります。
+「まだなければ 0 から始める」を `get` が引き受けてくれます。
+
+**3. 表示順は `sorted()` で決める**（[4.4.1](./04-data-structures.md#441-重複しない集まり) / [4.3.4](./04-data-structures.md#434-キー値両方を回す)）
+
+集合は順番を持たないので、`print(kinds)` の表示順は決まっていません。
+`sorted(kinds)` でリストにしてから表示します。
+
+辞書に `sorted()` を使うと、**キーを並べ替えたリスト**が返ります。
+
+```python
+for kind in sorted(counts):
+    print(f"{kind}: {counts[kind]}票")
+```
+
+**4. 絞り込んだ辞書は、辞書内包表記で作る**（[4.5.3](./04-data-structures.md#453-辞書内包表記)）
+
+```python
+many = {kind: count for kind, count in counts.items() if count >= 2}
+```
+
+`items()` でキーと値を受け取り、`if` で絞り込み、`{キー: 値}` の形で作り直しています。
+`for` で書くと次のとおりで、意味は同じです。
+
+```python
+many = {}
+for kind, count in counts.items():
+    if count >= 2:
+        many[kind] = count
+```
+
+> **別解：種類の数も `counts` から求める**
+> 票を数えた `counts` のキーは、答えの種類そのものです。
+> そのため、`set` を使わずに `len(counts)` でも種類の数が求まります。
+>
+> ```python
+> print(f"答えの種類: {len(counts)}種類")
+> ```
+>
+> どちらでも正解です。
+> **「種類が知りたいだけ」なら `set`、「票数も要る」なら `counts`** と考えると迷いません。
+
+> **よくある間違い**
+> - `counts = {}` を `for` の**中**に書く → 毎回空に戻り、すべて1票になります
+> - `sorted(counts)` が**値**を返すと思ってしまう
+>   → 返るのは**キーのリスト**です。票数は `counts[kind]` で取り出します
+> - `set` を `{}` で作ろうとする
+>   → `{}` は空の辞書です。空の集合は `set()` です（[4.4.1](./04-data-structures.md#441-重複しない集まり)）

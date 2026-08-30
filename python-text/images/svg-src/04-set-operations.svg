@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="330" viewBox="0 0 900 330" font-family="IPAGothic, sans-serif">
+  <desc>集合演算（和・積・差）で選ばれる範囲を、2つの円の重なりで示した図</desc>
+  <rect x="0" y="0" width="900" height="330" fill="#ffffff"/>
+
+  <defs>
+    <clipPath id="clip-a-panel2">
+      <circle cx="410" cy="160" r="68"/>
+    </clipPath>
+  </defs>
+
+  <!-- ===== パネル1: A | B（和集合） ===== -->
+  <text x="150" y="40" text-anchor="middle" font-size="20" fill="#000000">A | B（和集合）</text>
+  <circle cx="110" cy="160" r="68" fill="#d0d0d0"/>
+  <circle cx="190" cy="160" r="68" fill="#d0d0d0"/>
+  <circle cx="110" cy="160" r="68" fill="none" stroke="#000000" stroke-width="2.5"/>
+  <circle cx="190" cy="160" r="68" fill="none" stroke="#000000" stroke-width="2.5" stroke-dasharray="7 5"/>
+  <text x="52" y="105" text-anchor="middle" font-size="18" fill="#000000">A</text>
+  <text x="248" y="105" text-anchor="middle" font-size="18" fill="#000000">B</text>
+  <text x="82" y="167" text-anchor="middle" font-size="18" fill="#000000">1  2</text>
+  <text x="150" y="167" text-anchor="middle" font-size="18" fill="#000000">3  4</text>
+  <text x="218" y="167" text-anchor="middle" font-size="18" fill="#000000">5</text>
+  <text x="150" y="278" text-anchor="middle" font-size="18" fill="#000000">→ {1, 2, 3, 4, 5}</text>
+
+  <!-- ===== パネル2: A &amp; B（積集合） ===== -->
+  <text x="450" y="40" text-anchor="middle" font-size="20" fill="#000000">A &amp; B（積集合）</text>
+  <circle cx="490" cy="160" r="68" fill="#d0d0d0" clip-path="url(#clip-a-panel2)"/>
+  <circle cx="410" cy="160" r="68" fill="none" stroke="#000000" stroke-width="2.5"/>
+  <circle cx="490" cy="160" r="68" fill="none" stroke="#000000" stroke-width="2.5" stroke-dasharray="7 5"/>
+  <text x="352" y="105" text-anchor="middle" font-size="18" fill="#000000">A</text>
+  <text x="548" y="105" text-anchor="middle" font-size="18" fill="#000000">B</text>
+  <text x="382" y="167" text-anchor="middle" font-size="18" fill="#000000">1  2</text>
+  <text x="450" y="167" text-anchor="middle" font-size="18" fill="#000000">3  4</text>
+  <text x="518" y="167" text-anchor="middle" font-size="18" fill="#000000">5</text>
+  <text x="450" y="278" text-anchor="middle" font-size="18" fill="#000000">→ {3, 4}</text>
+
+  <!-- ===== パネル3: A - B（差集合） ===== -->
+  <text x="750" y="40" text-anchor="middle" font-size="20" fill="#000000">A - B（差集合）</text>
+  <circle cx="710" cy="160" r="68" fill="#d0d0d0"/>
+  <circle cx="790" cy="160" r="68" fill="#ffffff"/>
+  <circle cx="710" cy="160" r="68" fill="none" stroke="#000000" stroke-width="2.5"/>
+  <circle cx="790" cy="160" r="68" fill="none" stroke="#000000" stroke-width="2.5" stroke-dasharray="7 5"/>
+  <text x="652" y="105" text-anchor="middle" font-size="18" fill="#000000">A</text>
+  <text x="848" y="105" text-anchor="middle" font-size="18" fill="#000000">B</text>
+  <text x="682" y="167" text-anchor="middle" font-size="18" fill="#000000">1  2</text>
+  <text x="750" y="167" text-anchor="middle" font-size="18" fill="#000000">3  4</text>
+  <text x="818" y="167" text-anchor="middle" font-size="18" fill="#000000">5</text>
+  <text x="750" y="278" text-anchor="middle" font-size="18" fill="#000000">→ {1, 2}</text>
+
+  <!-- ===== 前提の集合 ===== -->
+  <text x="450" y="315" text-anchor="middle" font-size="16" fill="#000000">A = {1, 2, 3, 4} ／ B = {3, 4, 5}　　実線の円が A、破線の円が B、灰色が選ばれる範囲</text>
+</svg>
