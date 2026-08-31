@@ -7,12 +7,15 @@
 
 ## 1. react-text（Web 開発入門 + React）
 
+> **この本は全章（第0章〜第11章＋解答編）が完成しています。**
+> 学習者が章番号を伝えてきたら、その章までの累積範囲だけで答えてください。
+
 | 章 | タイトル | この章を終えた時点の既習範囲（累積） | よくあるつまずき |
 |----|---------|-----------------------------------|----------------|
-| 0 | はじめに | — | AI の準備をせずに進んでしまう |
-| 1 | Web の仕組みと開発環境 | ブラウザ／サーバー／HTTP の概念、VS Code、ターミナル基本操作、Node.js インストール | **PATH**、ターミナル恐怖症、拡張子が隠れていてファイル名を間違える |
-| 2 | HTML | タグ、要素、属性、見出し・段落・リスト・リンク・画像・表・フォーム、構造タグ | 閉じタグ忘れ、パスの相対指定、日本語の文字化け |
-| 3 | CSS | セレクタ、ボックスモデル、色・文字、Flexbox、レスポンシブ | CSS が効かない（読み込み・詳細度・キャッシュ）、`margin` の相殺 |
+| 0 | はじめに | （コードなし）AI サポートの準備（指示ファイルの読み込み・動作確認）、学習の進め方、このテキストの表記ルール | AI の準備をせずに進んでしまう |
+| 1 | Web の仕組みと開発環境 | プログラムとプログラミング言語、ブラウザ／サーバー／クライアント、リクエストとレスポンス、HTTP・HTTPS、URL の読み方（スキーム・ドメイン・ポート・パス）、HTML/CSS/JavaScript の役割分担、VS Code（インストール・日本語化・拡張子の表示）、ターミナル（PowerShell と bash の違い・`pwd`／`cd`／`ls`（`dir`）／`mkdir`）、作業用ディレクトリ `react-lesson` の作成、Node.js のインストールと `node --version`、`index.html` を作ってブラウザで開く（`file://`）、開発者ツール（Elements / Console） | **PATH**、ターミナル恐怖症、拡張子が隠れていてファイル名を間違える |
+| 2 | HTML | タグ・要素・入れ子・コメント、HTML の骨組み（`<!DOCTYPE html>`／`html`／`head`／`body`／`meta charset`／`title`）、見出し `h1`〜`h6`、`p`／`br`、`ul`／`ol`／`li`、`strong`／`em`（`b`／`i` との違い）、属性の書き方、`a`（`href`・相対パスと絶対パス）、`img`（`src`／`alt`）、`id` と `class`、表（`table`／`thead`／`tbody`／`tr`／`th`／`td`）、フォーム（`form`／`input` の各 `type`／`label`／`textarea`／`select`／`button`）、`div` と `span`、意味を持つ構造タグ（`header`／`main`／`footer`／`section`／`article`／`nav`） | 閉じタグ忘れ、パスの相対指定、日本語の文字化け |
+| 3 | CSS | `<link>` での読み込み、ルールの構造（セレクタ・プロパティ・値）、セレクタ（要素／class／id／子孫／複数指定）、詳細度、ボックスモデル（`padding`／`border`／`margin`、`width` と `box-sizing: border-box`、`margin` の相殺）、色（キーワード・`#rrggbb`・`rgb()`）、フォント（`font-family`／`font-size`／`font-weight`、`rem`）、`line-height`／`text-align`、`border-radius`、`:hover`、`display`（`block`／`inline`／`inline-block`／`none`）、Flexbox（`display: flex`／`flex-direction`／`justify-content`／`align-items`／`flex-wrap`／`gap`／`flex-grow`／`flex-shrink`）、Grid の入口（`grid-template-columns`）、viewport の `meta`、メディアクエリ（`@media (max-width: 768px)`）、CSS が効かないときの調べ方 | CSS が効かない（読み込み・詳細度・キャッシュ）、`margin` の相殺 |
 | 4 | JavaScript 基礎（前半） | `<script>` の読み込み、`console.log`、エラーの読み方、変数（`let`/`const`、`var` は使わない）、数値・文字列・真偽値・`undefined`/`null`、`typeof`、算術演算子と `%`、`Math.floor`/`ceil`/`round`、テンプレートリテラル、`===`/`!==`、`&&`/`\|\|`/`!`、`Number()`、`if`/`else if`/`else`、三項演算子、`switch`、`for`/`while`、`break`/`continue`、関数（`function`・アロー関数・引数・戻り値）、スコープ | `=` と `==` と `===`、スコープ、`i` の意味、小数の誤差、`return` を書かず `undefined` になる、無限ループ |
 | 5 | JavaScript 基礎（後半） | 配列（`push`/`pop`/`unshift`/`shift`/`includes`/`indexOf`/`join`/`slice`/`concat`/`for...of`）、オブジェクト（読み書き・入れ子・オプショナルチェーン`?.`）、`map`/`filter`/`find`/`reduce`/`sort`とチェーン、分割代入、スプレッド構文、イミュータブルな更新、非同期処理（`setTimeout`/`Promise`/`async`/`await`）、`fetch`とエラー処理、`export`/`import`（名前付き・デフォルト）、`type="module"`、DOM 操作（`querySelector`/`textContent`/`classList`/`addEventListener`/`createElement`/`appendChild`/`remove`） | `TypeError: Cannot read properties of undefined`、`const copy = original` が複製にならない、`reduce` の初期値省略、`setTimeout` が待ってくれると誤解する、モジュールを `file://` で直接開いて動かない |
 | 6 | React をはじめる | 命令的と宣言的の違い、Vite（`npm create vite@latest ... -- --template react`／`npm install`／`npm run dev`／Ctrl+C）、プロジェクト構成（`src`／`index.html`／`main.jsx`／`App.jsx`／`package.json`／`node_modules`／`public`）、`createRoot`と`StrictMode`（存在のみ）、CSS を `import` で読み込む、JSX（1要素ルール、`className`、閉じタグ必須、キャメルケース属性、`{/* */}`）、`{ }` での式の埋め込み（変数・計算・三項演算子。`if`/`for` は書けない）、属性への値渡しと `style={{ }}`、フラグメント `<>`、コンポーネント（作成・`export default`/`import` でのファイル分割・分け方の基準・大文字始まりの命名） | Node バージョン非互換（Vite は Node 20.19+／22.12+ が必要）、ポート 5173 の衝突、`Missing script: "dev"`（プロジェクト外で実行）、JSX の1要素ルール、`class` と書いて CSS が効かない、オブジェクトを `{ }` に直接入れる、`style` の波かっこ1つ、コンポーネント名を小文字で始めて何も表示されない、`import` パスに `./` を付け忘れる |
@@ -23,7 +26,11 @@
 | 11 | 次のステップ | 上記すべてに加えて、TypeScript の基礎（`.tsx`／型注釈 `: string` `: number` `: boolean`／型推論／関数の引数と戻り値の型／`type` によるオブジェクトの型／props の型 `({ ... }: Props)`／`(引数: 型) => void`／`useState<Task[]>`／`npm create vite@latest ... -- --template react-ts`／`tsc -b` による型チェック）、テスト（Vitest のインストール・`test`／`expect().toBe()`／`toEqual()`・`npm test`・値を返す関数に切り出してからテストする）、ビルド（`npm run build`／`dist` の中身／`npm run preview`（4173））、デプロイ（Netlify Drop／Vercel + GitHub の自動デプロイ）、Git（`git init`／`status`／`add`／`commit -m`／`push`／`restore`／`log --oneline`／`remote add origin`／`.gitignore`） | `dist/index.html` を `file://` で開いて真っ白になる、`npm run preview` を 5173 で開く、`node_modules` をコミットしてしまう、GitHub 側に README を作って `git push` が拒否される、`import` パスの大文字小文字の違いが公開環境でだけ失敗する、型エラーを放置したまま `npm run dev` で進めてビルドで詰まる、`localStorage` のデータが公開先で共有されると誤解する |
 | 12 | 解答編 | — | — |
 
-> **注意**：4 章の学習者に `map` を使ったコードを見せないでください（5 章の内容）。
+> **注意**：1 章の学習者には、HTML のタグはまだ説明しないでください（2 章の内容）。
+> 1 章で書くのは、動作確認のための最小限の `index.html` だけです。
+> 2 章の学習者に CSS を書かせないでください（3 章の内容）。見た目の相談は「3 章で扱う」と伝えてください。
+> 3 章の学習者に JavaScript を書かせないでください（4 章の内容）。
+> 4 章の学習者に `map` を使ったコードを見せないでください（5 章の内容）。
 > 6 章の学習者に `props` / `useState` / JSX 内での `map` と `key` を使わせないでください（7 章の内容）。
 > 6 章の学習者に `useEffect` の話をしないでください（8 章の内容）。
 > 7 章の学習者に `useEffect` / 状態のリフトアップ / `useRef` / カスタムフック / React Router を使わせないでください（8 章以降の内容）。

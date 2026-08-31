@@ -22,7 +22,7 @@
 
 | 本 | 完了 / 全体 |
 |----|-----------|
-| react-text | 13 / 13 |
+| react-text | **13 / 13（完成）** |
 | python-text | 10 / 13 |
 | fastapi-text | 0 / 12 |
 | docker-text | 0 / 10 |
@@ -49,7 +49,7 @@
 | R-09 | 完了 | 第9章 ルーティングと全体設計 | `react-text/09-routing-and-architecture.md` | part2 | 中 | |
 | R-10 | 完了 | 第10章 実践：タスク管理アプリ | `react-text/10-practice-task-app.md` | part2 | 大 | |
 | R-11 | 完了 | 第11章 次のステップ | `react-text/11-next-steps.md` | — | 小 | |
-| R-FIN | 完了 | 通し確認 | — | — | 小 | 下の「-FIN タスクの内容」参照。TASKS.md への反映漏れを補正（RUNBOOK 4.6） |
+| R-FIN | 完了 | 通し確認 | — | — | 小 | 章立てとの一致・リンク・解答の対応を機械的に確認。用語のブレを修正し、glossary に未登録の 24 語を追記。残りの申し送りは `review-notes.md` へ |
 
 ### R-04 の注記
 

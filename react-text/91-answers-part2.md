@@ -2857,7 +2857,7 @@ if (!juice) {
 
 ---
 
-### 演習問題
+### 演習
 
 ### 演習 9.1 の解答
 
@@ -3578,7 +3578,7 @@ Keys should be unique so that components maintain their identity across updates.
 
 ---
 
-### 演習問題
+### 演習
 
 ### 演習 10.1 の解答
 
@@ -4332,6 +4332,8 @@ GitHub 上で自分のコードを探すこともできなくなります。
 > これを付け忘れると、`node_modules` そのものが削除されます（`npm install` で戻せます）。
 
 ---
+
+### 演習
 
 ### 演習 11.1 の解答
 
