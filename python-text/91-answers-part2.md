@@ -1,8 +1,8 @@
 ---
-title: "解答編 その2（第6章〜第10章）"
+title: "解答編 その2（第6章〜第11章）"
 ---
 
-# 解答編 その2（第6章〜第10章）
+# 解答編 その2（第6章〜第11章）
 
 **先に自分で解いてから読んでください。**
 
@@ -3868,3 +3868,538 @@ Open-Meteo は「送った変数名を、そのままキーにして返す」た
 > 返ってきた `daily` から2つのリストを取り出すことになります。
 > **通信の回数は少ないほうがよい**（相手のサーバーにも優しい）ので、
 > 実務ではこちらを選ぶ場面が多くなります。
+
+---
+
+## 第11章
+
+### 理解度チェック
+
+**問 11.1 の解答**
+
+- A = **`test_`**（ファイル名も関数名も、この4文字で始める）
+- B = **`assert`**
+- C = **`AssertionError`**
+
+**解説**
+
+pytest は、設定を書かなくても**名前の規則だけ**でテストを見つけます
+（[11.2.1](./11-next-steps.md#1121-テストpytest)）。
+
+- `test_analyze_sales.py` … ファイル名が `test_` で始まる
+- `def test_filter_sales_は期間の外を落とす():` … 関数名が `test_` で始まる
+
+この規則から外れると、書いても実行されません。
+`pytest` を実行して `collected 0 items` と出たときは、まずここを疑ってください。
+
+`assert` は pytest の機能ではなく、**Python の文法**です。
+
+```python
+assert 1 + 1 == 2   # 何も起きない
+assert 1 + 1 == 3   # AssertionError で止まる
+```
+
+pytest は、この `AssertionError` で止まったテストを「失敗」として数え、
+**期待した値と実際の値の両方**を表示してくれます。
+
+---
+
+**問 11.2 の解答**
+
+`analyze_sales.py` の最後が、次のようになっているためです。
+
+```python
+if __name__ == "__main__":
+    main()
+```
+
+`main()` は、この `if` の中でしか呼ばれていません。
+`if __name__ == "__main__":` は「このファイルを**直接実行したとき**だけ True になる」条件なので、
+`import` されたときは False になり、`main()` は呼ばれません。
+
+**解説**
+
+[6.4.1](./06-modules.md#641-if-__name__--__main__-の意味) で「なぜこの1行を書くのか」を学びましたが、
+その効き目が実際に必要になるのが、この場面です。
+
+もしこの `if` がなく、ファイルの末尾に `main()` とだけ書いてあったら、
+テストを実行するたびに次のことが起きます。
+
+- `data/sales.csv` を読み込む
+- 外部 API に通信しに行く（オフラインだと、そのぶん待たされる）
+- `out/` に CSV が書き出される
+
+**テストのつもりが、本番の処理を毎回動かしていた**ことになります。
+
+> **補足**
+> 「あとで `import` するかどうか分からないから、とりあえず書いておく」という説明を
+> 6.4.1 ではしました。テストを書き始めると、この「あとで」がすぐ来ます。
+
+---
+
+**問 11.3 の解答**
+
+**2・4・5** が、そのままではテストを書きにくい関数です。
+
+| 番号 | 関数 | 書きにくい理由 |
+|------|------|--------------|
+| 2 | `fetch_max_temperatures` | **通信する。** 相手のサーバーの状態や、ネットワークの有無で結果が変わる |
+| 4 | `make_output_path` | **実行した日で結果が変わる。** 期待する値を書いても、翌日には合わなくなる |
+| 5 | `save_rows` | **ファイルを書き出す。** テストを動かすたびにファイルが増え、後片付けが必要になる |
+
+1（`total_by_item`）と 3（`build_rows`）は、**値を渡すと値が返るだけ**なので、
+期待値をそのまま書けます。
+
+**解説**
+
+書きにくさの正体は、**「同じものを渡しても、同じ結果になるとは限らない」**ことです。
+通信・時刻・ファイルは、いずれも**自分のパソコンの外や、時間とともに変わるもの**に触れています。
+
+ここで大事なのは、これが**関数の分け方の結果**だということです
+（[10.6.1](./10-practice-data-script.md#1061-関数に分割する)）。
+第10章では「1つの関数は1つのことをする」という理由で分けましたが、
+その結果として、**外に用事がある処理が端に寄り、真ん中の計算だけを取り出せる形**になりました。
+
+もし `load_sales` の中で読み込みも絞り込みも集計もしていたら、
+集計だけを試すことはできませんでした。
+
+> **補足**
+> 2・4・5 もテストできないわけではありません。
+> 通信を偽物に差し替える、一時的なディレクトリに書き出す、
+> 日付を引数で受け取るようにする——といった方法があります。
+> ただし、どれも道具や書き換えが要るので、**まずは1と3のような関数から**書いてください。
+
+---
+
+**問 11.4 の解答**
+
+`pandas.read_csv` が、**列ごとに型を推測して変換してくれる**ためです。
+
+**解説**
+
+[7.4.1](./07-files-and-exceptions.md#741-csv-モジュール) で学んだとおり、`csv.DictReader` が返す値は**すべて文字列**です。
+そのため第10章では、`Sale` を作るときに `int(row["quantity"])` と変換していました。
+
+`pandas.read_csv` は、読み込むときに列全体を見て
+「この列は全部数字だから整数として持とう」と判断します。
+だから `df["quantity"] * df["unit_price"]` がそのまま掛け算になります
+（[11.2.2](./11-next-steps.md#1122-データ分析pandas)）。
+
+> **注意**
+> 便利な反面、**推測が外れることもあります。**
+> 数字だけの商品コード（`0123`）が整数と判断され、先頭の `0` が消える——というのが典型例です。
+> 「勝手に変換される」ことを知らずに使うと、原因の分からない不一致に悩むことになります。
+
+---
+
+**問 11.5 の解答**
+
+自動実行のときは、**有効化のコマンドを打つ人がいない**ためです。
+
+**解説**
+
+`.venv\Scripts\Activate.ps1` や `source .venv/bin/activate` は、
+**あなたがターミナルで打つ前提**のコマンドです（[1.5.3](./01-environment.md#153-有効化する)）。
+タスクスケジューラや cron は、ターミナルを開いて有効化してくれるわけではありません。
+
+そもそも「有効化」がやっているのは、
+**`python` と打ったときに `.venv` の中の Python が使われるようにする**ことです。
+だったら、最初から `.venv` の中の Python を直接指せば、同じ結果になります。
+
+```text
+C:\Users\taro\sales-analyzer\.venv\Scripts\python.exe analyze_sales.py
+```
+
+**解説（もう1つの理由）**
+
+有効化せずに `python analyze_sales.py` と登録してしまうと、
+**OS に最初から入っている Python** や、別の場所の Python が使われることがあります。
+その Python には `requests` が入っていないので、次のエラーで止まります。
+
+```text
+ModuleNotFoundError: No module named 'requests'
+```
+
+**自動実行が「なぜか動かない」原因の、いちばん多いパターン**です
+（[11.2.3](./11-next-steps.md#1123-自動化スクリプト)）。
+
+---
+
+**問 11.6 の解答**
+
+ファイルの移動は**取り消せない**ため、実行する前に
+「何をするつもりなのか」を確かめる必要があるからです。
+このやり方を **DRY RUN**（ドライラン）と呼びます。
+
+**解説**
+
+集計スクリプトなら、間違えても数字が合わないだけで、もう一度実行すれば済みます。
+しかし、ファイルを動かすプログラムが間違っていた場合、
+**動いてしまったあとに気づいても元に戻せません。**
+
+DRY RUN は、その差を埋めるための習慣です
+（[11.2.3](./11-next-steps.md#1123-自動化スクリプト)）。
+
+- まず、`plan_moves` が返した計画を**表示するだけ**にする
+- 表示された内容に「消えたら困るもの」が混ざっていないか、目で確認する
+- 問題なければ、`APPLY = True`（演習 11.3 のあとは `--apply`）で実行する
+
+**「計画を作る関数」と「実行する関数」を分けてある**ことが、これを可能にしています。
+`plan_moves` と `apply_moves` を1つの関数にまとめてしまうと、
+「表示だけ」ができなくなります。
+
+---
+
+### 演習 11.1 の解答
+
+`sales-analyzer/test_analyze_sales.py`（先頭の `import` と、末尾に追加した3件）
+
+```python
+from analyze_sales import Sale, filter_sales, total_by_date, total_by_item
+```
+
+```python
+def test_total_by_date_は日付ごとに合計する() -> None:
+    assert total_by_date(make_sales()) == {
+        "2024-07-01": 700,
+        "2024-07-02": 2750,
+    }
+
+
+def test_total_by_date_は空のリストなら空の辞書を返す() -> None:
+    assert total_by_date([]) == {}
+
+
+def test_total_by_date_は1件だけでも辞書を返す() -> None:
+    sale = Sale(
+        date="2024-07-01",
+        shop="本店",
+        item="かき氷",
+        quantity=1,
+        unit_price=450,
+    )
+    assert total_by_date([sale]) == {"2024-07-01": 450}
+```
+
+```text
+実行結果:
+============================= test session starts ==============================
+platform win32 -- Python 3.13.1, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\taro\sales-analyzer
+collected 8 items
+
+test_analyze_sales.py ........                                           [100%]
+
+============================== 8 passed in 0.11s ===============================
+```
+
+**解説**
+
+**期待する金額の出し方**
+
+`make_sales()` の3件は、次のようになっています。
+
+| 日付 | 商品 | 数量 | 単価 | 小計 |
+|------|------|------|------|------|
+| 2024-07-01 | ソフトクリーム | 2 | 350 | 700 |
+| 2024-07-02 | かき氷 | 3 | 450 | 1350 |
+| 2024-07-02 | ソフトクリーム | 4 | 350 | 1400 |
+
+`2024-07-02` は2件あるので、`1350 + 1400 = 2750` です。
+**テスト用のデータを小さく作ってあるから、期待値を手で計算できます。**
+本物の `data/sales.csv`（36件）を読ませていたら、この計算はできません。
+
+**空のリストのテストが重要な理由**
+
+`total_by_date([])` は、`for` が1回も回らないまま `dict(totals)` に進み、`{}` が返ります。
+
+このテストは「いまも壊れていないこと」を確かめるために置きます。
+たとえば、あとから「最初の日付を取り出しておこう」と考えて
+`first = sales[0].date` のような行を足すと、空のリストで `IndexError` になります。
+**そのとき、このテストが赤くなって教えてくれます。**
+
+**わざと壊したときの結果**
+
+`+=` を `=` に変えると、同じ日付の2件目が**足されずに上書き**されます。
+
+```text
+実行結果:
+E       AssertionError: assert {'2024-07-01'... '2024-07-02': 1400} == {'2024-07-01'... '2024-07-02': 2750}
+```
+
+`2024-07-02` が `2750` ではなく `1400`（最後の1件だけ）になっています。
+
+> **よくある間違い**
+> `import` に `total_by_date` を足し忘れると、次のエラーで止まります。
+>
+> ```text
+> NameError: name 'total_by_date' is not defined
+> ```
+>
+> テストファイルも普通の Python のファイルなので、
+> **使うものは import する**という決まりは同じです（[6.2.2](./06-modules.md#622-from--import-)）。
+
+---
+
+### 演習 11.2 の解答
+
+`sales-analyzer/sales_pandas.py`
+
+```python
+"""本店の商品別売上を、金額の大きい順に表示する。"""
+
+import pandas as pd
+
+df = pd.read_csv("data/sales.csv")
+df["subtotal"] = df["quantity"] * df["unit_price"]
+
+honten = df[df["shop"] == "本店"]
+item_totals = honten.groupby("item")["subtotal"].sum().sort_values(ascending=False)
+
+print(item_totals)
+print(f"合計: {item_totals.sum():,}円")
+```
+
+```text
+実行結果:
+item
+ソフトクリーム    157500
+かき氷        134100
+ホットコーヒー     41700
+Name: subtotal, dtype: int64
+合計: 333,300円
+```
+
+**解説**
+
+**1行の中で、4つのことが順番に起きています**
+
+```python
+honten.groupby("item")["subtotal"].sum().sort_values(ascending=False)
+```
+
+| 書いたもの | やっていること |
+|-----------|-------------|
+| `honten` | 本店の行だけに絞った表 |
+| `.groupby("item")` | `item` が同じ行どうしをまとめる |
+| `["subtotal"]` | まとめた中の `subtotal` 列を使う |
+| `.sum()` | 合計する |
+| `.sort_values(ascending=False)` | 値の大きい順に並べ替える |
+
+左から右へ、**前の結果に次の処理をつなげていく**書き方です。
+一度に読みにくければ、途中で変数に入れて分けても構いません。
+
+```python
+grouped = honten.groupby("item")["subtotal"].sum()
+item_totals = grouped.sort_values(ascending=False)
+```
+
+**`ascending=False`**
+
+`sort_values()` は、そのままだと**小さい順**（昇順）に並べます。
+`ascending`（アセンディング。昇順）を `False` にすると、大きい順になります。
+
+これは [4.1.5](./04-data-structures.md#415-並べ替えsort--sorted) の
+`sorted(..., reverse=True)` にあたるものです。
+**同じ「大きい順」でも、道具ごとに引数の名前が違います。**
+`sorted` は `reverse=True`、pandas は `ascending=False` です。
+
+**合計の確認**
+
+`item_totals.sum()` は、並べ替えた3つの値をすべて足します。
+
+```text
+157500 + 134100 + 41700 = 333300
+```
+
+第10章の演習 10.1 で求めた本店の売上と一致しました。
+**同じデータを、別の道具で計算して同じ答えになる**ことを確かめられたので、
+どちらの書き方も正しかったと分かります。
+
+> **よくある間違い**
+> 絞り込みを `honten = df["shop"] == "本店"` と書いてしまうと、
+> `True` / `False` が並んだ Series が入ってしまいます。
+> **`df[...]` で囲んで初めて、行の絞り込みになります**（[11.2.2](./11-next-steps.md#1122-データ分析pandas)）。
+
+> **別解：金額に桁区切りを付けて1件ずつ表示する**
+>
+> ```python
+> for item, amount in item_totals.items():
+>     print(f"{item}: {amount:,}円")
+> ```
+>
+> ```text
+> 実行結果:
+> ソフトクリーム: 157,500円
+> かき氷: 134,100円
+> ホットコーヒー: 41,700円
+> ```
+>
+> `items()` で「名前と値」を1組ずつ取り出せるのは、辞書と同じ形です
+> （[4.3.4](./04-data-structures.md#434-キー値両方を回す)）。
+> 第10章の `main` の表示と、見た目をそろえたいときはこちらを使ってください。
+
+---
+
+### 演習 11.3 の解答
+
+`sales-analyzer/organize_files.py`
+
+```python
+"""指定したディレクトリのファイルを、拡張子ごとのディレクトリに仕分ける。"""
+
+import argparse
+from pathlib import Path
+
+
+def plan_moves(target: Path) -> list[tuple[Path, Path]]:
+    """(移動元, 移動先) の組を、名前順に並べて返す。"""
+    moves: list[tuple[Path, Path]] = []
+    for item in sorted(target.iterdir()):
+        if not item.is_file():
+            continue
+        if item.suffix == "":
+            continue
+        folder = item.suffix.lstrip(".").lower()
+        moves.append((item, target / folder / item.name))
+    return moves
+
+
+def apply_moves(moves: list[tuple[Path, Path]]) -> None:
+    """組のとおりにファイルを移動する。"""
+    for src, dst in moves:
+        if dst.exists():
+            print(f"移動先にすでにあるので飛ばします: {dst}")
+            continue
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        src.rename(dst)
+        print(f"移動しました: {src.name} -> {dst.parent.name}/")
+
+
+def parse_args() -> argparse.Namespace:
+    """コマンドラインの引数を読み取って返す。"""
+    parser = argparse.ArgumentParser(
+        description="ディレクトリの中のファイルを、拡張子ごとに仕分けます。",
+        epilog="例: python organize_files.py --dir demo_downloads --apply",
+    )
+    parser.add_argument(
+        "--dir",
+        default=str(Path.home() / "Downloads"),
+        metavar="パス",
+        help="仕分けるディレクトリ（既定: ホームの Downloads）",
+    )
+    parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="実際に移動する（付けないと計画の表示だけ）",
+    )
+    return parser.parse_args()
+
+
+def main() -> None:
+    """仕分けの計画を表示し、--apply が付いたときだけ実際に移動する。"""
+    args = parse_args()
+    target = Path(args.dir)
+    if not target.is_dir():
+        print(f"ディレクトリが見つかりません: {target}")
+        return
+
+    moves = plan_moves(target)
+    for src, dst in moves:
+        print(f"{src.name} -> {dst.parent.name}/")
+    print(f"対象は {len(moves)} 件です")
+
+    if args.apply:
+        apply_moves(moves)
+    else:
+        print("--apply が付いていないので、まだ何も移動していません")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+```text
+実行結果（python organize_files.py --dir demo_downloads）:
+データ.csv -> csv/
+メモ.txt -> txt/
+レシピ.pdf -> pdf/
+写真1.JPG -> jpg/
+写真2.jpg -> jpg/
+請求書.pdf -> pdf/
+対象は 6 件です
+--apply が付いていないので、まだ何も移動していません
+```
+
+```text
+実行結果（python organize_files.py --help）:
+usage: organize_files.py [-h] [--dir パス] [--apply]
+
+ディレクトリの中のファイルを、拡張子ごとに仕分けます。
+
+options:
+  -h, --help  show this help message and exit
+  --dir パス    仕分けるディレクトリ（既定: ホームの Downloads）
+  --apply     実際に移動する（付けないと計画の表示だけ）
+
+例: python organize_files.py --dir demo_downloads --apply
+```
+
+**解説**
+
+**`plan_moves` と `apply_moves` は、1行も変えていません**
+
+変えたのは「どこから設定を受け取るか」だけです。
+[10.6.1](./10-practice-data-script.md#1061-関数に分割する) で見た
+「`main` だけが全体を知っていて、他の関数はお互いを知らない」形になっているので、
+入り口だけを差し替えられました。
+
+**`default=str(Path.home() / "Downloads")`**
+
+`Path.home() / "Downloads"` は `Path` ですが、`argparse` に渡す既定値は
+**文字列にそろえておく**ほうが安全です。
+`--dir` で指定されたときも文字列で届くので、
+`main` の中で `Path(args.dir)` と1か所だけ変換すれば、以降は `Path` として扱えます。
+
+**受け取る場所で1回だけ変換する**——第10章の `type=int` と同じ考え方です
+（[10.5.1](./10-practice-data-script.md#1051-argparse-の基本)）。
+
+**`if not target.is_dir():`**
+
+指定されたディレクトリがないときに、`iterdir()` を呼ぶと
+`FileNotFoundError` でトレースバックが出ます。
+ここは「そのあとどうするか」を決められる場面
+（[7.6.3](./07-files-and-exceptions.md#763-どこで例外を捕まえるべきか)）なので、
+メッセージを出して `return` で終わります。
+
+`is_dir()` は `is_file()` の仲間で、「それがディレクトリか」を調べます
+（[7.3.3](./07-files-and-exceptions.md#733-存在確認作成一覧)）。
+
+**`action="store_true"` を選ぶ理由**
+
+`--apply` は、値を取らない「付けるか付けないか」のオプションです。
+第10章の `--no-weather` とまったく同じ形になります
+（[10.5.2](./10-practice-data-script.md#1052-引数を受け取る)）。
+
+**既定を「安全な側」にしてあることが大事です。**
+`--apply` を付けなければ何も動かないので、うっかり実行しても事故になりません。
+逆に `--dry-run` というオプションにして、既定を「移動する」にしてしまうと、
+**忘れた瞬間にファイルが動きます。**
+
+> **よくある間違い**
+> `args.dir` をそのまま `plan_moves(args.dir)` に渡すと、
+> mypy が次のように報告します。
+>
+> ```text
+> error: Argument 1 to "plan_moves" has incompatible type "str"; expected "Path"  [arg-type]
+> ```
+>
+> `plan_moves` は `Path` を受け取る関数として書いてあるためです
+> （[9.1.2](./09-typing-and-tools.md#912-変数と引数に型を書く)）。
+> **動かす前に、この食い違いを見つけられる**のが型チェックの効き目です。
+
+> **補足：もう一歩進めるなら**
+> `--dir` を複数回指定できるようにする、
+> 拡張子ごとのディレクトリ名を「画像」「書類」のようにまとめる、
+> 移動したファイルの一覧をログに書き出す——などが考えられます。
+> ただし、**どれもファイルを動かす処理なので、必ず DRY RUN で確かめてから**にしてください。

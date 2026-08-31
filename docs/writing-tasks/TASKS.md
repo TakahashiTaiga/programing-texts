@@ -23,11 +23,11 @@
 | 本 | 完了 / 全体 |
 |----|-----------|
 | react-text | **13 / 13（完成）** |
-| python-text | 11 / 13 |
+| python-text | 12 / 13 |
 | fastapi-text | 0 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **24 / 59** |
+| **合計** | **25 / 59** |
 
 ---
 
@@ -86,7 +86,7 @@
 | P-08 | 完了 | 第8章 オブジェクト指向 | `python-text/08-oop.md` | part2 | 大 | 8.5.2 で `@dataclass` のために型の注記を先取り（詳細は第9章）。第9章のスタブを新規作成 |
 | P-09 | 完了 | 第9章 型ヒントとモダン Python | `python-text/09-typing-and-tools.md` | part2 | 中 | 9.4 の ruff / mypy の出力は実機で確認済み（バージョンは review-notes.md に検証依頼あり）。第10章のスタブを新規作成 |
 | P-10 | 完了 | 第10章 実践：データ処理スクリプト | `python-text/10-practice-data-script.md` | part2 | 中 | 新規プロジェクト `sales-analyzer` を作る章。`requests`（Open-Meteo API）と `argparse` を導入。10.1.2 / 10.3.1 / 10.3.2 / 10.3.3 / 10.6.1 に Mermaid 図。第11章のスタブを新規作成 |
-| P-11 | 未着手 | 第11章 次のステップ | `python-text/11-next-steps.md` | — | 小 | |
+| P-11 | 完了 | 第11章 次のステップ | `python-text/11-next-steps.md` | part2 | 小 | 到達度チェックリスト・JS 対応表の答え合わせに加え、pytest / pandas / 自動化を入口だけ紹介。解答編 その2 を「第6章〜第11章」に改題し、第11章を追記 |
 | P-FIN | 未着手 | 通し確認 | — | — | 小 | |
 
 ### P-00 / P-01 の注記
