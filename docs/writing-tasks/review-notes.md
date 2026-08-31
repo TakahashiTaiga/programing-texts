@@ -24,6 +24,11 @@
 - [ ] `python-text` 1.7 VS Code の Python 拡張・インタプリタ選択・▷ 実行・デバッガのステップ実行（UI 文言は変わりやすい）
 - [ ] `python-text` 2.6.4 VS Code の `settings.json` 設定（`editor.insertSpaces` / `tabSize` / `detectIndentation` / `renderWhitespace`）と、コマンドパレットの日本語メニュー名「基本設定: ユーザー設定を開く (JSON)」「インデントをスペースに変換」（UI 文言は変わりやすい）
 - [ ] `python-text` 2.7.3 VS Code 拡張機能 **Black Formatter**（発行元 Microsoft、識別子 `ms-python.black-formatter`）のインストールと、保存時の自動整形（`editor.formatOnSave`）が実際に効くか
+- [ ] `python-text` 9.3.2 / 9.4.1 mypy と ruff の**バージョン表記**（本文は 2026年8月時点の mypy 1.19 / ruff 0.15 で確認した出力を載せています）。公開前に `mypy --version` / `ruff --version` で確認し、必要なら本文の数字と `pip install` の出力例を更新してください
+- [ ] `python-text` 9.4.1 ruff の報告の**表示形式**（本文は `F401 [*] ...` の下に `--> ファイル:行:桁` と枠が続く新しい形式で記載）。古い ruff では1行形式になります
+- [ ] `python-text` 9.4.3 VS Code 拡張機能 **Ruff**（発行元 Astral Software、識別子 `charliermarsh.ruff`）のインストールと、保存時の `source.fixAll.ruff` / `source.organizeImports.ruff` が実際に効くか。あわせて 2.7.3 で入れた Black Formatter を無効化する手順の UI 文言
+- [ ] `python-text` 9.3.3 Pylance の `"python.analysis.typeCheckingMode": "basic"` と、赤い波線に表示される**日本語のメッセージ文言**（VS Code の表示言語設定で変わります）
+- [ ] `python-text` 9.5.2 uv のインストールコマンド（Windows の `irm ... | iex` / macOS の `curl ... | sh`）。**この2つは Windows / macOS 実機で未確認**です。`uv venv` / `uv pip install` の出力例は Linux で確認したものを Windows 向けに書き換えてあります
 - [ ] `fastapi-text` 2.2〜2.4 インストールと開発サーバー起動コマンド
 - [ ] `docker-text` 2.1〜2.2 Docker Desktop のインストールとトラブル対処
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続

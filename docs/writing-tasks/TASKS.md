@@ -23,11 +23,11 @@
 | 本 | 完了 / 全体 |
 |----|-----------|
 | react-text | 13 / 13 |
-| python-text | 9 / 13 |
+| python-text | 10 / 13 |
 | fastapi-text | 0 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **22 / 59** |
+| **合計** | **23 / 59** |
 
 ---
 
@@ -84,7 +84,7 @@
 | P-06 | 完了 | 第6章 モジュールとパッケージ | `python-text/06-modules.md` | part2 | 中 | 解答編 その2（`91-answers-part2.md`）を新規作成。6.3.5 で `str.join` を追加説明。第7章のスタブを新規作成 |
 | P-07 | 完了 | 第7章 ファイル操作と例外 | `python-text/07-files-and-exceptions.md` | part2 | 中 | 7.6.2 で `class ...(Exception):` のみ「例外を増やす決まった書き方」として先取り（詳細は第8章）。第8章のスタブを新規作成 |
 | P-08 | 完了 | 第8章 オブジェクト指向 | `python-text/08-oop.md` | part2 | 大 | 8.5.2 で `@dataclass` のために型の注記を先取り（詳細は第9章）。第9章のスタブを新規作成 |
-| P-09 | 未着手 | 第9章 型ヒントとモダン Python | `python-text/09-typing-and-tools.md` | part2 | 中 | |
+| P-09 | 完了 | 第9章 型ヒントとモダン Python | `python-text/09-typing-and-tools.md` | part2 | 中 | 9.4 の ruff / mypy の出力は実機で確認済み（バージョンは review-notes.md に検証依頼あり）。第10章のスタブを新規作成 |
 | P-10 | 未着手 | 第10章 実践：データ処理スクリプト | `python-text/10-practice-data-script.md` | part2 | 中 | |
 | P-11 | 未着手 | 第11章 次のステップ | `python-text/11-next-steps.md` | — | 小 | |
 | P-FIN | 未着手 | 通し確認 | — | — | 小 | |

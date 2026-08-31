@@ -2353,3 +2353,725 @@ sorted(members, key=lambda m: m.points, reverse=True)
 > 人が開いて確認できません。
 > **`ensure_ascii=False` と `encoding="utf-8"` はセットで指定してください**
 > （[7.4.3](./07-files-and-exceptions.md#743-日本語を含む-json-の書き出し)）。
+
+---
+
+## 第9章
+
+### 理解度チェック
+
+**問 9.1 の解答**
+
+- A = **`:`**（コロン）
+- B = **`->`**（ハイフンと大なり記号）
+- C = **`None`**（つまり `-> None` と書く）
+
+**解説**
+
+3つの位置を並べて確認してください。
+
+```python
+def with_tax(price: int, rate: float = 0.1) -> int:
+    """税込価格を四捨五入して返す。"""
+    return round(price * (1 + rate))
+```
+
+- 引数は `名前: 型`（[9.1.2](./09-typing-and-tools.md#912-変数と引数に型を書く)）
+- 戻り値は、かっこを閉じたあとに `-> 型`、その後ろに `:`（[9.1.3](./09-typing-and-tools.md#913-戻り値の型)）
+- デフォルト値がある引数は、**型が先、`=` が後**
+
+`-> None` は「何も返さない」という意味です。
+省略しても動きますが、省略すると **mypy がその関数の中身を検査しません**。
+`print` するだけの関数にも必ず書いてください。
+
+---
+
+**問 9.2 の解答**
+
+```text
+実行結果:
+12
+```
+
+**解説**
+
+`repeat(4)` は `4 * 3` を計算して `12` を返します。
+
+型ヒント `word: str` は「文字列を渡すはず」という**注記でしかなく、
+Python は実行時にこれを検査しません**
+（[9.1.4](./09-typing-and-tools.md#914-型ヒントは実行時に強制されない)）。
+`4 * 3` は整数どうしの掛け算として成立するので、エラーにもなりません。
+
+戻り値の型も `-> str` と書いてありますが、返ってきたのは整数の `12` です。
+**「型ヒントを書いた ＝ 守られる」ではない**ことを、ここで確実に覚えてください。
+
+この間違いを見つけたいなら、mypy を実行します。
+
+```text
+error: Argument 1 to "repeat" has incompatible type "int"; expected "str"  [arg-type]
+```
+
+---
+
+**問 9.3 の解答**
+
+1. `dict[str, int]`
+2. `list[dict[str, str]]`
+3. `str | None`
+
+**解説**
+
+1. 辞書は**キーと値の2つ**を書きます（[9.2.1](./09-typing-and-tools.md#921-リスト辞書タプル)）。
+   `dict[str: int]` のようにコロンで書くのは誤りです。カンマで区切ります。
+2. `csv.DictReader` は1行を辞書にして返し、**値はすべて文字列**でした
+   （[7.4.1](./07-files-and-exceptions.md#741-csv-モジュール)）。
+   その行が複数集まるので、`list[dict[str, str]]` になります。
+   `list[dict[str, int]]` と書きたくなりますが、
+   `int()` に通すまで値は文字列のままです。
+3. `str | None` です。`Optional[str]` と書いても同じ意味ですが、
+   このテキストでは `| None` を使います（[9.2.2](./09-typing-and-tools.md#922-optional-と--none)）。
+
+---
+
+**問 9.4 の解答**
+
+`stock.py` の **14行目**で、`Item` を作るときの**2番目の引数**に文字列を渡しています。
+`int()` で整数に変換してから渡すよう直します。
+
+```python
+# 直す前
+Item(row["name"], row["price"])
+
+# 直したあと
+Item(row["name"], int(row["price"]))
+```
+
+**解説**
+
+mypy のメッセージは4つの部分でできています
+（[9.3.2](./09-typing-and-tools.md#932-導入して実行する)）。
+
+| 部分 | 読み取れること |
+|------|--------------|
+| `stock.py:14` | `stock.py` の14行目 |
+| `Argument 2 to "Item"` | `Item` の**2番目**の引数 |
+| `has incompatible type "str"; expected "int"` | 文字列が渡されている。整数のはず |
+| `[arg-type]` | 引数の型のルール |
+
+**「2番目の引数」と言われたら、`self` は数えません**（[8.2.3](./08-oop.md#823-メソッドを定義する)）。
+`Item("ノート", "180")` なら `"180"` のことです。
+
+なお、`int()` を付ける以外に「`Item` の項目の型を `str` に変える」という直し方も考えられます。
+ただし、そのあと計算に使うのであれば、**読み込んだ時点で数値にしておく**ほうが安全です。
+
+---
+
+**問 9.5 の解答**
+
+**問題**：デフォルト値のリスト `[]` は**関数を定義したときに1回だけ作られ、
+呼び出しのたびに使い回される**ため、前回追加した値が残ります。
+
+**書き直したもの**
+
+```python
+def add_tag(name: str, tags: list[str] | None = None) -> list[str]:
+    """tags に name を足したリストを返す。省略すると新しいリストを作る。"""
+    if tags is None:
+        tags = []
+    tags.append(name)
+    return tags
+```
+
+**解説**
+
+これは [5.2.4](./05-functions.md#524-デフォルト引数にリストを使ってはいけない) で学んだ落とし穴に、
+型ヒントを付けただけのものです。型ヒントは**この事故を防いでくれません**
+（[9.1.4](./09-typing-and-tools.md#914-型ヒントは実行時に強制されない)）。
+
+直したあとの型が `list[str] | None` になる点が、この章での新しい部分です。
+「リストか、`None` か」のどちらかが入るので、`|` でつなぎます
+（[9.2.2](./09-typing-and-tools.md#922-optional-と--none)）。
+
+> **よくある間違い**
+> `tags: list[str] = None` と書くと、型と初期値が食い違います。
+> mypy はこう報告します。
+>
+> ```text
+> error: Incompatible default for argument "tags" (default has type "None", argument has type "list[str]")  [assignment]
+> ```
+
+---
+
+**問 9.6 の解答**
+
+- `ruff check` … コードを読んで、**規約違反や怪しい書き方を報告する**（リンタ）
+- `ruff format` … 空白・改行・引用符などを、**決められた形に整える**（フォーマッタ）
+
+**解説**
+
+2つは仕事が違います（[9.4.1](./09-typing-and-tools.md#941-ruff--リンタとフォーマッタ)）。
+
+- `ruff check` が見つけるのは、**未使用の `import`**、未定義の名前、`import` の並び順など
+- `ruff format` が直すのは、**見た目だけ**。`total=price*2` を `total = price * 2` にする
+
+`ruff check --fix` を付けると、報告のうち `[*]` が付いたものを自動で直します。
+`ruff format` は、[2.7.3](./02-basics.md#273-自動整形を設定する) で入れた Black の置き換えにあたります。
+
+---
+
+**問 9.7 の解答**
+
+**`import` の並び順**が報告されるようになります（ルール名は `I001`）。
+
+**解説**
+
+`select` は「どのルールのまとまりを見るか」を選ぶ設定です
+（[9.4.2](./09-typing-and-tools.md#942-設定ファイルpyprojecttoml)）。
+
+| 記号 | 見るもの |
+|------|---------|
+| `E` | PEP 8 の書式 |
+| `F` | 明らかな間違い（未使用の `import` など） |
+| `I` | **`import` の並び順** |
+| `UP` | 古い書き方（`List[str]` など） |
+
+`"I"` を入れると、並びが崩れているときに次が出ます。
+
+```text
+I001 [*] Import block is un-sorted or un-formatted
+```
+
+`[*]` が付いているので、`ruff check --fix` で自動的に並べ替えられます。
+**並び順を自分で覚える必要はありません。**
+
+---
+
+### 演習 9.1 の解答
+
+`python-lesson/price_tools.py`
+
+```python
+def with_tax(price: int, rate: float = 0.1) -> int:
+    """税込価格を四捨五入して返す。"""
+    return round(price * (1 + rate))
+
+
+def total_price(prices: list[int]) -> int:
+    """価格のリストを受け取り、税込の合計を返す。"""
+    return sum([with_tax(p) for p in prices])
+
+
+def label(name: str, price: int) -> str:
+    """一覧表示用の1行を返す。"""
+    return f"{name}: {price:,}円"
+
+
+def main() -> None:
+    """動作確認をする。"""
+    prices: list[int] = [180, 120, 90]
+    print(label("合計", total_price(prices)))
+    print(label("ノート", with_tax(180)))
+    print(label("ボールペン", with_tax(120)))
+
+
+if __name__ == "__main__":
+    main()
+```
+
+```text
+実行結果:
+合計: 429円
+ノート: 198円
+ボールペン: 132円
+```
+
+```text
+mypy price_tools.py の実行結果:
+Success: no issues found in 1 source file
+```
+
+**解説**
+
+付けた型を1つずつ確認します。
+
+| 関数 | 書いた型 | 決め方 |
+|------|---------|--------|
+| `with_tax` | `(price: int, rate: float = 0.1) -> int` | `round()` は整数を返すので戻り値は `int` |
+| `total_price` | `(prices: list[int]) -> int` | 受け取るのは価格（整数）のリスト |
+| `label` | `(name: str, price: int) -> str` | f-string を返すので `str` |
+| `main` | `() -> None` | `print` するだけで何も返さない |
+
+**`rate: float = 0.1` の書き順**に注意してください。
+`rate = 0.1: float` とは書けません（[9.1.2](./09-typing-and-tools.md#912-変数と引数に型を書く)）。
+
+`prices` に型ヒントを書いたのは、この演習の指示があったからですが、
+実は `[180, 120, 90]` という値が入っているので、
+書かなくても mypy は `list[int]` だと推測できます。
+**書かないと困るのは、`prices: list[int] = []` のように空で作るとき**です
+（[9.4.2](./09-typing-and-tools.md#942-設定ファイルpyprojecttoml) のよくある間違い）。
+
+> **よくある間違い：`main` の `-> None` を忘れる**
+> `def main():` のままにすると、mypy は `main` の**中身を検査しません**。
+> `print(label(123, "ノート"))` のように引数を逆にしても `Success` と出てしまいます。
+> **引数のない関数にも `-> None` を書く**、と決めておくのが安全です
+> （[9.1.3](./09-typing-and-tools.md#913-戻り値の型)）。
+
+> **よくある間違い：`round()` の戻り値を `float` と書く**
+> `round(180 * 1.1)` の結果は `198`（整数）です。
+> `round()` は、桁数を指定しなければ **`int` を返します**。
+> `-> float` と書いても mypy は通しますが（`int` は `float` として扱えるため）、
+> **実際に返るものを書く**のが型ヒントの目的です。
+
+---
+
+### 演習 9.2 の解答
+
+`python-lesson/product_find.py`
+
+```python
+from dataclasses import dataclass
+
+
+@dataclass
+class Product:
+    """商品を表すクラス。"""
+
+    name: str
+    price: int
+    stock: int
+
+    def is_available(self) -> bool:
+        """在庫が1以上なら True を返す。"""
+        return self.stock >= 1
+
+
+def find_product(products: list[Product], name: str) -> Product | None:
+    """商品名で1件探す。見つからなければ None を返す。"""
+    for product in products:
+        if product.name == name:
+            return product
+    return None
+
+
+def cheapest(products: list[Product]) -> Product | None:
+    """いちばん安い商品を返す。リストが空なら None を返す。"""
+    if not products:
+        return None
+    return min(products, key=lambda p: p.price)
+
+
+def main() -> None:
+    """商品を探して表示する。"""
+    products: list[Product] = [
+        Product("ノート", 180, 12),
+        Product("ボールペン", 120, 0),
+        Product("消しゴム", 90, 4),
+    ]
+
+    for name in ["ノート", "定規"]:
+        found = find_product(products, name)
+        if found is None:
+            print(f"{name}は取り扱っていません")
+        elif found.is_available():
+            print(f"{found.name}: {found.price}円（在庫あり）")
+        else:
+            print(f"{found.name}: {found.price}円（在庫切れ）")
+
+    target = cheapest(products)
+    if target is None:
+        print("商品がありません")
+    else:
+        print(f"いちばん安いのは {target.name}（{target.price}円）です")
+
+    print(f"空のリストの結果: {cheapest([])}")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+```text
+実行結果:
+ノート: 180円（在庫あり）
+定規は取り扱っていません
+いちばん安いのは 消しゴム（90円）です
+空のリストの結果: None
+```
+
+**解説**
+
+この演習の中心は、**`| None` を書いた関数を、呼ぶ側がどう扱うか**です。
+
+`find_product` の戻り値は `Product | None` なので、
+返ってきた値は「`Product` かもしれないし `None` かもしれない」状態です。
+`found.name` といきなり書くと、mypy に止められます。
+
+```text
+error: Item "None" of "Product | None" has no attribute "name"  [union-attr]
+```
+
+`if found is None:` を先に書くと、**その先では `Product` に確定した**と
+mypy も理解してくれます（[9.2.2](./09-typing-and-tools.md#922-optional-と--none)）。
+
+`cheapest` で `if not products:` を先に書いているのも同じ理由です。
+これを書かずに `min(products, key=...)` だけにすると、
+空のリストを渡したときに `ValueError` で止まります
+（メッセージは Python のバージョンによって
+`min() arg is an empty sequence` / `min() iterable argument is empty` と変わります）。
+
+**「空かもしれない」ことに気づいた時点で、戻り値は `Product | None` になる**——
+この結び付きが分かれば、この演習の目的は達成です。
+
+> **別解：`for` を使わず1行で探す**
+> 慣れてきたら、次の書き方もできます。
+>
+> ```python
+> def find_product(products: list[Product], name: str) -> Product | None:
+>     """商品名で1件探す。見つからなければ None を返す。"""
+>     matched = [p for p in products if p.name == name]
+>     return matched[0] if matched else None
+> ```
+>
+> リスト内包表記（[4.5.1](./04-data-structures.md#451-リスト内包表記)）と
+> 条件式（[3.1.6](./03-control-flow.md#316-条件式三項演算子)）の組み合わせです。
+> ただし**全件を調べてからリストを作る**ので、
+> 解答例の `for` + 早期 `return` のほうが素直です。
+
+> **よくある間違い**
+> `is_available` の戻り値に型を書き忘れないでください。
+> `return self.stock >= 1` は比較の結果、つまり `True` か `False` なので `-> bool` です。
+> `-> int` と書くと mypy に指摘されます。
+
+---
+
+### 演習 9.3 の解答
+
+**修正前に実行すると、こうなります**
+
+```text
+実行結果:
+佐藤: 8274点
+鈴木: 6588点
+高橋: 9058点
+佐藤さんの合計は 8274点です
+```
+
+**止まらないのに、答えが完全に間違っています。**
+`82 + 74` ではなく、文字列の `"82"` と `"74"` が**連結**されて `"8274"` になっています
+（[2.4.1](./02-basics.md#241-連結と繰り返し)）。
+
+**mypy の報告**
+
+```text
+broken_report.py:25: error: Argument 2 to "Score" has incompatible type "str | Any"; expected "int"  [arg-type]
+broken_report.py:25: error: Argument 3 to "Score" has incompatible type "str | Any"; expected "int"  [arg-type]
+broken_report.py:44: error: Item "None" of "Score | None" has no attribute "total"  [union-attr]
+Found 3 errors in 1 file (checked 1 source file)
+```
+
+**修正後のファイル**
+
+`python-lesson/broken_report.py`
+
+```python
+import csv
+from dataclasses import dataclass
+from pathlib import Path
+
+
+@dataclass
+class Score:
+    """1人ぶんの点数。"""
+
+    name: str
+    math: int
+    english: int
+
+    def total(self) -> int:
+        """2教科の合計点を返す。"""
+        return self.math + self.english
+
+
+def load_scores(path: Path) -> list[Score]:
+    """CSV を読み込んで Score のリストを返す。"""
+    scores: list[Score] = []
+    with open(path, encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            scores.append(Score(row["name"], int(row["math"]), int(row["english"])))
+    return scores
+
+
+def find_score(scores: list[Score], name: str) -> Score | None:
+    """名前で1件探す。見つからなければ None を返す。"""
+    for score in scores:
+        if score.name == name:
+            return score
+    return None
+
+
+def main() -> None:
+    """読み込んで表示する。"""
+    scores = load_scores(Path("data/scores.csv"))
+    for score in scores:
+        print(f"{score.name}: {score.total()}点")
+
+    target = find_score(scores, "佐藤")
+    if target is None:
+        print("佐藤さんは見つかりませんでした")
+    else:
+        print(f"佐藤さんの合計は {target.total()}点です")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+```text
+実行結果:
+佐藤: 156点
+鈴木: 153点
+高橋: 148点
+佐藤さんの合計は 156点です
+```
+
+**解説**
+
+直したのは2か所です。
+
+**1. 25行目：CSV の値を `int()` に通す**
+
+```diff
+-             scores.append(Score(row["name"], row["math"], row["english"]))
++             scores.append(Score(row["name"], int(row["math"]), int(row["english"])))
+```
+
+`csv.DictReader` が返す値は**すべて文字列**です
+（[7.4.1](./07-files-and-exceptions.md#741-csv-モジュール)）。
+`Score` の項目は `math: int` と宣言してあるので、食い違います。
+
+この間違いが厄介なのは、**実行しても止まらない**ことです。
+`"82" + "74"` は文字列の連結として成立してしまいます。
+mypy は、これを**動かす前に**2件とも報告してくれました。
+
+> **補足：`"str | Any"` と表示されるのはなぜか**
+> `row["math"]` の型が `str` ではなく `str | Any` と出るのは、
+> `csv.DictReader` の型情報がそう作られているためです。
+> **`str` が混ざっている＝整数ではない**、と読めば十分です。
+
+**2. 44行目：`None` かどうかを確認してから使う**
+
+```diff
+      target = find_score(scores, "佐藤")
+-     print(f"佐藤さんの合計は {target.total()}点です")
++     if target is None:
++         print("佐藤さんは見つかりませんでした")
++     else:
++         print(f"佐藤さんの合計は {target.total()}点です")
+```
+
+`find_score` の戻り値は `Score | None` と宣言されています。
+いまは `"佐藤"` が必ず入っているファイルなので動きますが、
+**CSV から佐藤さんの行が消えた瞬間**に `AttributeError` で落ちます。
+
+```text
+AttributeError: 'NoneType' object has no attribute 'total'
+```
+
+mypy の `union-attr` は、**まだ起きていないこの事故**を先に報告してくれたことになります
+（[9.2.2](./09-typing-and-tools.md#922-optional-と--none)）。
+
+> **よくある間違い：`# type: ignore` で消す**
+> 44行目に `# type: ignore` を付ければ報告は消えますが、
+> **落ちる可能性はそのまま残ります**（[9.3.2](./09-typing-and-tools.md#932-導入して実行する) の注意）。
+> 報告を消すのではなく、分岐を書いてください。
+
+> **よくある間違い：`Score` の項目を `str` に変えて通す**
+> `math: str` と書けば mypy は通りますが、
+> `total()` の中の足し算が文字列の連結のままなので、
+> **表示は `8274点` のまま**です。
+> **エラーを消すことと、正しく動かすことは別**だと覚えてください。
+
+---
+
+### 演習 9.4 の解答
+
+`python-lesson/pyproject.toml`
+
+```toml
+[tool.ruff]
+line-length = 88
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
+
+[tool.mypy]
+python_version = "3.13"
+ignore_missing_imports = true
+disallow_untyped_defs = true
+```
+
+`python-lesson/messy_stock.py`
+
+```python
+import csv
+import json
+from pathlib import Path
+
+
+def load(path: Path) -> list[dict[str, str]]:
+    """CSV を読み込んで、辞書のリストとして返す。"""
+    rows: list[dict[str, str]] = []
+    with open(path, encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            rows.append({"name": row["name"], "count": row["count"]})
+    return rows
+
+
+def save(rows: list[dict[str, str]], path: Path) -> None:
+    """辞書のリストを JSON に書き出す。"""
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(rows, f, ensure_ascii=False, indent=2)
+
+
+def main() -> None:
+    """在庫の CSV を読み込んで JSON に書き出す。"""
+    rows = load(Path("data/stock.csv"))
+    save(rows, Path("data/stock.json"))
+    print(f"{len(rows)}件を書き出しました")
+
+
+if __name__ == "__main__":
+    main()
+```
+
+```text
+ruff check messy_stock.py の実行結果:
+All checks passed!
+```
+
+```text
+ruff format messy_stock.py の実行結果:
+1 file left unchanged
+```
+
+```text
+mypy messy_stock.py の実行結果:
+Success: no issues found in 1 source file
+```
+
+```text
+python messy_stock.py の実行結果:
+3件を書き出しました
+```
+
+`python-lesson/data/stock.json`
+
+```json
+[
+  {
+    "name": "ノート",
+    "count": "12"
+  },
+  {
+    "name": "ボールペン",
+    "count": "3"
+  },
+  {
+    "name": "消しゴム",
+    "count": "25"
+  }
+]
+```
+
+**解説**
+
+作業の順番が大事なので、通してたどります。
+
+**1. `ruff check --fix messy_stock.py`**
+
+```text
+Found 1 error (1 fixed, 0 remaining).
+```
+
+直ったのは `import` の並び順（`I001`）です。
+`pyproject.toml` の `select` に `"I"` を入れたから報告されました。
+入れていなければ、並びが崩れたままでも何も言われません。
+
+```diff
+- import json
+- from pathlib import Path
+  import csv
++ import json
++ from pathlib import Path
+```
+
+**2. `ruff format messy_stock.py`**
+
+```text
+1 file reformatted
+```
+
+`rows=[]` が `rows = []`、`open(path,encoding=...)` が `open(path, encoding=...)` になり、
+関数と関数のあいだが2行空きました。
+**ここまでは、道具が全部やってくれます。**
+
+**3. `mypy messy_stock.py`**
+
+ここで、道具に任せられない部分が出ます。
+
+```text
+messy_stock.py:6: error: Function is missing a type annotation  [no-untyped-def]
+messy_stock.py:14: error: Function is missing a type annotation  [no-untyped-def]
+messy_stock.py:19: error: Function is missing a return type annotation  [no-untyped-def]
+messy_stock.py:19: note: Use "-> None" if function does not return a value
+```
+
+`disallow_untyped_defs = true` を書いたので、
+**型ヒントを書いていない関数そのもの**が報告されました
+（[9.4.2](./09-typing-and-tools.md#942-設定ファイルpyprojecttoml) の補足）。
+この設定がないと、3つとも報告されないまま `Success` と出ます。
+
+19行目の `note:` は、mypy からの助け船です。
+「何も返さないなら `-> None` と書け」と教えてくれています。
+
+**4. 型ヒントと docstring を書く**
+
+| 関数 | 書いた型 | 決め方 |
+|------|---------|--------|
+| `load` | `(path: Path) -> list[dict[str, str]]` | `csv.DictReader` の行を集めたもの。**値はすべて文字列**（[9.2.1](./09-typing-and-tools.md#921-リスト辞書タプル)） |
+| `save` | `(rows: list[dict[str, str]], path: Path) -> None` | `load` が返したものをそのまま受け取り、書き出すだけ |
+| `main` | `() -> None` | 何も返さない |
+
+`rows: list[dict[str, str]] = []` の型ヒントは省略できません。
+**空のリストからは中身の型が推測できない**ためです。省くとこうなります。
+
+```text
+error: Need type annotation for "rows" (hint: "rows: list[<type>] = ...")  [var-annotated]
+```
+
+**5. もう一度3つを実行して、すべて通ることを確認する**
+
+`ruff format` が `1 file left unchanged` になれば、整形すべき箇所がもうない状態です。
+
+> **よくある間違い：`count` を整数にしようとする**
+> 書き出された JSON の `"count": "12"` が文字列であることを、
+> 間違いだと思って `int(row["count"])` に直したくなるかもしれません。
+> しかし、そうすると `load` の戻り値は `list[dict[str, str]]` ではなくなり、
+> **mypy に別のエラーを出されます。**
+>
+> ```text
+> error: Dict entry 1 has incompatible type "str": "int"; expected "str": "str"  [dict-item]
+> ```
+>
+> **型ヒントは「こう書きたい」という願望ではなく、「実際にこうなっている」という事実を書くもの**です。
+> 整数として扱いたいなら、`list[dict[str, str | int]]` のように
+> 型のほうも合わせて変える必要があります
+> （[9.4.2](./09-typing-and-tools.md#942-設定ファイルpyprojecttoml) の `to_rows` がその形です）。
+
+> **よくある間違い：`ruff check .` や `mypy .` と打つ**
+> `python-lesson` には第1章からのファイルが全部あるので、
+> **大量の報告が出て、どれが自分の課題のものか分からなくなります。**
+> ファイル名を1つだけ指定してください
+> （[9.4.1](./09-typing-and-tools.md#941-ruff--リンタとフォーマッタ) の注意）。
