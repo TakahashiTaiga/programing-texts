@@ -3075,3 +3075,796 @@ error: Need type annotation for "rows" (hint: "rows: list[<type>] = ...")  [var-
 > **大量の報告が出て、どれが自分の課題のものか分からなくなります。**
 > ファイル名を1つだけ指定してください
 > （[9.4.1](./09-typing-and-tools.md#941-ruff--リンタとフォーマッタ) の注意）。
+
+---
+
+## 第10章
+
+### 理解度チェック
+
+**問 10.1 の解答**
+
+- A = **`timeout`**（`requests.get(URL, params=..., timeout=10)` のように秒数を渡す）
+- B = **`raise_for_status()`**
+
+**解説**
+
+この2つは、通信するコードを書くときの「必ず書くもの」です。
+
+`timeout` を書かないと、相手が応答しないときに**いつまでも待ち続けます**。
+画面には何も出ず、止まったようにしか見えません
+（[10.3.1](./10-practice-data-script.md#1031-requests-を使う)）。
+
+`raise_for_status()` を書かないと、`404` や `500` が返ってきても
+**「成功」として次の行へ進みます。** `requests` は
+「サーバーとやり取りできた」ことを成功とみなすためです。
+エラーの JSON をそのまま集計しようとして、ずっと先の行で
+意味の分からない `KeyError` になります
+（[10.3.3](./10-practice-data-script.md#1033-エラー処理とリトライ)）。
+
+---
+
+**問 10.2 の解答**
+
+`--times 3` と指定すると、`args.times` には**文字列の `"3"`** が入るためです。
+`range()` は整数しか受け取れません。
+省略したときは `default=1` の**整数の `1`** がそのまま入るので、動いてしまいます。
+
+```text
+実行結果:
+Traceback (most recent call last):
+  File "demo.py", line 7, in <module>
+    for i in range(args.times):
+             ^^^^^^^^^^^^^^^^^
+TypeError: 'str' object cannot be interpreted as an integer
+```
+
+直し方は `type=int` を足すだけです。
+
+```python
+parser.add_argument("--times", type=int, default=1)
+```
+
+**解説**
+
+**コマンドラインから渡される値は、必ず文字列です。**
+これは `input` の戻り値が必ず文字列だったのと同じ事情です
+（[2.5.3](./02-basics.md#253-入力は必ず文字列である)）。
+
+この問題がやっかいなのは、**省略したときだけ動いてしまう**ことです。
+`default=1` は Python のコードの中に書いた値なので整数のまま渡り、
+コマンドラインから来た値だけが文字列になります。
+「動作確認したときは動いたのに、オプションを付けたら落ちた」という形で表面化します。
+
+`type=int` を書いておけば、変換してくれるうえに、
+数値でないものを渡されたときは `argparse` が止めてくれます
+（[10.5.1](./10-practice-data-script.md#1051-argparse-の基本)）。
+
+```text
+実行結果:
+demo.py: error: argument --times: invalid int value: 'おおい'
+```
+
+> **よくある間違い**
+> `int(args.times)` と、使うたびに変換する書き方もできます。
+> ただし、そうすると**使う場所すべてで変換を書く**ことになり、1か所忘れると同じ事故が起きます。
+> **受け取る場所で1回だけ変換する**（`type=int`）ほうが確実です。
+> これは、CSV を読んだ値を `Sale` を作るときに `int()` しておく
+> （[10.2.2](./10-practice-data-script.md#1022-読み込んで表示する)）のと同じ考え方です。
+
+---
+
+**問 10.3 の解答**
+
+```python
+data = {
+    "daily": {
+        "time": ["2024-07-01", "2024-07-02"],
+        "temperature_2m_max": [28.2, 31.4],
+    }
+}
+
+temperatures = {}
+for index, day in enumerate(data["daily"]["time"]):
+    temperatures[day] = data["daily"]["temperature_2m_max"][index]
+
+print(temperatures)
+```
+
+```text
+実行結果:
+{'2024-07-01': 28.2, '2024-07-02': 31.4}
+```
+
+**解説**
+
+**2本のリストが、同じ順番で並んでいる**のがポイントです。
+`time` の0番目と `temperature_2m_max` の0番目が同じ日のデータなので、
+**同じ番号どうしを組にすれば**ほしい形になります
+（[10.3.2](./10-practice-data-script.md#1032-json-を扱う)）。
+
+番号と値を同時に取り出す道具が `enumerate` でした
+（[3.2.3](./03-control-flow.md#323-enumerate-で番号付きに回す)）。
+`index` が 0, 1, 2, ... と進み、`day` に日付が入ります。
+
+**別解：番号だけを回す**
+
+```python
+days = data["daily"]["time"]
+values = data["daily"]["temperature_2m_max"]
+
+temperatures = {}
+for index in range(len(days)):
+    temperatures[days[index]] = values[index]
+```
+
+`range(len(...))` でも同じ結果になります。
+ただし `days[index]` と2段階で書くことになるので、`enumerate` のほうが読みやすくなります。
+
+**別解：辞書内包表記**
+
+```python
+days = data["daily"]["time"]
+values = data["daily"]["temperature_2m_max"]
+
+temperatures = {day: values[index] for index, day in enumerate(days)}
+```
+
+辞書内包表記（[4.5.3](./04-data-structures.md#453-辞書内包表記)）でも書けます。
+1行で書けますが、**この形が読みやすいかどうかは場合によります。**
+迷ったら `for` に戻してかまいません（[4.5.4](./04-data-structures.md#454-読みにくくなったら-for-に戻す)）。
+
+> **よくある間違い**
+> `data["daily"]["time"]` を毎回書くのが長いからと、
+> 先に `daily = data["daily"]` と取り出しておくのは良い書き方です。
+> 一方、`data["time"]` のように**入れ子を1段飛ばす**と `KeyError` になります。
+> 迷ったら `print(data.keys())` でその階層のキーを確認してください
+> （[10.3.2](./10-practice-data-script.md#1032-json-を扱う) のよくある間違い）。
+
+---
+
+**問 10.4 の解答**
+
+`defaultdict` は**存在しないキーを読んでもエラーにならない**ため、
+受け取った側でキーを打ち間違えると、`0` が返って静かに間違った結果になるからです。
+集計中だけ `defaultdict` を使い、返すときに普通の辞書に戻しておくと、
+打ち間違いが `KeyError` としてその場で分かります。
+
+**解説**
+
+`defaultdict(int)` の便利さは、そのまま危うさでもあります。
+
+```python
+totals = defaultdict(int)
+totals["2024-07-01"] += 100
+print(totals["2024-07-99"])   # 0 が返る（存在しない日付なのに）
+```
+
+集計している最中は、この動きが**まさに必要なもの**です。
+初めて出てきた日付を `0` から数え始めてくれるので、
+`if 日付 in totals:` のような確認が要りません。
+
+しかし、集計が終わって値を返したあとは、この動きは**害にしかなりません。**
+`date_totals["2024-07-08"]` と書き間違えても `0` が返るので、
+「なぜか売上が 0 円の日がある」という形でしか気づけません。
+
+`dict(totals)` は、**中身が同じ普通の辞書**を新しく作ります。
+1行で「便利さが必要な区間」を終わらせられます
+（[10.2.4](./10-practice-data-script.md#1024-集計する)）。
+
+> **補足**
+> `defaultdict` は `dict` を継承したクラスです（[8.3](./08-oop.md#83-継承)）。
+> そのため `dict[str, int]` を求める場所にそのまま渡しても、
+> mypy には叱られません。**道具が守ってくれない部分**なので、
+> 書く側が意識して戻す必要があります。
+
+---
+
+**問 10.5 の解答**
+
+使えるのは **1** です。
+
+日付が `YYYY-MM-DD` の形（**桁数が固定で、大きい単位が左にある**）なら、
+文字列として1文字ずつ比べた結果と、日付として比べた結果が一致します。
+
+2 の `2024/7/4` の形では使えません。月や日が1桁のときに桁数が変わるため、
+`"2024/7/4"` と `"2024/12/1"` を比べると、4文字目の `7` と `1` の比較になり、
+**7月のほうが後ろだと判定されてしまいます。**
+
+**解説**
+
+文字列どうしの `<` は、**先頭の文字から順に比較**します。
+最初に違いが出たところで勝負が決まります。
+
+```python
+>>> "2024-07-04" < "2024-07-06"
+True
+>>> "2024-12-31" < "2025-01-01"
+True
+>>> "2024/7/4" < "2024/12/1"
+False
+```
+
+3つ目が `False` になるのが、2 が使えない理由です
+（[10.2.3](./10-practice-data-script.md#1023-条件で絞り込む)）。
+
+`2024/7/4` の形のデータを扱うときは、
+`datetime.strptime` で日付として読み込んでから比べるか、
+読み込む時点で `2024-07-04` の形に直します。
+**このテキストの範囲では、「そろった形のデータを使う」ことで避けています。**
+
+> **補足**
+> `YYYY-MM-DD` の形は **ISO 8601** という国際規格で決まった書き方です。
+> データを保存するときにこの形を選んでおくと、
+> 並べ替えも比較もそのままできる、という利点があります。
+> 自分でデータを作るときは、この形にしておくのが安全です。
+
+---
+
+**問 10.6 の解答**
+
+**そのあとどうするかを、その場で決められるかどうか**で分かれています。
+気温が取れないときは「気温なしで集計を続ける」と決められるので捕まえます。
+CSV がないときは、代わりに何を読めばよいか決められないので、捕まえずに止めます。
+
+**解説**
+
+これは [7.6.3](./07-files-and-exceptions.md#763-どこで例外を捕まえるべきか) で決めた方針を、
+実際のプログラムに当てはめたものです。
+
+| 起きたこと | 決められること | 対応 |
+|-----------|--------------|------|
+| 気温が取れない | 気温の列を空にして、売上の集計は出す | 捕まえて `None` を返す |
+| CSV が見つからない | 何も決められない（読むものがない） | 捕まえずにトレースバックで止める |
+
+**捕まえること自体が良いことではありません。**
+「捕まえたけれど、結局どうしていいか分からない」という場合、
+それは握りつぶし（[7.5.5](./07-files-and-exceptions.md#755-握りつぶさないexcept-pass-の危険)）に近づきます。
+そのまま止まって、**どこで何が起きたかがトレースバックに出る**ほうが親切です。
+
+> **補足**
+> 「CSV が見つかりません、パスを確認してください」という
+> 親切なメッセージを出したい、と考えたなら、その判断は妥当です。
+> その場合、`main` の中で `except FileNotFoundError:` を書き、
+> メッセージを表示して `return` します。
+> **決められることが増えたなら、捕まえてよい**ということです
+> （[10.6.3](./10-practice-data-script.md#1063-動作確認のチェックリスト) の補足）。
+
+---
+
+**問 10.7 の解答**
+
+- `--no-weather` を**付けた**とき … `True`
+- **付けなかった**とき … `False`
+
+**解説**
+
+`action="store_true"` は「**付いていれば `True` を入れる**」という指定です。
+値を書く必要がなく、`--no-weather` と書くだけで動きます。
+省略したときは、自動的に `False` になります
+（[10.5.2](./10-practice-data-script.md#1052-引数を受け取る)）。
+
+本文ではこう使っていました。
+
+```python
+if args.no_weather:
+    temperatures = None
+else:
+    temperatures = fetch_max_temperatures(args.start, args.end)
+```
+
+なお、`--no-weather` のように `-` を含む名前は、
+取り出すときに **`-` が `_` に変わって** `args.no_weather` になります。
+`args.no-weather` と書くと `SyntaxError` になるので注意してください
+（Python は `no - weather` という引き算だと解釈します）。
+
+---
+
+### 演習 10.1 の解答
+
+`analyze_sales.py` に追加する関数です。
+
+```python
+def total_by_shop(sales: list[Sale]) -> dict[str, int]:
+    """店舗ごとの売上金額を返す。"""
+    totals: defaultdict[str, int] = defaultdict(int)
+    for sale in sales:
+        totals[sale.shop] += sale.subtotal()
+    return dict(totals)
+```
+
+`main` の中、商品別売上の表示のあと（`rows = build_rows(...)` の**前**）に追加します。
+
+```python
+    print()
+    print(f"【{args.start} 〜 {args.end} の店舗別売上】")
+    shop_totals = total_by_shop(target)
+    for shop in sorted(shop_totals):
+        print(f"{shop}: {shop_totals[shop]:,}円")
+
+    print()
+```
+
+```powershell
+python analyze_sales.py --no-weather
+```
+
+```text
+実行結果:
+【2024-07-01 〜 2024-07-07 の商品別売上】
+ソフトクリーム: 278,600円
+かき氷: 134,100円
+アイスコーヒー: 56,100円
+ホットコーヒー: 41,700円
+焼きドーナツ: 14,600円
+
+【2024-07-01 〜 2024-07-07 の店舗別売上】
+本店: 333,300円
+駅前店: 191,800円
+
+7日ぶんを out\sales_report_20260831.csv に書き出しました
+```
+
+**解説**
+
+`total_by_item`（[10.2.4](./10-practice-data-script.md#1024-集計する)）と比べてみてください。
+**違うのは `sale.item` が `sale.shop` になった1か所だけ**です。
+
+```python
+totals[sale.item] += sale.subtotal()    # 商品ごと
+totals[sale.shop] += sale.subtotal()    # 店舗ごと
+```
+
+「何をキーにして足し込むか」を変えるだけで、集計の切り口が変わります。
+**これが `defaultdict` を使った集計の型です。** 一度覚えると、
+「担当者ごと」「月ごと」「地域ごと」など、そのまま応用できます。
+
+**なぜ `sorted` でキーを並べるのか**
+
+```python
+for shop in sorted(shop_totals):
+```
+
+辞書は、**入れた順に並んでいます。** そのまま回すと、
+CSV の並び方が変わったときに表示順も変わってしまいます。
+`sorted` を通せば、いつ実行しても同じ順（ここでは店舗名の順）になります。
+
+なお、日本語のキーを `sorted` に渡すと、**文字コードの順**に並びます
+（[4.1.5](./04-data-structures.md#415-並べ替えsort--sorted)）。
+「本店」「駅前店」という並びは、その結果です。読み順ではありません。
+
+> **よくある間違い**
+> `print()` を入れずに続けて表示すると、2つの見出しがくっついて読みにくくなります。
+> **空の `print()` は1行の空行を出す**のでした（[2.5.1](./02-basics.md#251-print-の使い方)）。
+> 表示を人が読むものとして整えるのも、スクリプトの仕事のうちです。
+
+**別解：関数を1つにまとめる**
+
+`total_by_item` と `total_by_shop` はほぼ同じなので、
+「何をキーにするか」を引数で渡す形にもできます。
+
+```python
+def total_by(sales: list[Sale], key_name: str) -> dict[str, int]:
+    """指定した属性ごとの売上金額を返す。"""
+    totals: defaultdict[str, int] = defaultdict(int)
+    for sale in sales:
+        totals[getattr(sale, key_name)] += sale.subtotal()
+    return dict(totals)
+```
+
+`getattr(オブジェクト, "名前")` は、属性を文字列で指定して読み取る命令です。
+**このテキストでは扱っていない書き方**なので、演習の解答としては上のものを正解とします。
+「まとめられそうだ」と感じたなら、その感覚は正しいものです。
+ただし、**この場合はまとめないほうが読みやすい**という判断もあります。
+`total_by(sales, "shop")` は、打ち間違えても mypy が気づけないためです。
+
+---
+
+### 演習 10.2 の解答
+
+`parse_args` に追加する部分です（`--no-weather` の**前**に置きました）。
+
+```python
+    parser.add_argument(
+        "--min-total",
+        type=int,
+        default=0,
+        metavar="金額",
+        help="この金額以上の日だけ書き出す（既定: 0）",
+    )
+```
+
+`main` の書き出し部分を、1行足して次のようにします。
+
+```python
+    rows = build_rows(date_totals, date_quantities, temperatures)
+    rows = [row for row in rows if int(row["total"]) >= args.min_total]
+    out_path = make_output_path(Path(args.out_dir))
+    save_rows(rows, out_path)
+    print(f"{len(rows)}日ぶんを {out_path} に書き出しました")
+```
+
+```powershell
+python analyze_sales.py --min-total 70000
+```
+
+```text
+実行結果:
+【2024-07-01 〜 2024-07-07 の商品別売上】
+ソフトクリーム: 278,600円
+かき氷: 134,100円
+アイスコーヒー: 56,100円
+ホットコーヒー: 41,700円
+焼きドーナツ: 14,600円
+4日ぶんを out\sales_report_20260831.csv に書き出しました
+```
+
+```text
+date,quantity,total,max_temperature
+2024-07-04,202,72700,33.2
+2024-07-05,230,83050,33.7
+2024-07-06,318,110300,33.7
+2024-07-07,258,93350,32.9
+```
+
+**解説**
+
+この演習の要点は2つです。
+
+**1. `type=int` を書く**
+
+書かないと `args.min_total` は文字列の `"70000"` になります。
+そのまま比較すると、**文字列どうしの比較**になってしまいます。
+
+```python
+>>> "110300" >= "70000"
+False
+```
+
+先頭の `1` と `7` を比べて `False` になるためです。
+金額としては 110,300 のほうが大きいのに、逆の結果になります。
+**エラーが出ないので、間違いに気づきにくい**のがこの落とし穴の怖いところです
+（[10.5.1](./10-practice-data-script.md#1051-argparse-の基本)）。
+
+**2. `int(row["total"])` で戻す**
+
+`build_rows` は、**すべての値を文字列にして**返していました
+（[10.4.1](./10-practice-data-script.md#1041-csv-に書き出す)）。
+比較するときは `int()` で数値に戻す必要があります。
+
+「文字列にしたものを、また整数に戻すのは無駄では」と思うかもしれません。
+そのとおりで、**絞り込みを `build_rows` より前に置く**ほうが素直です。
+
+**別解：辞書のうちに絞り込む**
+
+```python
+    date_totals = {
+        day: amount
+        for day, amount in date_totals.items()
+        if amount >= args.min_total
+    }
+    rows = build_rows(date_totals, date_quantities, temperatures)
+```
+
+`build_rows` に渡す前に、`date_totals` のほうを絞ります。
+`date_totals` の値は整数のままなので、`int()` が要りません。
+`build_rows` は `sorted(date_totals)` の日付だけを見て組み立てるので、
+渡す辞書を減らせば、そのまま行数が減ります。
+
+**どちらでも正解です。** 変換の回数だけを見るならこちらのほうが素直で、
+「書き出す直前に絞る」という意図の分かりやすさなら前者です。
+
+> **よくある間違い**
+> `--min-total` は、取り出すときに `args.min_total` になります
+> （`-` が `_` に変わる）。`args.min-total` と書くと `SyntaxError` です。
+
+---
+
+### 演習 10.3 の解答
+
+追加・変更するのは3つの関数です。
+
+**1. 商品別の行を組み立てる関数を追加する**
+
+```python
+def build_item_rows(item_totals: dict[str, int]) -> list[dict[str, str]]:
+    """商品別の書き出し用の辞書のリストを、売上の多い順に組み立てて返す。"""
+    total = sum(item_totals.values())
+    rows: list[dict[str, str]] = []
+    for item, amount in sorted(
+        item_totals.items(), key=lambda pair: pair[1], reverse=True
+    ):
+        rows.append(
+            {
+                "item": item,
+                "total": str(amount),
+                "share": f"{amount / total * 100:.1f}",
+            }
+        )
+    return rows
+```
+
+**2. `save_rows` が列名を受け取るようにする**
+
+```python
+def save_rows(rows: list[dict[str, str]], path: Path, fieldnames: list[str]) -> None:
+    """辞書のリストを CSV として書き出す。"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+```
+
+**3. `make_output_path` がファイル名の先頭を受け取るようにする**
+
+```python
+def make_output_path(out_dir: Path, prefix: str) -> Path:
+    """今日の日付を入れた書き出し先のパスを返す。"""
+    stamp = datetime.now().strftime("%Y%m%d")
+    return out_dir / f"{prefix}_{stamp}.csv"
+```
+
+`main` の最後を、次のように書き換えます。
+
+```python
+    rows = build_rows(date_totals, date_quantities, temperatures)
+    out_path = make_output_path(Path(args.out_dir), "sales_report")
+    save_rows(rows, out_path, ["date", "quantity", "total", "max_temperature"])
+    print(f"{len(rows)}日ぶんを {out_path} に書き出しました")
+
+    item_rows = build_item_rows(item_totals)
+    item_path = make_output_path(Path(args.out_dir), "item_report")
+    save_rows(item_rows, item_path, ["item", "total", "share"])
+    print(f"{len(item_rows)}商品ぶんを {item_path} に書き出しました")
+```
+
+```powershell
+python analyze_sales.py
+```
+
+```text
+実行結果:
+【2024-07-01 〜 2024-07-07 の商品別売上】
+ソフトクリーム: 278,600円
+かき氷: 134,100円
+アイスコーヒー: 56,100円
+ホットコーヒー: 41,700円
+焼きドーナツ: 14,600円
+7日ぶんを out\sales_report_20260831.csv に書き出しました
+5商品ぶんを out\item_report_20260831.csv に書き出しました
+```
+
+`out/item_report_20260831.csv` の中身です。
+
+```text
+item,total,share
+ソフトクリーム,278600,53.1
+かき氷,134100,25.5
+アイスコーヒー,56100,10.7
+ホットコーヒー,41700,7.9
+焼きドーナツ,14600,2.8
+```
+
+**解説**
+
+**`sum(item_totals.values())` で全体を出す**
+
+`values()` は辞書の値だけを取り出します（[4.3.4](./04-data-structures.md#434-キー値両方を回す)）。
+それを `sum()` に渡すと合計になります。
+`sum(item_totals)` と書くと**キー（商品名）を足そうとして** `TypeError` になるので注意してください。
+
+**`f"{amount / total * 100:.1f}"`**
+
+`:.1f` は「小数第1位まで表示する」という書式指定です
+（[2.4.4](./02-basics.md#244-f-string) の `:.2f` の仲間）。
+
+`278600 / 524600 * 100` は `53.107...` という値になりますが、
+`:.1f` を通すと `53.1` という**文字列**になります。
+`build_rows` と同じく、書き出す直前に文字列へそろえています
+（[10.4.1](./10-practice-data-script.md#1041-csv-に書き出す)）。
+
+**なぜ `save_rows` に `fieldnames` を渡すのか**
+
+もとの `save_rows` は、列名が関数の中に**書き込まれて**いました。
+
+```python
+writer = csv.DictWriter(
+    f, fieldnames=["date", "quantity", "total", "max_temperature"]
+)
+```
+
+このままだと、商品別の CSV を書くときに `save_rows` をもう1つ作ることになります。
+**「書き出す」という仕事は同じで、違うのは列名だけ**なので、
+違う部分を引数にすれば1つの関数で足ります。
+
+これが [5.6.3](./05-functions.md#563-どこで関数に切り出すか)「どこで関数に切り出すか」の逆向きの判断——
+**「ほとんど同じ関数が2つできそうなら、違いを引数にする」**——です。
+
+> **よくある間違い**
+> `fieldnames` に書いた列名と、`rows` の辞書のキーが1つでも食い違うと、
+> `DictWriter` は次のエラーを出します。
+>
+> ```text
+> ValueError: dict contains fields not in fieldnames: 'share'
+> ```
+>
+> 「辞書に `share` があるのに、列名の一覧に書かれていない」という意味です。
+> **列名の一覧と、辞書のキーを見比べてください。**
+
+**別解：合計を引数で受け取る**
+
+```python
+def build_item_rows(item_totals: dict[str, int], total: int) -> list[dict[str, str]]:
+```
+
+合計を関数の外で計算して渡す形もあります。
+「全体の売上」を他の場所でも使うなら、こちらのほうが二度手間になりません。
+今回は他で使わないので、関数の中で計算しました。
+
+---
+
+### 演習 10.4 の解答
+
+**1. 取得の関数を一般化する**
+
+```python
+def fetch_daily_values(start: str, end: str, variable: str) -> dict[str, float] | None:
+    """期間中の日ごとの値を返す。取得できなければ None を返す。"""
+    params: dict[str, str] = {
+        "latitude": str(LATITUDE),
+        "longitude": str(LONGITUDE),
+        "start_date": start,
+        "end_date": end,
+        "daily": variable,
+        "timezone": "Asia/Tokyo",
+    }
+    for attempt in range(1, RETRY_COUNT + 1):
+        try:
+            response = requests.get(API_URL, params=params, timeout=10)
+            response.raise_for_status()
+            data = response.json()
+        except requests.RequestException as e:
+            print(f"{variable} の取得に失敗しました（{attempt}回目）: {e}")
+            if attempt < RETRY_COUNT:
+                time.sleep(RETRY_WAIT_SECONDS)
+            continue
+
+        values: dict[str, float] = {}
+        for index, day in enumerate(data["daily"]["time"]):
+            values[day] = data["daily"][variable][index]
+        return values
+
+    return None
+```
+
+**2. `build_rows` に降水量を足す**
+
+```python
+def build_rows(
+    date_totals: dict[str, int],
+    date_quantities: dict[str, int],
+    temperatures: dict[str, float] | None,
+    rainfalls: dict[str, float] | None,
+) -> list[dict[str, str]]:
+    """書き出し用の辞書のリストを、日付順に組み立てて返す。"""
+    rows: list[dict[str, str]] = []
+    for day in sorted(date_totals):
+        if temperatures is None:
+            temperature = ""
+        else:
+            temperature = str(temperatures.get(day, ""))
+        if rainfalls is None:
+            rainfall = ""
+        else:
+            rainfall = str(rainfalls.get(day, ""))
+        rows.append(
+            {
+                "date": day,
+                "quantity": str(date_quantities[day]),
+                "total": str(date_totals[day]),
+                "max_temperature": temperature,
+                "rainfall": rainfall,
+            }
+        )
+    return rows
+```
+
+**3. `save_rows` の列名に足す**
+
+```python
+        writer = csv.DictWriter(
+            f,
+            fieldnames=["date", "quantity", "total", "max_temperature", "rainfall"],
+        )
+```
+
+**4. `main` から2回呼ぶ**
+
+```python
+    if args.no_weather:
+        temperatures = None
+        rainfalls = None
+    else:
+        temperatures = fetch_daily_values(args.start, args.end, "temperature_2m_max")
+        rainfalls = fetch_daily_values(args.start, args.end, "precipitation_sum")
+        if temperatures is None or rainfalls is None:
+            print("気象データなしで集計を続けます")
+```
+
+```python
+    rows = build_rows(date_totals, date_quantities, temperatures, rainfalls)
+```
+
+```powershell
+python analyze_sales.py
+```
+
+```text
+date,quantity,total,max_temperature,rainfall
+2024-07-01,149,48600,28.2,6.7
+2024-07-02,172,60900,31.4,4.9
+2024-07-03,164,56200,31.4,1.1
+2024-07-04,202,72700,33.2,0.0
+2024-07-05,230,83050,33.7,0.0
+2024-07-06,318,110300,33.7,1.1
+2024-07-07,258,93350,32.9,0.0
+```
+
+**解説**
+
+書き出された表を読むと、面白いことが分かります。
+**雨が降った 7月1日・2日は、気温のわりに売上が伸びていません。**
+気温だけを見ていたときには気づけなかったことです。
+
+**列を1つ足すだけで、見えるものが変わる。** これがデータ処理の面白いところです。
+
+**「関数の中に固定で書かれていた値」を引数にする**
+
+もとの `fetch_max_temperatures` は、`"temperature_2m_max"` を2か所に書き込んでいました。
+
+```python
+"daily": "temperature_2m_max",                              # 送るとき
+values[day] = data["daily"]["temperature_2m_max"][index]    # 受け取るとき
+```
+
+**この2つは、必ず同じ値でなければなりません。**
+Open-Meteo は「送った変数名を、そのままキーにして返す」ためです。
+引数 `variable` にまとめると、**片方だけ直す**という間違いが起こらなくなります。
+
+これは演習 10.3 の `fieldnames` と同じ考え方です。
+「ほとんど同じ関数が2つできそうなら、違いを引数にする」
+（[5.2.1](./05-functions.md#521-位置引数) / [5.6.3](./05-functions.md#563-どこで関数に切り出すか)）。
+
+**`if temperatures is None or rainfalls is None:`**
+
+どちらか一方でも取れなかったら、メッセージを出します。
+`build_rows` の中で、取れなかったほうの列だけが空欄になります。
+
+**`0.0` は「雨が降らなかった」**
+
+`rainfall` の列に `0.0` と入っている日は、雨が降らなかった日です。
+空欄（取得できなかった）とは意味が違います。
+**「値がない」と「値が 0 である」は違う**——という区別は、
+`None` と `0` の区別（[2.2.4](./02-basics.md#224-none)）と同じ話です。
+
+> **よくある間違い**
+> `build_rows` の引数を1つ増やしたのに、
+> `main` の呼び出し側を直し忘れると、次のエラーになります。
+>
+> ```text
+> TypeError: build_rows() missing 1 required positional argument: 'rainfalls'
+> ```
+>
+> **引数を増やしたら、呼んでいる場所をすべて直す**（[5.2.1](./05-functions.md#521-位置引数)）。
+> mypy を実行すれば、動かす前にこの間違いを見つけられます。
+
+> **補足**
+> 2回 API を呼んでいるので、通信も2回起きています。
+> Open-Meteo は `"daily": "temperature_2m_max,precipitation_sum"` のように
+> **カンマで区切って一度に複数の値を要求**できます。
+> 1回の通信で済ませたい場合は、この形にして、
+> 返ってきた `daily` から2つのリストを取り出すことになります。
+> **通信の回数は少ないほうがよい**（相手のサーバーにも優しい）ので、
+> 実務ではこちらを選ぶ場面が多くなります。
