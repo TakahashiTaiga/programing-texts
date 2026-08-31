@@ -23,11 +23,11 @@
 | 本 | 完了 / 全体 |
 |----|-----------|
 | react-text | 13 / 13 |
-| python-text | 8 / 13 |
+| python-text | 9 / 13 |
 | fastapi-text | 0 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **21 / 59** |
+| **合計** | **22 / 59** |
 
 ---
 
@@ -83,7 +83,7 @@
 | P-05 | 完了 | 第5章 関数 | `python-text/05-functions.md` | part1 | 中 | 4章で先送りした `sorted()` の `key` を 5.5.3 で回収。第6章のスタブを新規作成 |
 | P-06 | 完了 | 第6章 モジュールとパッケージ | `python-text/06-modules.md` | part2 | 中 | 解答編 その2（`91-answers-part2.md`）を新規作成。6.3.5 で `str.join` を追加説明。第7章のスタブを新規作成 |
 | P-07 | 完了 | 第7章 ファイル操作と例外 | `python-text/07-files-and-exceptions.md` | part2 | 中 | 7.6.2 で `class ...(Exception):` のみ「例外を増やす決まった書き方」として先取り（詳細は第8章）。第8章のスタブを新規作成 |
-| P-08 | 未着手 | 第8章 オブジェクト指向 | `python-text/08-oop.md` | part2 | 大 | |
+| P-08 | 完了 | 第8章 オブジェクト指向 | `python-text/08-oop.md` | part2 | 大 | 8.5.2 で `@dataclass` のために型の注記を先取り（詳細は第9章）。第9章のスタブを新規作成 |
 | P-09 | 未着手 | 第9章 型ヒントとモダン Python | `python-text/09-typing-and-tools.md` | part2 | 中 | |
 | P-10 | 未着手 | 第10章 実践：データ処理スクリプト | `python-text/10-practice-data-script.md` | part2 | 中 | |
 | P-11 | 未着手 | 第11章 次のステップ | `python-text/11-next-steps.md` | — | 小 | |
