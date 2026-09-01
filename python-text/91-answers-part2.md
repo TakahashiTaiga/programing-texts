@@ -246,6 +246,8 @@ ImportError: attempted relative import with no known parent package
 
 ---
 
+### 演習
+
 ### 演習 6.1 の解答
 
 `python-lesson/text_utils.py`
@@ -1006,6 +1008,8 @@ def read_count(path):
 
 ---
 
+### 演習
+
 ### 演習 7.1 の解答
 
 `python-lesson/shopping.txt`
@@ -1752,6 +1756,8 @@ print(to_yen(1234))
 > `from formatters import to_yen` で使うほうが Python らしい書き方です。
 
 ---
+
+### 演習
 
 ### 演習 8.1 の解答
 
@@ -2545,6 +2551,8 @@ I001 [*] Import block is un-sorted or un-formatted
 **並び順を自分で覚える必要はありません。**
 
 ---
+
+### 演習
 
 ### 演習 9.1 の解答
 
@@ -3360,6 +3368,8 @@ else:
 
 ---
 
+### 演習
+
 ### 演習 10.1 の解答
 
 `analyze_sales.py` に追加する関数です。
@@ -4049,6 +4059,8 @@ DRY RUN は、その差を埋めるための習慣です
 「表示だけ」ができなくなります。
 
 ---
+
+### 演習
 
 ### 演習 11.1 の解答
 
