@@ -241,7 +241,7 @@
 |----|---------|----------------|
 | 0 | はじめに（前提：python-text 完了） | （コードなし）この本の前提（python-text の venv / pip / リスト / 辞書 / 関数 / `import` / JSON / 例外 / `class` / `@dataclass` / 型ヒントの戻り場所つき対応表）、**型ヒントが FastAPI では実際の動作を決めること**（python-text 第9章との違い）、`python --version` / `python3 --version` による確認（3.10 以上）、この本で作るもの（タスク管理 API →第9章で react-text 第10章のアプリと接続）、全5冊での位置づけ、AI サポートの準備（指示ファイルの読み込み・動作確認・章番号を添える理由）、API 開発ならではの進め方（**サーバーは起動しっぱなし**・`Ctrl` + `C` で停止・**ターミナルを2つ使う**（VS Code の「新しいターミナル」／2つ目では venv の有効化が必要）・確認は「ブラウザ／`/docs`／サーバーのログ」の3つ・書いたらすぐ動かす輪）、詰まったときの確認順（サーバーが動いているか→URL とメソッド→ステータスコード→ターミナルの最終行）と質問テンプレート（章番号・URL とメソッド・返ってきたもの・サーバーの表示） |
 | 1 | Web API とは | フロントエンドとバックエンド（1台のパソコンに閉じ込められる限界・データを1か所に置く構図・サーバーは起動しっぱなし）、**Web API＝HTTP で呼び出せる関数**（関数名→URL、引数→URL に付ける値かボディ、戻り値→JSON）、HTTP（リクエスト1つ→レスポンス1つで完結・リクエストの部品＝メソッド／URL／ヘッダー／ボディ・レスポンスの部品＝ステータスコード／ヘッダー／ボディ）、**HTTP メソッド**（`GET`（何度呼んでも変わらない・ボディを付けない）/ `POST`（作る）/ `PUT`（丸ごと置換。送らなかった項目は消える）/ `PATCH`（一部だけ変更）/ `DELETE`（消す）・**URL に動詞を書かない**）、**ステータスコード**（2xx / 3xx / **4xx＝送った側**／**5xx＝受けた側**・`200` / `201` / `204` / `400` / `404` / `422` / `500`・`404` と `422` の違い・`500` はサーバーのターミナルを見る）、ヘッダーとボディ（`Content-Type: application/json`・`Authorization`（存在のみ）・メソッドごとのボディの有無）、**JSON**（**ダブルクォートのみ・キーも引用符・末尾カンマ禁止・コメント禁止**・`true` / `false` / `null` は小文字・Python との対応表（`True`→`true` / `None`→`null` / `dict`→オブジェクト / `list`→配列）・`json.dumps` / `json.loads` と `ensure_ascii=False` で確認）、**REST**（リソース＝数えられるもの・**URL は複数形の名詞**・`/tasks` と `/tasks/3`・入れ子は2段まで（`/members/12/loans`）・動詞を名詞に翻訳する（「借りる」→`POST /loans`）・**`POST` の相手は集まり、`PUT`/`PATCH`/`DELETE` の相手は1件**・メソッド×URL×成功コードの対応表・完璧を目指さなくてよい（ただし **`GET` でデータを変更しない**））、**API を叩く3つの方法**（ブラウザのアドレス欄は `GET` のみ・**開発者ツールの Network タブ**（`F12` / `Command`+`Option`+`I`・`Status Code` / `Headers` / `Response` / `Preview`）・**`curl`**（**PowerShell では `curl.exe`**・`-i`（ヘッダー表示）/ `-X`（メソッド）/ `-H`（ヘッダー）/ `-d "@ファイル名"`（ボディをファイルから）/ `-o`（ファイルに保存）/ `-s`）・JSONPlaceholder（`/posts` / `/posts/1` / `/users`。**保存はされない**）・保存した JSON を `json.load` で読んで Python の集計に繋げる） |
-| 2 | FastAPI をはじめる | インストール、最初のエンドポイント、自動ドキュメント |
+| 2 | FastAPI をはじめる | 第1章の範囲に加えて：**FastAPI が肩代わりする部分**（受け取り・パスの振り分け・戻り値の JSON 変換・レスポンスの組み立て。書くのは呼ばれる関数だけ）、**型ヒントが実際の検査とドキュメントに使われる**（python-text 9.1.4 との違い）、Flask / Django との位置づけの違い（表のみ）、**プロジェクトの作り方**（`mkdir` → `cd` → `python -m venv .venv` → 有効化 → `pip install "fastapi[standard]==0.115.6"` → `pip freeze > requirements.txt`）、`[standard]` の意味（`fastapi` コマンド・`uvicorn` が入る。**ダブルクォートで囲む**）、`pip list` / `fastapi --version` での確認、依存関係に `pydantic` / `uvicorn` / `starlette` が入ること（名前のみ）、**`main.py` の書き方**（`from fastapi import FastAPI` / `app = FastAPI()` / `@app.get("/")` / `def` / 辞書を `return`）、**デコレータの3部品**（登録先 `app`・メソッド `.get`・パス `("/")`）、`.get` / `.post` / `.put` / `.patch` / `.delete` の書き分け（**書き方のみ。パラメータは第3章**）、`app` という変数名を使う理由、関数名は自由（`/docs` の見出しになる）、**戻り値の辞書が自動で JSON になる**（`True`→`true` / `None`→`null`・入れ子・リスト可・`Content-Type` も自動。**日付や自作クラスは第4章**）、**`fastapi dev main.py` での起動**（ターミナルが返ってこない・`Ctrl`+`C` で停止・`127.0.0.1` と `localhost`・ポート 8000・`dev` と `run` の違い）、ブラウザ / `curl` / 開発者ツールでの確認、**アクセスログの読み方**（`INFO: 127.0.0.1:... - "GET /health HTTP/1.1" 200 OK`）、登録していない URL は `404`、**自動リロード**（保存で `Reloading...`・反映されないときの4つの確認）、**新規 API の6ステップ**（作成→venv→install→main.py→dev→確認）、**ポート衝突**（`Address already in use`・`--port 8001`・`netstat -ano \| Select-String ":8000"` + `taskkill /PID <n> /F`・`lsof -i :8000` + `kill <n>`・**ポートを分ければ同時に動かせる**）、**`/docs`（Swagger UI）**（`Try it out` → `Execute`・`Curl` / `Code` / `Response body` の3表示。**Windows の引用符問題を回避できる**）、`/redoc`（読む用）、**`/openapi.json` からコードが一方通行で生成されるのでズレない**、docstring が説明欄になること、**起動しないときの3原因**（有効化忘れ／インストール漏れ・`[standard]` 忘れ／ファイル名・変数名の食い違い）、`which python` / `Get-Command python` での有効化確認、`There is no FastAPI app` / `Path does not exist` の意味 |
 | 3 | パラメータ | パスパラメータ、クエリパラメータ、リクエストボディ |
 | 4 | Pydantic | モデル定義、バリデーション、レスポンスモデル |
 | 5 | ルーター分割とプロジェクト構成 | `APIRouter`、依存性注入 |
@@ -269,6 +269,18 @@
 > **`@app.get` などのエンドポイントの書き方を先取りして見せないでください**（第2章）。
 > パラメータの受け取り方は第3章、Pydantic は第4章、データベースは第6章です。
 > 第1章の相談には、**python-text までの知識＋この章の HTTP / JSON / REST の語彙**で答えてください。
+>
+> **注意（第2章）**：第2章の学習者は、**引数を1つも持たない窓口しか作っていません。**
+> `@app.get("/tasks/{task_id}")` のようなパスパラメータ、`?done=true` のクエリパラメータ、
+> `POST` のボディ受け取りは**すべて第3章**です。先取りして見せないでください。
+> Pydantic の `BaseModel` は第4章、`APIRouter` によるファイル分割は第5章です。
+> **第2章の範囲でファイルは `main.py` 1つだけ**なので、
+> 「ルーターに分けましょう」という助言はしないでください。
+> 返せる値は**辞書・リスト・文字列・数値・真偽値・`None`** の範囲です
+> （日付や自作クラスを返す相談には「第4章で扱います」と伝えてください）。
+> インストールのバージョンは **`fastapi[standard]==0.115.6`**（2.2.2）で統一されています。
+> 起動コマンドは **`fastapi dev main.py`** です。`uvicorn main:app --reload` は
+> **このテキストでは使っていない**ので、そちらを案内しないでください。
 >
 > ターミナルから API を叩く道具は **`curl` だけ**です。
 > `requests`（python-text 第10章）を使っても構いませんが、

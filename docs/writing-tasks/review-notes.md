@@ -32,7 +32,15 @@
 - [ ] `fastapi-text` 1.5.3 `curl` の実機確認（**Windows で `curl.exe` と打つ必要がある**点、`-i` の1行目が `HTTP/2 200` / `HTTP/2 404` の形で出るか、`-d "@new_post.json"` で `201` が返るか）。PowerShell 5.1 と PowerShell 7 系の両方で確認してください
 - [ ] `fastapi-text` 1.5 で使っている外部サービス **JSONPlaceholder**（`https://jsonplaceholder.typicode.com/`）が公開され続けているか。`/posts` が 100 件・`/users` が 10 件（演習 1.2 の解答が「10 人 × 10 件」前提）であることも、公開前に確認してください。停止していた場合は、代替 API に差し替えるか 1.5 全体を第2章の自作 API に置き換える必要があります
 - [ ] `fastapi-text` 1.5.2 開発者ツールの **Network タブの日本語 UI 文言**（Chrome / Edge / Safari で変わります）。本文は英語表記を主にして日本語を併記しています
-- [ ] `fastapi-text` 2.2〜2.4 インストールと開発サーバー起動コマンド
+- [ ] `fastapi-text` 2.2〜2.4 インストールと開発サーバー起動コマンド。**F-02 で書いた内容は実機未確認です。**公開前に次を必ず通しで実行してください
+  - [ ] 2.2.2 `pip install "fastapi[standard]==0.115.6"` が現在も成功するか（**本文はこのバージョンで固定**。新しい版に更新する場合は、2.2.3・2.2.2 の出力例・まとめ・演習 2.2 の完成条件・解答編の `fastapi==0.115.6` をすべて直す必要があります）。あわせて `Successfully installed ...` に並ぶ**依存パッケージ名とバージョン**を実際の出力に合わせてください
+  - [ ] 2.2.2 macOS の zsh で `pip install fastapi[standard]`（クォート無し）が本当に `zsh: no matches found:` になるか
+  - [ ] 2.2.3 `fastapi --version` の出力形式（本文は `FastAPI CLI version: 0.0.7`）
+  - [ ] 2.4.1 **`fastapi dev main.py` の起動時の表示**。本文は枠線付きの表示を要点だけ抜粋した形で載せています。実機の出力と大きく違うようなら差し替えてください
+  - [ ] 2.4.4 ポート衝突時のメッセージ（macOS `[Errno 48] Address already in use` / Windows `[Errno 10048] ...`）と、`netstat -ano | Select-String ":8000"` / `lsof -i :8000` の出力形式
+  - [ ] 2.6.3 **変数名を `app` 以外にしたときのエラー文言**（本文は `There is no FastAPI app or you haven't used a supported type.`）と、ファイルが無いときの `Error: Path does not exist main.py`。**この2つは版によって文言が変わりやすい箇所です**（解答編 演習 2.3 にも同じ文言を書いています）
+  - [ ] 2.6.2 `Get-Command python | Select-Object Source` の出力形式（Windows 実機）
+  - [ ] 2.5.1〜2.5.3 `/docs` `/redoc` `/openapi.json` の表示と、`Try it out` → `Execute` の UI 文言
 - [ ] `docker-text` 2.1〜2.2 Docker Desktop のインストールとトラブル対処
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
 
