@@ -29,6 +29,9 @@
 - [ ] `python-text` 9.4.3 VS Code 拡張機能 **Ruff**（発行元 Astral Software、識別子 `charliermarsh.ruff`）のインストールと、保存時の `source.fixAll.ruff` / `source.organizeImports.ruff` が実際に効くか。あわせて 2.7.3 で入れた Black Formatter を無効化する手順の UI 文言
 - [ ] `python-text` 9.3.3 Pylance の `"python.analysis.typeCheckingMode": "basic"` と、赤い波線に表示される**日本語のメッセージ文言**（VS Code の表示言語設定で変わります）
 - [ ] `python-text` 9.5.2 uv のインストールコマンド（Windows の `irm ... | iex` / macOS の `curl ... | sh`）。**この2つは Windows / macOS 実機で未確認**です。`uv venv` / `uv pip install` の出力例は Linux で確認したものを Windows 向けに書き換えてあります
+- [ ] `fastapi-text` 1.5.3 `curl` の実機確認（**Windows で `curl.exe` と打つ必要がある**点、`-i` の1行目が `HTTP/2 200` / `HTTP/2 404` の形で出るか、`-d "@new_post.json"` で `201` が返るか）。PowerShell 5.1 と PowerShell 7 系の両方で確認してください
+- [ ] `fastapi-text` 1.5 で使っている外部サービス **JSONPlaceholder**（`https://jsonplaceholder.typicode.com/`）が公開され続けているか。`/posts` が 100 件・`/users` が 10 件（演習 1.2 の解答が「10 人 × 10 件」前提）であることも、公開前に確認してください。停止していた場合は、代替 API に差し替えるか 1.5 全体を第2章の自作 API に置き換える必要があります
+- [ ] `fastapi-text` 1.5.2 開発者ツールの **Network タブの日本語 UI 文言**（Chrome / Edge / Safari で変わります）。本文は英語表記を主にして日本語を併記しています
 - [ ] `fastapi-text` 2.2〜2.4 インストールと開発サーバー起動コマンド
 - [ ] `docker-text` 2.1〜2.2 Docker Desktop のインストールとトラブル対処
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
