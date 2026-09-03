@@ -243,7 +243,7 @@
 | 1 | Web API とは | フロントエンドとバックエンド（1台のパソコンに閉じ込められる限界・データを1か所に置く構図・サーバーは起動しっぱなし）、**Web API＝HTTP で呼び出せる関数**（関数名→URL、引数→URL に付ける値かボディ、戻り値→JSON）、HTTP（リクエスト1つ→レスポンス1つで完結・リクエストの部品＝メソッド／URL／ヘッダー／ボディ・レスポンスの部品＝ステータスコード／ヘッダー／ボディ）、**HTTP メソッド**（`GET`（何度呼んでも変わらない・ボディを付けない）/ `POST`（作る）/ `PUT`（丸ごと置換。送らなかった項目は消える）/ `PATCH`（一部だけ変更）/ `DELETE`（消す）・**URL に動詞を書かない**）、**ステータスコード**（2xx / 3xx / **4xx＝送った側**／**5xx＝受けた側**・`200` / `201` / `204` / `400` / `404` / `422` / `500`・`404` と `422` の違い・`500` はサーバーのターミナルを見る）、ヘッダーとボディ（`Content-Type: application/json`・`Authorization`（存在のみ）・メソッドごとのボディの有無）、**JSON**（**ダブルクォートのみ・キーも引用符・末尾カンマ禁止・コメント禁止**・`true` / `false` / `null` は小文字・Python との対応表（`True`→`true` / `None`→`null` / `dict`→オブジェクト / `list`→配列）・`json.dumps` / `json.loads` と `ensure_ascii=False` で確認）、**REST**（リソース＝数えられるもの・**URL は複数形の名詞**・`/tasks` と `/tasks/3`・入れ子は2段まで（`/members/12/loans`）・動詞を名詞に翻訳する（「借りる」→`POST /loans`）・**`POST` の相手は集まり、`PUT`/`PATCH`/`DELETE` の相手は1件**・メソッド×URL×成功コードの対応表・完璧を目指さなくてよい（ただし **`GET` でデータを変更しない**））、**API を叩く3つの方法**（ブラウザのアドレス欄は `GET` のみ・**開発者ツールの Network タブ**（`F12` / `Command`+`Option`+`I`・`Status Code` / `Headers` / `Response` / `Preview`）・**`curl`**（**PowerShell では `curl.exe`**・`-i`（ヘッダー表示）/ `-X`（メソッド）/ `-H`（ヘッダー）/ `-d "@ファイル名"`（ボディをファイルから）/ `-o`（ファイルに保存）/ `-s`）・JSONPlaceholder（`/posts` / `/posts/1` / `/users`。**保存はされない**）・保存した JSON を `json.load` で読んで Python の集計に繋げる） |
 | 2 | FastAPI をはじめる | 第1章の範囲に加えて：**FastAPI が肩代わりする部分**（受け取り・パスの振り分け・戻り値の JSON 変換・レスポンスの組み立て。書くのは呼ばれる関数だけ）、**型ヒントが実際の検査とドキュメントに使われる**（python-text 9.1.4 との違い）、Flask / Django との位置づけの違い（表のみ）、**プロジェクトの作り方**（`mkdir` → `cd` → `python -m venv .venv` → 有効化 → `pip install "fastapi[standard]==0.115.6"` → `pip freeze > requirements.txt`）、`[standard]` の意味（`fastapi` コマンド・`uvicorn` が入る。**ダブルクォートで囲む**）、`pip list` / `fastapi --version` での確認、依存関係に `pydantic` / `uvicorn` / `starlette` が入ること（名前のみ）、**`main.py` の書き方**（`from fastapi import FastAPI` / `app = FastAPI()` / `@app.get("/")` / `def` / 辞書を `return`）、**デコレータの3部品**（登録先 `app`・メソッド `.get`・パス `("/")`）、`.get` / `.post` / `.put` / `.patch` / `.delete` の書き分け（**書き方のみ。パラメータは第3章**）、`app` という変数名を使う理由、関数名は自由（`/docs` の見出しになる）、**戻り値の辞書が自動で JSON になる**（`True`→`true` / `None`→`null`・入れ子・リスト可・`Content-Type` も自動。**日付や自作クラスは第4章**）、**`fastapi dev main.py` での起動**（ターミナルが返ってこない・`Ctrl`+`C` で停止・`127.0.0.1` と `localhost`・ポート 8000・`dev` と `run` の違い）、ブラウザ / `curl` / 開発者ツールでの確認、**アクセスログの読み方**（`INFO: 127.0.0.1:... - "GET /health HTTP/1.1" 200 OK`）、登録していない URL は `404`、**自動リロード**（保存で `Reloading...`・反映されないときの4つの確認）、**新規 API の6ステップ**（作成→venv→install→main.py→dev→確認）、**ポート衝突**（`Address already in use`・`--port 8001`・`netstat -ano \| Select-String ":8000"` + `taskkill /PID <n> /F`・`lsof -i :8000` + `kill <n>`・**ポートを分ければ同時に動かせる**）、**`/docs`（Swagger UI）**（`Try it out` → `Execute`・`Curl` / `Code` / `Response body` の3表示。**Windows の引用符問題を回避できる**）、`/redoc`（読む用）、**`/openapi.json` からコードが一方通行で生成されるのでズレない**、docstring が説明欄になること、**起動しないときの3原因**（有効化忘れ／インストール漏れ・`[standard]` 忘れ／ファイル名・変数名の食い違い）、`which python` / `Get-Command python` での有効化確認、`There is no FastAPI app` / `Path does not exist` の意味 |
 | 3 | パラメータを受け取る | 第2章の範囲に加えて：練習用データ（`main.py` の中の `tasks` リスト。**サーバーを止めると消える。保存は第6章**）、**パスパラメータ**（`@app.get("/tasks/{task_id}")` と同名の引数・**型ヒントが無いと文字列のまま**・波括弧の名前と引数名がずれると `missing` の `422`）、**型ヒントによる変換と検査**（`"3"`→`3`・変換できなければ `422` で関数は呼ばれない・使えるのは `int` / `float` / `str` / `bool`）、`404` と `422` の違い（見つからない／形式が違う）、**見つからないときも `200` でメッセージを返す**（`HTTPException` は第5章 5.4.1）、**定義の順序**（**固定のパスを波括弧付きより先に書く**・上から順に照合・型ヒントが無いと気づけない）、**クエリパラメータ**（`?key=value`・`&` 区切り・**パスの波括弧に無い引数が自動的にこれになる**・`bool` は `true`/`1`/`yes`/`on` を受け付ける）、**デフォルト値の有無で必須か省略可能かが決まる**、**`bool \| None = None`** と `is not None`（`if done:` では `false` の指定が効かない）、**`list[int] = Query(default=[])`**（`Query` が無いと値が届かない）、**リクエストボディ**（URL に載せられないもの＝長さ・入れ子・秘密の値・`GET` の約束・**型ヒントを `dict` にすると受け取れる**・`/docs` か `curl` で送る・`-H "Content-Type: application/json"` の付け忘れは `dict_type` の `422`・PowerShell は `-d "@ファイル名"`・**成功しても `200`（`201` の指定は第4章 4.4.3）**）、**`dict` は中身を検査しない**（`KeyError` → `500` → サーバーのターミナルのトレースバック。**解決は第4章の Pydantic**）、**パス・クエリ・ボディの同時利用**（名前と型で自動判定。引数の順番は無関係）、**`Query` / `Path` による条件付け**（`default` / `ge` / `le` / `gt` / `lt` / `min_length` / `max_length`・`/docs` にも反映・**デフォルト値のある引数は後ろに書く**・公式ドキュメントの `Annotated` 記法の存在）、**`422` の読み方**（`detail` はリスト・**`loc` の1つ目（`path` / `query` / `body` / `header`）で直す場所が決まる**・`type` / `msg` / `input` / `ctx`・`missing` / `int_parsing` / `bool_parsing` / `greater_than_equal` / `string_too_short` / `dict_type`・複数の問題はまとめて返る）、**ヘッダー**（`Header(default=None)`・**引数名の `_` はヘッダー名の `-`**・大文字小文字は無視・`User-Agent` は自動で付く・`X-` の慣習）、**クッキー**（`Cookie(default=None)`・`curl -b` で送る・**`/docs` からは送れない**・`Set-Cookie` を返す側は第7章）、パーセントエンコーディング（存在のみ。日本語の確認はブラウザか `/docs` で） |
-| 4 | Pydantic | モデル定義、バリデーション、レスポンスモデル |
+| 4 | Pydantic | 第3章の範囲に加えて：**Pydantic**（型ヒントを読み取って実行時に検査するライブラリ。FastAPI に同梱・**2 系**で書く。`@validator` / `.dict()` は 1 系なので使わない）、`@dataclass` との違い（検査するかしないか。python-text 9.1.4 の回収）、**モデル**（`class TaskCreate(BaseModel):`・**値は属性で取り出す**（`new_task.title`）・`/docs` の `Request body` に送信例が出る・`dict` の `500` が **`422`** に変わる）、**必須と任意**（デフォルト値の有無で決まる・**`str \| None = None`**・**`str = None` は省略できるが `null` を送ると `string_type` の 422**）、**入れ子のモデル**（内側もモデルにする・`loc` が `["body","owner","email"]` と長くなる・`model_dump()` で辞書に変換）、**リストを持つモデル**（`list[str]`・`list[Model]`・**モデルの項目では `= []` と書いてよい**（python-text 5.2.4 との違い）・`list_type`）、**`Field`**（`Query` / `Path` と同じ兄弟・`default` / `min_length` / `max_length` / `ge` / `le` / `gt` / `lt` / `pattern` / `description`・**`default=` の有無で必須か決まる**）、**正規表現**（`^` / `$` / `\d` / `{3}` / そのままの文字の5つだけ・`r"..."`・**メールアドレスは正規表現で検査しない**（`EmailStr` の存在のみ紹介））、**カスタムバリデータ**（`@field_validator("title")` + `@classmethod`・`raise ValueError(...)` → `value_error`（`msg` に `Value error, ` が付く）・**`return` した値が採用される**・`return` 忘れの罠）、**`422` の追加の `type`**（`string_too_short` / `string_too_long` / `string_pattern_mismatch` / `less_than_equal` / `list_type` / `value_error`・**複数の問題はモデルの定義順に並ぶ**・**モデルに無いキーは黙って捨てられる**（`extra="forbid"` の存在のみ））、**レスポンスモデル**（`response_model=`・**関所は2つ（入力＝`422`／出力＝`500`）**・`loc` の1つ目が **`response`** なら自分のコード・`ResponseValidationError` はサーバーのターミナル）、**返してはいけない項目を落とす**（`OwnerRead` に `email` を書かない・保存側は変えない・包みの形は `TaskListResponse` のようにモデル化・**`404` が返せないので見つからないときは `TaskRead \| None` で `null`**（`HTTPException` は第5章 5.4.1））、**`status_code=`**（**`201`**（3.3.2 からの回収）・**`204`（`return None` で空のボディ）**・`status.HTTP_201_CREATED` の存在のみ）、**入力用と出力用を分ける**（`Create` / `Update` / `Read`・場面ごとに必要な項目が違う・`PUT` をやめて **`PATCH`** に・**`model_dump(exclude_unset=True)`**（送られてきた項目だけ取り出す）・共通部分は `TaskBase` に継承でまとめる（**継承すると JSON の項目の順番が変わる**）・モデルの docstring が `/docs` に出る）、**設定管理**（`pydantic-settings==2.7.0` は**別途 `pip install`**・`BaseSettings`・`SettingsConfigDict(env_file=".env")`・`FastAPI(title=...)`・**環境変数 > `.env` > コードのデフォルト値**・`.env` は VS Code で作る・**再起動しないと反映されない**・型が合わないと**起動時に落ちる**）、**秘密情報をコードに書かない**（`.env` を共有しない・`.gitignore`（Git は用語の紹介のみ）・**`.env.example`**・本番では環境変数を直接渡す・`settings.model_dump()` をそのまま返さない） |
 | 5 | ルーター分割とプロジェクト構成 | `APIRouter`、依存性注入 |
 | 6 | データベース連携 | SQLAlchemy、マイグレーション |
 | 7 | 認証 | パスワードハッシュ、JWT、依存性による認可 |
@@ -319,6 +319,33 @@
 > 一緒に読むところから始めてください（3.4.2）。
 > **「作ったはずの窓口が動かない」**という相談では、
 > まず **`/tasks/{task_id}` より後ろに固定パスを書いていないか**を確認させてください（3.1.4）。
+>
+> **注意**：第4章の学習者は、**Pydantic の 2 系だけ**を知っています。
+> 検索して出てくる **1 系の書き方（`@validator` / `.dict()` / `class Config:`）を見せないでください。**
+> `@field_validator` / `.model_dump()` / `model_config = ConfigDict(...)` が 2 系の書き方です。
+> また、次のものはまだ使えません。
+>
+> | 使えないもの | 扱う章 |
+> |------------|-------|
+> | `HTTPException`（`404` を返す）・`APIRouter`・`Depends`・ミドルウェア | 第5章 |
+> | データの保存（データベース・ファイル）・**ファイルを分けること** | 第6章 |
+> | 認証・パスワードのハッシュ化・JWT | 第7章 |
+> | `TestClient` / pytest | 第8章 |
+> | CORS・React との接続 | 第9章 |
+>
+> **`main.py` が 200 行を超えて読みにくい**という相談は、**第4章の時点では想定どおり**です。
+> ファイルを分けたくなった気持ちを肯定したうえで、**第5章まで待つ**ように案内してください。
+> 「見つからないときに `null` が返るのが気持ち悪い」という相談も同じで、
+> **第5章 5.4.1 の `HTTPException`** まで待たせてください（4.4.2 に明記してあります）。
+>
+> `422` の相談では、**`loc` の1つ目**を見る手順は第3章と同じですが、
+> ボディの場合は **`loc` が3つ以上になる**ことを伝えてください（`["body","owner","email"]`）。
+> **`500` の相談では、`loc` の1つ目が `response` かどうか**を必ず確認させてください。
+> `response` なら、送った側ではなく**学習者自身のコードが返している値**が原因です（4.4.1）。
+>
+> `.env` の相談では、まず **サーバーを再起動したか**を確認してください（4.6.2）。
+> `pydantic-settings` は**別途インストールが必要**です（4.6.1）。
+> **秘密の値をコードや `.env.example` に書いた状態のコードを、そのまま肯定しないでください**（4.6.3）。
 
 ## 4. docker-text
 

@@ -1424,3 +1424,672 @@ SyntaxError: parameter without a default follows parameter with a default
 > 送らなかった項目は消えるのが筋です。
 > このテキストでは、第9章まで `PUT` を「更新」として使いますが、
 > **どちらの意味で作ったかを説明できることのほうが大切です**（1.4.4）。
+
+---
+
+## 第4章
+
+### 理解度チェック
+
+**問 4.1 の解答**
+
+- ① **`BaseModel`**
+- ② **`Field`**
+- ③ **`response_model`**
+
+**解説**
+
+3つの役割を整理しておきます。
+
+| 書くもの | 何を宣言するか | 出てきた項 |
+|---------|--------------|-----------|
+| `class TaskCreate(BaseModel):` | **受け取るデータの形** | 4.2.1 |
+| `title: str = Field(min_length=1)` | **項目ごとの条件** | 4.3.1 |
+| `@app.post("/tasks", response_model=TaskRead)` | **返すデータの形** | 4.4.1 |
+
+`Field` は、第3章の `Query` / `Path` と同じ作りの兄弟です（4.3.1 の表）。
+**値がクエリにあるなら `Query`、パスにあるなら `Path`、ボディの中の項目なら `Field`** と覚えてください。
+
+---
+
+**問 4.2 の解答**
+
+**3** の `422` が返り、`loc` が `["body", "done"]` になる
+
+**解説**
+
+`done: bool` には**デフォルト値が書かれていない**ので、必須の項目です（4.2.2）。
+必須の項目が送られてこなければ `422` になります。
+
+```json
+{"detail":[{"type":"missing","loc":["body","done"],"msg":"Field required","input":{"title":"買い物"}}]}
+```
+
+1 になるのは `done: bool = False` と書いた場合です。
+2 の「`None` になる」ことは起こりません。`bool` は `None` を受け付けないからです。
+4 の `500` は、**第3章のように `dict` で受け取っていた**ときの結果です（3.3.2）。
+モデルで受け取るようにしたことで、同じ入力が `500` から `422` に変わった——
+これがこの章の出発点です（4.1.1）。
+
+---
+
+**問 4.3 の解答**
+
+**2** の「どちらも省略できるが、`null` を明示的に送ると下だけ `422` になる」
+
+- `code: str | None = None` … 省略できる。`null` を送ってもよい
+- `code: str = None` … **省略はできるが、`null` を明示的に送ると `422`**
+
+**解説**
+
+Pydantic は、**省略されたときのデフォルト値は検査しません。**
+そのため `code: str = None` でも、省略しただけなら `None` が入って通ってしまいます。
+
+問題は、呼ぶ側が `{"code": null}` と**明示的に送ったとき**です。
+
+```json
+{"detail":[{"type":"string_type","loc":["body","code"],"msg":"Input should be a valid string","input":null}]}
+```
+
+「省略はできるのに `null` は送れない」という、説明のつかない窓口になります。
+さらに `/docs` の表示も「文字列」のままなので、**呼ぶ側からは何が正しいのか読み取れません。**
+
+**省略できる項目には、必ず型のほうに `| None` を書いてください**（4.2.2 のよくある間違い）。
+
+---
+
+**問 4.4 の解答**
+
+**保存しているデータの中の、外に出してはいけない情報が、うっかり漏れる事故**を防げます。
+
+**解説**
+
+4.4.2 の `owner.email` がその例でした。
+`TaskRead` の `owner` を `OwnerRead`（`name` だけ）にした瞬間に、
+**`create_task` のコードを1文字も変えずに** `email` が返らなくなりました。
+
+`return` する直前に毎回 `del task["email"]` と書く方法もありますが、
+**窓口が増えるたびに書き忘れる危険**があり、書き忘れても誰も教えてくれません。
+「返してよいものを1か所で宣言する」ほうが、**書き忘れが起こりようがない**ぶん安全です。
+
+第7章では、パスワードを保存する仕組みを扱います。
+そこでは、この性質がそのまま**事故を防ぐ仕掛け**になります。
+
+---
+
+**問 4.5 の解答**
+
+**作った側（自分のコード）に原因があります。**
+根拠は、`loc` の1つ目が **`response`** になっているからです。
+
+**解説**
+
+`loc` の1つ目は「どこで問題が起きたか」を表します（3.4.2・4.4.1）。
+
+| `loc` の1つ目 | 誰の問題か | どこを直すか |
+|--------------|-----------|------------|
+| `path` / `query` / `body` / `header` | **送った側** | リクエストの内容 |
+| **`response`** | **作った側** | **自分の関数が返している値** |
+
+このエラーは「`owner` を返すと宣言したのに、返す辞書に `owner` が無い」という意味です。
+ブラウザ側には `500 Internal Server Error` としか出ないので、
+**サーバー側のターミナルを見る**必要があります（第1章 1.2.3）。
+
+直し方は、次のどちらかです。
+
+1. 返す辞書に `owner` を入れる（多くの場合はこちら）
+2. `TaskRead` の `owner` を任意の項目にする（本当に無いことがある場合）
+
+---
+
+**問 4.6 の解答**
+
+`title` など**送っていない項目が `None` として書き込まれ、値が消えます。**
+`TaskRead` の `title` は `None` を許していないため、実際にはレスポンスの関所で `500` になります。
+
+**解説**
+
+`model_dump()` は、**モデルの全項目**を辞書にします（4.2.3）。
+`TaskUpdate` はすべての項目が `| None = None` なので、
+`{"done": true}` だけを送っても、次の辞書ができます。
+
+```python
+{"title": None, "done": True, "priority": None, "tags": None}
+```
+
+これをそのまま反映すると、`title` が `None` で上書きされます。
+
+```python
+{"title": None, "done": True, ...}
+```
+
+`exclude_unset=True` を付けると、**実際に送られてきた項目だけ**が残ります（4.5.2）。
+
+```python
+{"done": True}
+```
+
+「送られてこなかった」と「`null` を送られた」を区別している点が肝です。
+第3章 3.2.3 で、`bool | None = None` と `is not None` を使って
+**「指定されなかった」を表した**のと同じ考え方です。
+
+---
+
+**問 4.7 の解答**
+
+**`本番用`** になります。**環境変数のほうが `.env` より優先される**からです。
+
+**解説**
+
+読み込みの順番は、強いほうから次のとおりです（4.6.2）。
+
+```text
+環境変数  >  .env ファイル  >  クラスに書いたデフォルト値
+```
+
+この順番には理由があります。
+`.env` は**開発中のパソコンで使う道具**で、本番のサーバーでは置きません。
+本番では、サーバーの設定画面や Docker（第4冊目）から**環境変数として直接渡します**。
+そのとき、うっかり残っていた `.env` に負けてしまっては困るからです（4.6.3 の注意）。
+
+---
+
+### 演習問題
+
+### 演習 4.1 の解答
+
+`main.py`（モデルの定義の並びに追記）
+
+```python
+class NoteCreate(BaseModel):
+    text: str = Field(min_length=1, max_length=100, description="メモの本文")
+    pinned: bool = False
+```
+
+`main.py`（`create_note` を次に差し替え）
+
+```python
+@app.post("/notes")
+def create_note(new_note: NoteCreate):
+    new_id = max([note["id"] for note in notes]) + 1
+    created = {
+        "id": new_id,
+        # dict のキー指定ではなく、属性で取り出す
+        "text": new_note.text,
+        "pinned": new_note.pinned,
+    }
+    notes.append(created)
+    return created
+```
+
+`/docs` から `{"text": "牛乳を買い忘れた"}` を送った結果
+
+```json
+{"id":2,"text":"牛乳を買い忘れた","pinned":false}
+```
+
+`{}` を送った結果
+
+```json
+{"detail":[{"type":"missing","loc":["body","text"],"msg":"Field required","input":{}}]}
+```
+
+`{"text": ""}` を送った結果
+
+```json
+{"detail":[{"type":"string_too_short","loc":["body","text"],"msg":"String should have at least 1 character","input":"","ctx":{"min_length":1}}]}
+```
+
+101文字の `text` を送った結果
+
+```json
+{"detail":[{"type":"string_too_long","loc":["body","text"],"msg":"String should have at most 100 characters","input":"あああ……","ctx":{"max_length":100}}]}
+```
+
+**解説**
+
+第3章の演習 3.3 では、`.get("text", "（本文なし）")` を使って
+**本文が無くても落ちないようにする**という対処をしていました（3.3.2）。
+
+その解答の最後に、こう書きました。
+
+> ただし、**これは正しい解決ではありません。**
+> 本文が無いメモを `"（本文なし）"` として登録してしまうのは、
+> おそらく利用者が期待した動作ではないからです。
+
+いま、その正しい解決ができました。
+**「`text` は必須」と宣言する**だけで、本文の無いメモは登録できなくなります。
+`.get(...)` も `if` も書いていないことに注目してください。
+
+| 第3章の書き方 | この章の書き方 |
+|-------------|--------------|
+| `new_note.get("text", "（本文なし）")` | `text: str = Field(min_length=1, ...)` |
+| 落ちないようにするだけ | **そもそも受け付けない** |
+| 呼ぶ側は間違いに気づけない | `422` で**何が悪いか伝わる** |
+
+`pinned: bool = False` は、デフォルト値があるので任意です（4.2.2）。
+
+> **よくある間違い**
+> **`{"text": " "}`（空白1文字）は、この解答では通ります。**
+> `min_length=1` は「1文字以上」なので、空白も1文字だからです。
+> 空白だけを弾きたい場合は、4.3.3 の `@field_validator` が必要になります。
+> **`Field` の条件で表せるのは「長さ」までで、「中身が意味を持つか」は表せません。**
+
+> **よくある間違い**
+> `/docs` の `Request body` に `{}` としか表示されない場合、
+> **関数の型ヒントが `dict` のまま**です（4.2.1）。
+> モデルを定義しただけでは何も変わりません。
+
+---
+
+### 演習 4.2 の解答
+
+`main.py`（モデルの定義の並びに追記・`NoteCreate` の前に `Author` を置く）
+
+```python
+class Author(BaseModel):
+    name: str
+    email: str
+
+
+class AuthorRead(BaseModel):
+    # email を書かない。書かなかったものは返らない
+    name: str
+
+
+class NoteCreate(BaseModel):
+    text: str = Field(min_length=1, max_length=100, description="メモの本文")
+    pinned: bool = False
+    author: Author
+
+
+class NoteRead(BaseModel):
+    id: int
+    text: str
+    pinned: bool
+    author: AuthorRead
+```
+
+`main.py`（`create_note` を次に差し替え）
+
+```python
+@app.post("/notes", response_model=NoteRead, status_code=201)
+def create_note(new_note: NoteCreate):
+    new_id = max([note["id"] for note in notes]) + 1
+    created = {
+        "id": new_id,
+        "text": new_note.text,
+        "pinned": new_note.pinned,
+        # 入れ子のモデルは辞書に変換してから保存する
+        "author": new_note.author.model_dump(),
+    }
+    notes.append(created)
+    return created
+```
+
+練習用の `notes` にも `author` を足しておきます。
+
+```python
+notes = [
+    {"id": 1, "text": "会議は水曜に変更", "pinned": False,
+     "author": {"name": "山田", "email": "yamada@example.com"}},
+]
+```
+
+**Windows（PowerShell）**
+
+`new_note.json` を作ってから実行します。
+
+```json
+{"text": "買い物", "author": {"name": "山田", "email": "yamada@example.com"}}
+```
+
+```powershell
+curl.exe -i -X POST http://127.0.0.1:8000/notes -H "Content-Type: application/json" -d "@new_note.json"
+```
+
+**macOS / Linux**
+
+```bash
+curl -i -X POST http://127.0.0.1:8000/notes -H "Content-Type: application/json" -d '{"text": "買い物", "author": {"name": "山田", "email": "yamada@example.com"}}'
+```
+
+実行結果:
+
+```text
+HTTP/1.1 201 Created
+content-type: application/json
+
+{"id":2,"text":"買い物","pinned":false,"author":{"name":"山田"}}
+```
+
+`author` を送らなかった場合
+
+```json
+{"detail":[{"type":"missing","loc":["body","author"],"msg":"Field required","input":{"text":"買い物"}}]}
+```
+
+`author` の `email` だけを抜いた場合
+
+```json
+{"detail":[{"type":"missing","loc":["body","author","email"],"msg":"Field required","input":{"name":"山田"}}]}
+```
+
+**解説**
+
+この演習の山は、**`Author` と `AuthorRead` を分けたこと**です。
+
+保存されている辞書には、`email` が**そのまま入っています。**
+消しているわけではありません。
+**`NoteRead` の `author` に `AuthorRead` と書いた**ため、
+返す直前の関所（4.4.1）で `email` が落ちています。
+
+```text
+保存: {"id":2,"text":"買い物","author":{"name":"山田","email":"yamada@example.com"}}
+                                                   ↓ NoteRead の関所を通る
+返す: {"id":2,"text":"買い物","pinned":false,"author":{"name":"山田"}}
+```
+
+`loc` が3つになる理由も確認しておいてください（4.2.3）。
+
+```text
+["body", "author", "email"]
+  │        │         └ その中の email が
+  │        └ ボディの中の author の
+  └ 足りない
+```
+
+> **よくある間違い**
+> **`AuthorRead` を作らずに、`NoteRead` の `author` を `Author` のままにする**間違いです。
+> この場合、`email` は返り続けます。**エラーにはならないので気づけません。**
+> 演習の完成条件に「`author` が `{"name": "山田"}` **だけ**になっている」と書いたのは、
+> 目で確認しないと分からないからです。
+
+> **よくある間違い**
+> `status_code=201` を `response_model` と**並べて書く**ことに気づかず、
+> `@app.post("/notes", status_code=201)` だけにしてしまうと、`email` が返ります。
+> 逆に `response_model` だけにすると、`200` のままです。
+> **デコレータには、両方をカンマで区切って書きます**（4.4.3）。
+
+> **別解**
+> `AuthorRead` を作らず、`author` の型を `str`（名前だけ）にする設計もあり得ます。
+>
+> ```python
+> class NoteRead(BaseModel):
+>     id: int
+>     text: str
+>     pinned: bool
+>     author: str          # 名前だけを文字列で返す
+> ```
+>
+> ただしこの場合、`create_note` の中で `"author": new_note.author.name` のように
+> **形を作り直す**必要があります。
+> 保存している形と返す形が離れるほど、変換のコードが増えます。
+> **入れ子の形を保ったまま項目だけ減らす**解答のほうが、変換のコードが要らないぶん手数が少なくて済みます。
+
+---
+
+### 演習 4.3 の解答
+
+`main.py`（モデルの定義の並びに追記）
+
+```python
+class NoteUpdate(BaseModel):
+    # 更新では「送られてこなかった項目は変えない」ので、すべて任意にする
+    text: str | None = Field(default=None, min_length=1, max_length=100)
+    pinned: bool | None = None
+```
+
+`main.py`（第3章の `@app.put("/notes/{note_id}")` を、次にまるごと差し替え）
+
+```python
+@app.patch("/notes/{note_id}", response_model=NoteRead | None)
+def update_note(new_note: NoteUpdate, note_id: int = Path(ge=1)):
+    for note in notes:
+        if note["id"] == note_id:
+            # 実際に送られてきた項目だけを取り出す
+            changes = new_note.model_dump(exclude_unset=True)
+            for key, value in changes.items():
+                note[key] = value
+            return note
+    # 見つからない場合は null。404 を返す方法は第5章 5.4.1
+    return None
+```
+
+`{"pinned": true}` だけを送った結果
+
+```json
+{"id":1,"text":"会議は水曜に変更","pinned":true,"author":{"name":"山田"}}
+```
+
+`{"text": "新しい本文"}` だけを送った結果
+
+```json
+{"id":1,"text":"新しい本文","pinned":true,"author":{"name":"山田"}}
+```
+
+`{}` を送った結果（何も変わらない）
+
+```json
+{"id":1,"text":"新しい本文","pinned":true,"author":{"name":"山田"}}
+```
+
+`PATCH /notes/0`
+
+```json
+{"detail":[{"type":"greater_than_equal","loc":["path","note_id"],"msg":"Input should be greater than or equal to 1","input":"0","ctx":{"ge":1}}]}
+```
+
+`PATCH /notes/99`
+
+```json
+null
+```
+
+**解説**
+
+第3章の解答では、更新を次のように書いていました（3.3.3）。
+
+```python
+note["text"] = new_note.get("text", note["text"])
+note["pinned"] = new_note.get("pinned", note["pinned"])
+```
+
+**項目が増えるたびに、この行を書き足す**必要がありました。
+書き忘れると、その項目だけ更新できない窓口になります。
+
+`model_dump(exclude_unset=True)` を使うと、**項目の数に関係なく同じコード**で済みます（4.5.2）。
+
+| 送ったボディ | `model_dump()` | `model_dump(exclude_unset=True)` |
+|------------|---------------|--------------------------------|
+| `{"pinned": true}` | `{"text": None, "pinned": True}` | **`{"pinned": True}`** |
+| `{}` | `{"text": None, "pinned": None}` | **`{}`** |
+
+`{}` を送ったときに `changes` が空の辞書になるので、
+`for` の中身が一度も実行されず、**何も変わりません。**
+これが「`{}` を送っても `500` にならない」という完成条件の理由です。
+
+`response_model=NoteRead | None` にした理由も確認しておいてください（4.4.2）。
+見つからないときに `{"message": "..."}` を返していると、
+**`NoteRead` の形と違う**ため `500` になります。
+
+> **よくある間違い**
+> **`exclude_unset=True` を書き忘れる**間違いです。
+> `{"pinned": true}` だけを送ったのに、`text` が消えます。
+>
+> ```json
+> {"detail":"Internal Server Error"}
+> ```
+>
+> `text` に `None` が入り、`NoteRead` の `text: str` に合わないため `500` になります。
+> **サーバー側のターミナル**に `loc: ('response', 'text')` と出ていれば、この間違いです（4.4.1）。
+
+> **よくある間違い**
+> `PUT` を `PATCH` に変えるとき、**デコレータだけ変えて `@app.put` を消し忘れる**と、
+> 同じパスに2つの窓口が残ります。
+> `/docs` に `PUT /notes/{note_id}` の行が残っていたら、消し忘れです。
+
+> **別解**
+> `note.update(changes)` と1行で書くこともできます。
+> 辞書の `update` は、別の辞書の内容をまとめて反映するメソッドです。
+>
+> ```python
+> note.update(new_note.model_dump(exclude_unset=True))
+> ```
+>
+> 動作は同じです。**短く書けますが、何が起きているかは `for` のほうが読み取れます。**
+
+---
+
+### 演習 4.4 の解答
+
+`main.py`（`Settings` に2項目を追加）
+
+```python
+class Settings(BaseSettings):
+    """アプリ全体の設定。"""
+
+    app_name: str = "タスク管理 API"
+    debug: bool = False
+    notes_title: str = "メモ"
+    notes_max: int = 100
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+```
+
+`main.py`（`/notes/{note_id}` より**前**に追記）
+
+```python
+@app.get("/notes/info")
+def read_notes_info():
+    return {
+        "title": settings.notes_title,
+        "max": settings.notes_max,
+        "count": len(notes),
+    }
+```
+
+`.env`
+
+```text
+APP_NAME=タスク管理 API（開発用）
+DEBUG=true
+NOTES_TITLE=今日のメモ
+NOTES_MAX=5
+```
+
+`.env.example`
+
+```text
+APP_NAME=
+DEBUG=false
+NOTES_TITLE=
+NOTES_MAX=
+```
+
+`.env` を書く前
+
+```json
+{"title":"メモ","max":100,"count":1}
+```
+
+`.env` を書いて**サーバーを再起動したあと**
+
+```json
+{"title":"今日のメモ","max":5,"count":1}
+```
+
+環境変数で上書きした場合
+
+**Windows（PowerShell）**
+
+```powershell
+$env:NOTES_TITLE = "環境変数のメモ"
+fastapi dev main.py
+```
+
+**macOS / Linux**
+
+```bash
+NOTES_TITLE="環境変数のメモ" fastapi dev main.py
+```
+
+```json
+{"title":"環境変数のメモ","max":5,"count":1}
+```
+
+**解説**
+
+`.env` に書く名前とクラスの項目名の対応は、次のとおりです（4.6.2）。
+
+| クラスの項目 | `.env` の名前 |
+|------------|--------------|
+| `notes_title` | `NOTES_TITLE` |
+| `notes_max` | `NOTES_MAX` |
+
+**大文字・小文字の違いは自動で読み替えられます。**
+アンダースコアは、そのままアンダースコアです（第3章 3.5.1 のヘッダーとは違います）。
+
+`NOTES_MAX=5` と**文字列で書いたのに `5`（数値）として返る**点にも注目してください。
+
+```json
+{"title":"今日のメモ","max":5,"count":1}
+```
+
+`.env` の中身はただの文字列ですが、`notes_max: int` と宣言してあるので、
+**Pydantic が整数に変換しています。** 第3章 3.1.2 の型ヒントと同じ働きです。
+
+`NOTES_MAX=abc` と書いた場合は、変換できないので**サーバーの起動時に止まります。**
+
+```text
+pydantic_core._pydantic_core.ValidationError: 1 validation error for Settings
+notes_max
+  Input should be a valid integer, unable to parse string as an integer [type=int_parsing, input_value='abc', input_type=str]
+```
+
+`type=int_parsing` は、第3章 3.1.3 で `/tasks/abc` を開いたときと**同じ種類**です。
+**設定も、リクエストと同じ仕組みで検査されている**ことが分かります。
+
+**起動時に止まるのは良いこと**です。
+設定の間違いを、利用者からの最初のリクエストで気づくのではなく、
+**起動した瞬間に気づける**からです。
+
+> **よくある間違い**
+> **`.env` を書き換えたのに反映されない**というつまずきが、この演習で最も多く起きます。
+> 設定は `settings = Settings()` の行で**起動時に1回だけ**読み込まれます（4.6.2）。
+> `main.py` の保存による自動リロード（2.4.3）は `.env` の変更を見ていません。
+> **`Ctrl` + `C` で止めて、起動し直してください。**
+
+> **よくある間違い**
+> `.env` の値をクォートで囲む間違いです。
+>
+> ```text
+> NOTES_TITLE="今日のメモ"
+> ```
+>
+> この書き方でも読めますが、**囲む必要はありません。**
+> 値に空白が入っていても、そのまま書けます（`APP_NAME=タスク管理 API`）。
+> 一方、**`=` の前後に空白を入れると読めなくなります**（`NOTES_MAX = 5` は不可）。
+
+> **よくある間違い**
+> **`.env.example` に本物の値を書いてしまう**間違いです。
+> `.env.example` は**共有してよいファイル**なので、
+> 値を書いた時点で、それは共有される情報になります（4.6.3）。
+> 名前だけを並べて、値は空にしてください。
+
+> **別解**
+> `/notes/info` ではなく、既存の `/info` に項目を足す作りでも構いません。
+>
+> ```python
+> @app.get("/info")
+> def read_info():
+>     return {
+>         "app_name": settings.app_name,
+>         "debug": settings.debug,
+>         "task_count": len(tasks),
+>         "note_count": len(notes),
+>     }
+> ```
+>
+> どちらが良いかは、**「タスクとメモを別の機能として分けるかどうか」**で決まります。
+> 分けるなら窓口も分けたほうが、第5章でファイルを分割するときに素直になります。
