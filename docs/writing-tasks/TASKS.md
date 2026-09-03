@@ -24,10 +24,10 @@
 |----|-----------|
 | react-text | **13 / 13（完成）** |
 | python-text | **13 / 13（完成）** |
-| fastapi-text | 3 / 12 |
+| fastapi-text | 4 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **29 / 59** |
+| **合計** | **30 / 59** |
 
 ---
 
@@ -109,7 +109,7 @@
 | F-00 | 完了 | 第0章 はじめに | `fastapi-text/00-introduction.md` | — | 小 | 0.1.1 に python-text の戻り場所つき前提表と `--version` 確認、0.1.2 に完成形の Mermaid 図、0.3.1 に API 開発ならではの進め方（サーバー常駐・ターミナル2つ・確認の輪）。コードを書かない章のため理解度チェック／演習はなし（R-00 / P-00 と同じ扱い）。第1章のスタブを新規作成 |
 | F-01 | 完了 | 第1章 Web API とは | `fastapi-text/01-web-api.md` | part1 | 中 | 解答編 その1（`90-answers-part1.md`）を新規作成。1.5 は JSONPlaceholder を使用（要ネット接続）。1.1.2 / 1.2.1 / 1.3.1 に Mermaid 図。第2章のスタブを新規作成 |
 | F-02 | 完了 | 第2章 FastAPI をはじめる | `fastapi-text/02-getting-started.md` | part1 | 中 | ★要検証（`fastapi[standard]==0.115.6` の出力・`fastapi dev` の表示・エラー文言。`review-notes.md` に検証依頼あり）。2.1.1 / 2.3.2 / 2.4.3 / 2.5.4 に Mermaid 図。第3章のスタブを新規作成 |
-| F-03 | 未着手 | 第3章 パラメータを受け取る | `fastapi-text/03-parameters.md` | part1 | 中 | |
+| F-03 | 完了 | 第3章 パラメータを受け取る | `fastapi-text/03-parameters.md` | part1 | 中 | 練習用データ `tasks` を `main.py` に持つ形に統一（保存は第6章）。3.1.4 / 3.3.3 / 3.4.2 に Mermaid 図。ボディは `dict` で受け取り、**`500` になる体験を第4章 Pydantic の動機**として残した。`404` は第5章 5.4.1、`201` は第4章 4.4.3 へ先送り（本文に明記）。glossary にパスパラメータ・クエリパラメータ・リクエストボディ・クッキー・パーセントエンコーディングを追加。第4章のスタブを新規作成 |
 | F-04 | 未着手 | 第4章 Pydantic | `fastapi-text/04-pydantic.md` | part1 | 中 | v2 系で書くこと |
 | F-05 | 未着手 | 第5章 プロジェクト構成 | `fastapi-text/05-project-structure.md` | part1 | 中 | |
 | F-06 | 未着手 | 第6章 データベース連携 | `fastapi-text/06-database.md` | part2 | 大 | SQLite で始める |

@@ -41,6 +41,8 @@
   - [ ] 2.6.3 **変数名を `app` 以外にしたときのエラー文言**（本文は `There is no FastAPI app or you haven't used a supported type.`）と、ファイルが無いときの `Error: Path does not exist main.py`。**この2つは版によって文言が変わりやすい箇所です**（解答編 演習 2.3 にも同じ文言を書いています）
   - [ ] 2.6.2 `Get-Command python | Select-Object Source` の出力形式（Windows 実機）
   - [ ] 2.5.1〜2.5.3 `/docs` `/redoc` `/openapi.json` の表示と、`Try it out` → `Execute` の UI 文言
+- [ ] `fastapi-text` 第3章のコードと出力（**執筆時に `fastapi==0.115.6` / `pydantic==2.10.4` / Python 3.11 で全エンドポイントを実行し、本文・解答編に載せた JSON はその実行結果です**）。公開前に、学習者と同じ Windows / macOS の実機で次の3点だけ確認してください。①`curl.exe -d "@new_task.json"`（3.3.2）と `-b "theme=dark"`（3.5.2）が PowerShell で通るか、②`422` の `msg`（英語）が Pydantic のバージョン更新で変わっていないか、③3.4.1 の「よくある間違い」の `SyntaxError` の文言（Python 3.12 以降と 3.11 以前で異なる旨は本文に注記済み）
+- [ ] `fastapi-text` 3.5.2 **`/docs` の `Try it out` からクッキーを送れない**という記述（Swagger UI の仕様変更で変わる可能性があります。変わっていた場合は `curl` 限定という書き方を緩めてください）
 - [ ] `docker-text` 2.1〜2.2 Docker Desktop のインストールとトラブル対処
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
 
