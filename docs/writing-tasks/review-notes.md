@@ -43,6 +43,12 @@
   - [ ] 2.5.1〜2.5.3 `/docs` `/redoc` `/openapi.json` の表示と、`Try it out` → `Execute` の UI 文言
 - [ ] `fastapi-text` 第3章のコードと出力（**執筆時に `fastapi==0.115.6` / `pydantic==2.10.4` / Python 3.11 で全エンドポイントを実行し、本文・解答編に載せた JSON はその実行結果です**）。公開前に、学習者と同じ Windows / macOS の実機で次の3点だけ確認してください。①`curl.exe -d "@new_task.json"`（3.3.2）と `-b "theme=dark"`（3.5.2）が PowerShell で通るか、②`422` の `msg`（英語）が Pydantic のバージョン更新で変わっていないか、③3.4.1 の「よくある間違い」の `SyntaxError` の文言（Python 3.12 以降と 3.11 以前で異なる旨は本文に注記済み）
 - [ ] `fastapi-text` 3.5.2 **`/docs` の `Try it out` からクッキーを送れない**という記述（Swagger UI の仕様変更で変わる可能性があります。変わっていた場合は `curl` 限定という書き方を緩めてください）
+- [ ] `fastapi-text` 第4章のコードと出力（**執筆時に `fastapi==0.115.6` / `pydantic==2.13.5` / `pydantic-settings==2.7.0` / Python 3.11 で、本文と解答編の全エンドポイント・全 `422` を実際に実行し、載せた JSON はその実行結果です**）。公開前に、学習者と同じ Windows / macOS の実機で次の4点だけ確認してください
+  - ① **4.1.2 の `pip list` に出る `pydantic` のバージョン**。本文は「`2.` で始まっていれば数字が違ってよい」と注記済みですが、`pydantic` 3 系が出ていた場合は `pip install` の指定ごと見直しが必要です
+  - ② **4.6.1 の `pip install "pydantic-settings==2.7.0"` の出力**（本文は `python-dotenv` が一緒に入る前提で書いています）
+  - ③ **4.4.3 の `DELETE` が `204` を返し、ボディが空になること**（`return None` で空になることは確認済みですが、`curl -i` の表示は環境差があります）
+  - ④ **`/docs` に表示される送信例・レスポンス例の値**（4.2.1 / 4.4.1）。Swagger UI が自動生成する見本なので、UI の更新で値が変わります。本文には「値そのものは手元と違って構わない」と注記済みです
+- [ ] `fastapi-text` 4.6.2 の **`.env` に日本語（全角括弧を含む）をクォート無しで書く**例。Linux では確認済みですが、Windows のメモ帳などで **UTF-8 以外の文字コードで保存された場合**の挙動は未確認です（本文は VS Code で作る前提。必要なら「文字コードは UTF-8」の注記を足してください）
 - [ ] `docker-text` 2.1〜2.2 Docker Desktop のインストールとトラブル対処
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
 
