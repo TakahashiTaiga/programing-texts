@@ -929,3 +929,498 @@ ERROR:    [Errno 48] Address already in use
 > **注意**
 > `taskkill` / `kill` を使うときは、**必ず自分で調べた PID を確認してから**打ってください（2.4.4）。
 > 練習だからといって、適当な番号を打たないでください。
+
+---
+
+## 第3章
+
+### 理解度チェック
+
+**問 3.1 の解答**
+
+- ① **パス**（パスパラメータ）
+- ② **クエリ**（クエリパラメータ）
+- ③ **ボディ**（リクエストボディ）
+
+**解説**
+
+3つの使い分けは、次の一文で覚えてください（3.3.1）。
+
+| 乗せ場所 | 役割 | 例 |
+|---------|------|---|
+| パス | **どれか1つ**を指す | `/tasks/3` |
+| クエリ | **どう絞り込むか**を指定する | `?done=true&limit=10` |
+| ボディ | **登録・更新する中身そのもの** | `{"title": "牛乳を買う"}` |
+
+迷ったときは、「**この値が変わったら、別のものを指すことになるか**」と考えます。
+`/tasks/3` の `3` が変われば別のタスクになるので、パスです。
+`?done=true` が変わっても対象は「タスクの一覧」のままなので、クエリです。
+
+---
+
+**問 3.2 の解答**
+
+**2** の `{"item_id":"5"}`
+
+**解説**
+
+型ヒントが書かれていないため、`item_id` は**文字列のまま**関数に渡されます（3.1.1）。
+URL はただの文字列なので、これが元々の姿です。
+
+1 になるのは `item_id: int` と書いた場合です（3.1.2）。
+3 の `422` は、`int` と書いたうえで `/items/abc` のように変換できない値が来たときです（3.1.3）。
+
+> **よくある間違い**
+> この違いは、**画面では気づきにくい**ものです。
+> `{"item_id":"5"}` と `{"item_id":5}` は、ダブルクォートの有無しか違いません。
+> しかし、`if task["id"] == item_id` のような比較を書くと、
+> **文字列と数値は決して一致しない**ので、「なぜか見つからない」という症状になります。
+> **JSON を見るときは、ダブルクォートの有無を必ず確認してください。**
+
+---
+
+**問 3.3 の解答**
+
+**3** の `422` が返る
+
+**解説**
+
+FastAPI は、**登録された順に上から照合します**（3.1.4）。
+`/users/me` は `/users/{user_id}` の形にも当てはまるため、
+**先に書いてある `/users/{user_id}` が捕まえてしまいます。**
+
+そのうえで `"me"` を `int` に変換しようとして失敗し、次が返ります。
+
+```json
+{"detail":[{"type":"int_parsing","loc":["path","user_id"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"me"}]}
+```
+
+直し方は、**`/users/me` を `/users/{user_id}` より前に移動する**ことです。
+
+2 になるのは、`user_id` に型ヒントを付けていない場合です。
+このときは `{"user_id":"me"}` が `200` で返り、**エラーが出ないぶん気づくのが遅れます。**
+
+4 が誤りなのは、この並びでもサーバーは正常に起動するからです。
+**起動時には何も警告されません。** 実行して初めて分かります。
+
+---
+
+**問 3.4 の解答**
+
+`done: bool = False` では、**「指定されなかった」と「`False` を指定した」を区別できない**ためです。
+省略時に「絞り込まない（全件返す）」という第3の動作をさせたい場合は、
+`bool | None = None` にして `None` を「指定なし」の印として使います。
+
+**解説**
+
+必要な状態が3つあるのに、`bool` は2つの値しか持てない、というのが問題の本質です（3.2.3）。
+
+| URL | `bool = False` の場合 | `bool \| None = None` の場合 |
+|-----|---------------------|---------------------------|
+| `/tasks` | `False` → **未完了だけ**返る | `None` → **全件**返る |
+| `/tasks?done=true` | `True` → 完了だけ | `True` → 完了だけ |
+| `/tasks?done=false` | `False` → 未完了だけ | `False` → 未完了だけ |
+
+判定は、必ず `is not None` で行います。
+
+```python
+if done is not None:
+    result = [task for task in result if task["done"] == done]
+```
+
+> **よくある間違い**
+> `if done:` と書くと、**`done=false` を指定したときにも絞り込みが行われません。**
+> `None` も `False` も、`if` の条件としては同じ「偽」だからです（python-text 3.1.5）。
+> 画面上は「`?done=false` を付けても全件返ってくる」という症状になります。
+
+---
+
+**問 3.5 の解答**
+
+**URL の `?` 以降に、`keyword` という名前のクエリパラメータを追加する。**
+
+**解説**
+
+読み方の順序は次のとおりです（3.4.2）。
+
+1. `loc` の1つ目が `query` → **直すのは URL の `?` 以降**
+2. `loc` の2つ目が `keyword` → 直す名前は `keyword`
+3. `type` が `missing`、`input` が `null` → **そもそも送られていない**
+
+したがって `/tasks/search?keyword=買う` のように付け足せば通ります。
+
+`missing` が出たときに疑うことは、次の2つです。
+
+| 疑うこと | 確認方法 |
+|---------|---------|
+| そもそも付け忘れている | URL に `?keyword=` があるか |
+| **名前の綴りが違う** | `keywords` や `Keyword` になっていないか |
+
+> **よくある間違い**
+> `loc` が `["query", ...]` なのに、**パスのほうを直そうとする**間違いがよくあります。
+> `loc` の1つ目は「URL のどの部分か」を表しています。
+> `path` なら `/` で区切られた部分、`query` なら `?` 以降です（3.4.2 の図）。
+
+---
+
+**問 3.6 の解答**
+
+**最初に見るべき場所：サーバーを起動しているターミナル**（トレースバックが出ています）。
+
+`422` にならなかったのは、ボディを `dict` で受け取っているためです。
+`dict` は「JSON のオブジェクトであること」しか検査しないので、
+`title` というキーが無くても FastAPI は通してしまい、
+関数の中で `new_task["title"]` を実行した時点で `KeyError` になって落ちます。
+**落ちたのはサーバー側なので `500` です。**
+
+**解説**
+
+`500` は「サーバー側の作りが悪い」ことを意味します（第1章 1.2.3、3.3.2）。
+レスポンスには `Internal Server Error` としか書かれていないので、
+**原因はターミナルでしか分かりません。**
+
+```text
+INFO:     127.0.0.1:52190 - "POST /tasks HTTP/1.1" 500 Internal Server Error
+ERROR:    Exception in ASGI application
+Traceback (most recent call last):
+  ...
+KeyError: 'title'
+```
+
+python-text 1.4.4 のとおり、**トレースバックはいちばん下の行が本当の原因**です。
+
+その場しのぎの対処は `.get("title", "（無題）")` を使うことですが、
+これは「送られてこなかったこと」を見逃しているだけで、正しい直し方ではありません。
+**正しくは、送る側の間違いとして `422` を返すべき**です。
+その方法が、第4章の Pydantic です。
+
+---
+
+**問 3.7 の解答**
+
+`X-Token: abc123` のように、**アンダースコアをハイフンに変えた名前**で送ります。
+
+**Windows（PowerShell）**
+
+```powershell
+curl.exe -s http://127.0.0.1:8000/whoami -H "X-Token: abc123"
+```
+
+**macOS / Linux**
+
+```bash
+curl -s http://127.0.0.1:8000/whoami -H "X-Token: abc123"
+```
+
+**解説**
+
+Python の変数名にハイフンは使えないため、
+FastAPI は**引数名の `_` をヘッダー名の `-` に読み替えます**（3.5.1）。
+
+| 引数名 | ヘッダー名 |
+|-------|-----------|
+| `x_token` | `X-Token` |
+| `user_agent` | `User-Agent` |
+
+大文字・小文字は区別されないので、`-H "x-token: abc123"` でも届きます。
+一方、`-H "x_token: abc123"` のように**アンダースコアのまま送ると届きません**（`null` になります）。
+
+---
+
+### 演習問題
+
+### 演習 3.1 の解答
+
+`main.py`（末尾に追記）
+
+```python
+@app.get("/users/{user_id}")
+def read_user(user_id: int, verbose: bool = False):
+    result = {"user_id": user_id, "name": f"ユーザー{user_id}"}
+    if verbose:
+        # 詳しい情報が要求されたときだけ、キーを1つ足す
+        result["detail"] = "詳細情報"
+    return result
+```
+
+`http://127.0.0.1:8000/users/5`
+
+```json
+{"user_id":5,"name":"ユーザー5"}
+```
+
+`http://127.0.0.1:8000/users/5?verbose=true`
+
+```json
+{"user_id":5,"name":"ユーザー5","detail":"詳細情報"}
+```
+
+`http://127.0.0.1:8000/users/abc`
+
+```json
+{"detail":[{"type":"int_parsing","loc":["path","user_id"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"abc"}]}
+```
+
+**解説**
+
+新しい要素は1つもありません。組み合わせているのは次の2つです。
+
+| 部分 | どこで学んだか |
+|------|--------------|
+| `user_id: int`（パスパラメータ＋型） | 3.1.2 |
+| `verbose: bool = False`（クエリ＋デフォルト値） | 3.2.1・3.2.2 |
+
+`user_id` は**パスの波括弧に同じ名前がある**のでパスパラメータになり、
+`verbose` は**波括弧に無い**のでクエリパラメータになります（3.2.1）。
+**引数の書き方はどちらもほとんど同じで、パスに書いたかどうかだけで決まります。**
+
+`f"ユーザー{user_id}"` は f-string（python-text 2.4.4）です。
+
+> **別解**
+> `if verbose:` の代わりに、辞書を2通り作って返しても構いません。
+>
+> ```python
+> if verbose:
+>     return {"user_id": user_id, "name": f"ユーザー{user_id}", "detail": "詳細情報"}
+> return {"user_id": user_id, "name": f"ユーザー{user_id}"}
+> ```
+>
+> 動作は同じです。ただし、共通部分が2か所に書かれているので、
+> 項目が増えたときに直し忘れが起きます。**解答の形のほうが安全です。**
+
+> **よくある間違い**
+> `/users/5` を開いて `{"user_id":"5"}` と返ってきた場合、**型ヒントの書き忘れ**です（3.1.2）。
+> `/users/5?verbose=True` と**大文字で書いても動きます**（3.2.1 の表）。
+> 逆に `?verbose=1` でも `True` になります。
+
+---
+
+### 演習 3.2 の解答
+
+`main.py`（**`@app.get("/tasks/{task_id}")` より前**に追記）
+
+```python
+@app.get("/tasks/search")
+def search_tasks(
+    keyword: str = Query(min_length=2, max_length=10),
+    done: bool | None = None,
+):
+    result = tasks
+    if done is not None:
+        result = [task for task in result if task["done"] == done]
+    # タイトルにキーワードを含むものだけ残す
+    result = [task for task in result if keyword in task["title"]]
+    return {"keyword": keyword, "count": len(result), "tasks": result}
+```
+
+`http://127.0.0.1:8000/tasks/search?keyword=買う`
+
+```json
+{"keyword":"買う","count":1,"tasks":[{"id":1,"title":"牛乳を買う","done":false}]}
+```
+
+`http://127.0.0.1:8000/tasks/search`（`keyword` なし）
+
+```json
+{"detail":[{"type":"missing","loc":["query","keyword"],"msg":"Field required","input":null}]}
+```
+
+`http://127.0.0.1:8000/tasks/search?keyword=あ`
+
+```json
+{"detail":[{"type":"string_too_short","loc":["query","keyword"],"msg":"String should have at least 2 characters","input":"あ","ctx":{"min_length":2}}]}
+```
+
+`http://127.0.0.1:8000/tasks/search?keyword=買う&done=true`
+
+```json
+{"keyword":"買う","count":0,"tasks":[]}
+```
+
+**解説**
+
+この演習の要点は3つです。
+
+**1つ目：書く場所（いちばん大事）**
+
+`/tasks/search` は固定のパスなので、**`/tasks/{task_id}` より前に書きます**（3.1.4）。
+後ろに書くと、`"search"` を `int` に変換しようとして次が返ります。
+
+```json
+{"detail":[{"type":"int_parsing","loc":["path","task_id"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"search"}]}
+```
+
+**「作ったはずの窓口が動かない」ときは、まず定義の順番を疑ってください。**
+
+**2つ目：必須のまま条件を付ける**
+
+`Query(min_length=2, max_length=10)` には、**`default=` を書いていません。**
+`default=` を書かなければ必須のままです（3.4.1）。
+
+```python
+keyword: str = Query(min_length=2, max_length=10)          # 必須
+keyword: str | None = Query(default=None, min_length=2)    # 省略可能
+```
+
+`= Query(...)` という見た目のせいで「デフォルト値がある」ように見えますが、
+**`Query(...)` は条件を書くための指定であって、値ではありません。**
+
+**3つ目：絞り込みの順番**
+
+`done` の絞り込みと `keyword` の絞り込みは、**どちらを先にしても結果は同じ**です。
+`result` を上書きしながら、条件を1つずつ重ねていく書き方に慣れてください。
+第6章でデータベースを使うようになっても、考え方は同じです。
+
+> **よくある間違い**
+> `keyword` を `Query` なしで `keyword: str` と書いた場合、
+> **必須にはなりますが、文字数の条件が効きません。**
+> `?keyword=あ` が `200` で通ってしまいます。
+> **条件を付けるには `Query` が必要です**（3.4.1）。
+
+> **別解**
+> 最後の完成条件（`?keyword=買う&done=true` が0件）は、
+> **「牛乳を買う」が未完了だから**です。
+> `?keyword=買う&done=false` にすると1件返ります。
+> 0件のときに `404` を返したくなるかもしれませんが、
+> **「検索した結果、該当が無かった」は正常な結果なので `200` のまま**にします
+> （第1章 1.2.3）。
+
+---
+
+### 演習 3.3 の解答
+
+`main.py`（`tasks` の下に追記）
+
+```python
+notes = [
+    {"id": 1, "text": "会議は水曜に変更", "pinned": False},
+]
+```
+
+`main.py`（末尾に追記）
+
+```python
+@app.post("/notes")
+def create_note(new_note: dict):
+    new_id = max([note["id"] for note in notes]) + 1
+    created = {
+        "id": new_id,
+        # 送られてこなかった項目は、決めておいた値で埋める
+        "text": new_note.get("text", "（本文なし）"),
+        "pinned": new_note.get("pinned", False),
+    }
+    notes.append(created)
+    return created
+
+
+@app.put("/notes/{note_id}")
+def update_note(
+    new_note: dict,
+    note_id: int = Path(ge=1),
+    notify: bool = False,
+    x_token: str | None = Header(default=None),
+):
+    for note in notes:
+        if note["id"] == note_id:
+            note["text"] = new_note.get("text", note["text"])
+            note["pinned"] = new_note.get("pinned", note["pinned"])
+            return {"updated": note, "notified": notify, "token": x_token}
+    return {"message": f"id {note_id} のメモは見つかりませんでした"}
+```
+
+`POST /notes` に `{"text": "牛乳を買い忘れた"}` を送った結果:
+
+```json
+{"id":2,"text":"牛乳を買い忘れた","pinned":false}
+```
+
+`POST /notes` に `{}` を送った結果:
+
+```json
+{"id":3,"text":"（本文なし）","pinned":false}
+```
+
+`PUT /notes/1?notify=true`（ボディは `{"pinned": true}`、ヘッダーは `X-Token: abc123`）:
+
+**Windows（PowerShell）**
+
+`update_note.json`
+
+```json
+{"pinned": true}
+```
+
+```powershell
+curl.exe -i -X PUT "http://127.0.0.1:8000/notes/1?notify=true" -H "Content-Type: application/json" -H "X-Token: abc123" -d "@update_note.json"
+```
+
+**macOS / Linux**
+
+```bash
+curl -i -X PUT "http://127.0.0.1:8000/notes/1?notify=true" -H "Content-Type: application/json" -H "X-Token: abc123" -d '{"pinned": true}'
+```
+
+実行結果:
+
+```text
+HTTP/1.1 200 OK
+content-type: application/json
+
+{"updated":{"id":1,"text":"会議は水曜に変更","pinned":true},"notified":true,"token":"abc123"}
+```
+
+`PUT /notes/0` の結果:
+
+```json
+{"detail":[{"type":"greater_than_equal","loc":["path","note_id"],"msg":"Input should be greater than or equal to 1","input":"0","ctx":{"ge":1}}]}
+```
+
+**解説**
+
+`update_note` の引数は4つありますが、**FastAPI は名前と型だけで振り分けています**（3.3.3）。
+
+| 引数 | 判定 | 理由 |
+|------|------|------|
+| `new_note` | **ボディ** | 型が `dict` |
+| `note_id` | **パス** | パスの波括弧に同じ名前がある |
+| `notify` | **クエリ** | 波括弧に無く、型が `bool` |
+| `x_token` | **ヘッダー** | `Header(...)` と書いてある |
+
+**引数の順番に注意してください。**
+`note_id: int = Path(ge=1)` はデフォルト値を持つ引数になるため、
+デフォルト値の無い `new_note: dict` を**前に**書く必要があります（3.4.1 の「よくある間違い」）。
+順番を逆にすると、起動する前に次のエラーになります。
+
+```text
+SyntaxError: parameter without a default follows parameter with a default
+```
+
+**FastAPI は名前と型で振り分けるので、順番を変えても動作は変わりません。**
+
+**2つ目の完成条件（`{}` を送っても `500` にならない）が、この演習の肝です。**
+
+`.get("text", "（本文なし）")` を使っているので、キーが無くても落ちません（3.3.2）。
+`new_note["text"]` と書いていた場合は `KeyError` になり、`500` が返ります。
+
+ただし、**これは正しい解決ではありません。**
+本文が無いメモを `"（本文なし）"` として登録してしまうのは、
+おそらく利用者が期待した動作ではないからです。
+**「`text` は必須。無ければ `422`」と宣言できるようにするのが第4章**です。
+
+> **よくある間違い**
+> `curl` で `X-Token` を送ったのに `token` が `null` になる場合、原因は次のどちらかです。
+>
+> 1. 引数名を `x-token` と書いた → **Python の変数名にハイフンは使えません**（3.5.1）
+> 2. `-H "x_token: abc123"` と、**アンダースコアのまま送った**
+>
+> 引数名は `x_token`、送るヘッダー名は `X-Token` です。**読み替えは FastAPI がします。**
+
+> **別解**
+> `PUT` ではなく `PATCH` を使う設計も考えられます（第1章 1.2.2）。
+> 実際、この解答の `update_note` は「送られてきた項目だけ更新する」動きなので、
+> **意味としては `PATCH` に近い**ものです。
+>
+> `PUT` は本来「丸ごと置き換える」メソッドで、
+> 送らなかった項目は消えるのが筋です。
+> このテキストでは、第9章まで `PUT` を「更新」として使いますが、
+> **どちらの意味で作ったかを説明できることのほうが大切です**（1.4.4）。
