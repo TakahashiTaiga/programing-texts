@@ -2093,3 +2093,693 @@ notes_max
 >
 > どちらが良いかは、**「タスクとメモを別の機能として分けるかどうか」**で決まります。
 > 分けるなら窓口も分けたほうが、第5章でファイルを分割するときに素直になります。
+
+---
+
+## 第5章
+
+### 理解度チェック
+
+**問 5.1 の解答**
+
+- ① **`APIRouter`**
+- ② **`include_router`**
+- ③ **`prefix`**
+
+**解説**
+
+3つはセットで覚えてください（5.2）。
+
+```python
+router = APIRouter(prefix="/tasks", tags=["tasks"])     # ① と ③
+...
+app.include_router(tasks.router)                        # ②
+```
+
+`APIRouter` は「窓口をまとめた小さな `app`」です。
+書き方は `app` とまったく同じですが、**`include_router` で登録するまで動きません**（5.2.1）。
+
+`prefix` は「共通の頭」です。`prefix="/tasks"` を付けたら、
+その中の窓口のパスからは `/tasks` を消します（5.2.3）。
+
+---
+
+**問 5.2 の解答**
+
+**2** の「`app/main.py` で `include_router` を呼んでいない」
+
+**解説**
+
+`{"detail":"Not Found"}` は、**その URL に窓口が登録されていない**という意味です（2.4.2）。
+ルーターに窓口を書いても、`app` に取り込まなければ存在しないのと同じです（5.2.1）。
+
+ほかの選択肢が違う理由は、次のとおりです。
+
+| 選択肢 | 起きること |
+|-------|-----------|
+| 1（`prefix` の間違い） | 末尾に `/` を付けた場合は **起動時に `AssertionError`** になる（5.2.3） |
+| 3（`__init__.py` が無い） | **`ModuleNotFoundError`** で起動しない（5.1.2） |
+| 4（`response_model` が無い） | 窓口は動く。返す形が宣言されないだけ（4.4.1） |
+
+**「起動しているのに `404`」なら登録漏れ、「起動しない」なら import か構成の問題**、
+と切り分けてください。
+
+---
+
+**問 5.3 の解答**
+
+**2** の「窓口の関数は呼ばれない」
+
+**解説**
+
+依存は、**窓口の関数より先に**解決されます（5.3.1）。
+
+```text
+リクエスト → 依存（list_params）→ 窓口の関数（read_tasks）→ レスポンス
+                    ↓ 条件に合わない
+                  422 を返して終わり
+```
+
+これは第4章の「関所」と同じ考え方です（4.4.1）。
+`?limit=0` を送ったとき `read_tasks` が呼ばれないのは、`list_params` が先に弾いているからです。
+
+**この性質があるので、窓口の関数の中で「引数がおかしくないか」を確かめる `if` は要りません。**
+
+---
+
+**問 5.4 の解答**
+
+**解答例**
+
+`raise` は例外を投げるので、その場で処理が終わり、FastAPI が `404` のレスポンスを作ります。
+`return` は例外を**値として返す**だけなので、`200` で例外の中身が JSON になって返ります。
+
+**解説**
+
+`return` にしたときに実際に返るのは、次のようなものです（5.4.1）。
+
+```json
+{"status_code":404,"detail":"無い","headers":null}
+```
+
+**エラーが出ないところ**が、この間違いのたちの悪さです。
+`response_model` を付けている窓口なら、宣言した形と違うので `500` になります（4.4.1）。
+付けていない窓口では、**`200` のまま気づかずに公開されます。**
+
+> **よくある間違い**
+> 「`404` を返したい」と検索すると `return` を使ったコードも見つかりますが、
+> それは `JSONResponse(status_code=404, ...)` を返している例です（5.4.2 のハンドラと同じ書き方）。
+> **`HTTPException` は `raise`、`JSONResponse` は `return`** と対応させて覚えてください。
+
+---
+
+**問 5.5 の解答**
+
+**解答例**
+
+`detail` には「どの項目が、なぜ弾かれたか」が入っているためです。
+これを `null` にすると、利用者は「形式が正しくありません」としか分からず、直せなくなります。
+
+**解説**
+
+統一するのは**包み**であって、中身の情報ではありません（5.4.3）。
+
+| 揃えるもの | 揃えてはいけないもの |
+|-----------|-------------------|
+| `error` / `status` / `message` / `detail` という**キーの並び** | `detail` の**中身**（`loc` / `type` / `msg`） |
+
+第3章 3.4.2 と第4章 4.3.4 で `loc` と `type` の読み方を練習したのは、
+**この情報が届く前提**だからです。届かなくなれば、その練習ごと無意味になります。
+
+---
+
+**問 5.6 の解答**
+
+**解答例**
+
+`logging.basicConfig(...)` を書いたか確認します。
+これが無いと出力の設定が決まっておらず、`INFO` のログは表示されずに捨てられるためです。
+
+**解説**
+
+`logging` は、**出力先とレベルの設定が無いと `INFO` を出しません**（5.5.1）。
+やっかいなのは、`logger.warning(...)` だけは（時刻も名前も付かない形で）表示されることです。
+
+```text
+登録しました
+```
+
+「警告は出るのに情報が出ない」という状態になったら、`basicConfig` の書き忘れです。
+
+確認の順番は次のとおりです。
+
+1. `app/main.py` に `logging.basicConfig(...)` があるか
+2. `level` が `INFO` より厳しく（`WARNING` などに）なっていないか
+3. `.env` の `DEBUG` を変えたのに再起動していない、ということはないか（5.5.2）
+
+---
+
+**問 5.7 の解答**
+
+**解答例**
+
+ミドルウェアを使います。`Depends` は書いた窓口にしか効きませんが、
+ミドルウェアは**すべてのリクエストの行きと帰り**を通るためです。
+
+**解説**
+
+判断の基準は「**全部か、選んだものだけか**」です（5.6.1）。
+
+| やりたいこと | 使うもの |
+|------------|---------|
+| すべてのリクエストで、必ず1回 | **ミドルウェア** |
+| 特定の窓口だけ、必要なときに | **`Depends`** |
+
+処理時間の計測を `Depends` で書くと、**窓口を1つ足すたびに書き忘れる**危険があります。
+しかも「帰り」の処理（レスポンスにヘッダーを付ける）は `Depends` では書けません。
+
+逆に、「id からタスクを探す」をミドルウェアに書くのは間違いです。
+`/info` や `/docs` にはタスクの id が無いのに、全部のリクエストで探そうとしてしまいます。
+
+---
+
+### 演習問題
+
+### 演習 5.1 の解答
+
+`app/schemas.py`（末尾に追記）
+
+```python
+class NoteListResponse(BaseModel):
+    """一覧を返すときの包み。"""
+
+    count: int
+    notes: list[NoteRead]
+```
+
+`app/routers/notes.py`（新規作成。この演習の範囲まで）
+
+```python
+"""メモに関する窓口。"""
+
+from fastapi import APIRouter, Path
+
+from app.config import settings
+from app.data import notes
+from app.schemas import NoteCreate, NoteListResponse, NoteRead, NoteUpdate
+
+router = APIRouter(prefix="/notes", tags=["notes"])
+
+
+# 固定のパスは、波括弧付きより先に書く（3.1.4）
+@router.get("/info")
+def read_notes_info():
+    return {
+        "title": settings.notes_title,
+        "max": settings.notes_max,
+        "count": len(notes),
+    }
+
+
+@router.get("", response_model=NoteListResponse)
+def read_notes():
+    return {"count": len(notes), "notes": notes}
+
+
+@router.post("", response_model=NoteRead, status_code=201)
+def create_note(new_note: NoteCreate):
+    new_id = max([note["id"] for note in notes]) + 1
+    created = {
+        "id": new_id,
+        "text": new_note.text,
+        "pinned": new_note.pinned,
+        "author": new_note.author.model_dump(),
+    }
+    notes.append(created)
+    return created
+
+
+@router.patch("/{note_id}", response_model=NoteRead | None)
+def update_note(new_note: NoteUpdate, note_id: int = Path(ge=1)):
+    for note in notes:
+        if note["id"] == note_id:
+            changes = new_note.model_dump(exclude_unset=True)
+            for key, value in changes.items():
+                note[key] = value
+            return note
+    return None
+```
+
+`app/main.py`（登録を1行足す）
+
+```diff
+- from app.routers import misc, tasks
++ from app.routers import misc, notes, tasks
+  
+  app = FastAPI(title=settings.app_name)
+  
+  app.include_router(tasks.router)
++ app.include_router(notes.router)
+  app.include_router(misc.router)
+```
+
+`GET /notes`
+
+```json
+{"count":1,"notes":[{"id":1,"text":"会議は水曜に変更","pinned":false,"author":{"name":"山田"}}]}
+```
+
+`GET /notes/info`
+
+```json
+{"title":"今日のメモ","max":5,"count":1}
+```
+
+**解説**
+
+やったことは3つだけです（5.2）。
+
+| やったこと | 参照 |
+|-----------|------|
+| `APIRouter(prefix="/notes", tags=["notes"])` を作った | 5.2.3 |
+| `@app.` を `@router.` に変え、パスから `/notes` を消した | 5.2.1・5.2.3 |
+| `app.include_router(notes.router)` を書いた | 5.2.2 |
+
+`/notes/info` を `/{note_id}` より**前**に置いている点に注意してください。
+順序の決まりは、ルーターの中でもそのまま効きます（3.1.4・5.2.2）。
+逆にすると、`info` が `note_id` として読まれて `422` になります。
+
+```json
+{"error":{"status":422,"message":"リクエストの形式が正しくありません","detail":[{"type":"int_parsing","loc":["path","note_id"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"info"}]}}
+```
+
+`GET /notes` を `TaskListResponse` と同じ**包みの形**にしたのは、
+`{"count": ..., "notes": [...]}` のほうが、あとから項目を足しやすいためです（4.4.2）。
+`author` の `email` が消えているのは、包みの中身を `NoteRead` と宣言してあるからです。
+
+> **よくある間違い**
+> **パスから `/notes` を消し忘れる**間違いです。
+>
+> ```python
+> router = APIRouter(prefix="/notes")
+>
+> @router.post("/notes")     # ❌ /notes/notes になる
+> ```
+>
+> エラーは出ません。`/docs` に `POST /notes/notes` と表示されて初めて気づきます。
+> **`/docs` の URL 一覧を見る**のが、いちばん早い確認方法です。
+
+> **よくある間違い**
+> `app/main.py` に**移す前の窓口が残っている**状態です。
+> 同じパスの窓口が2つになり、**先に登録されたほう**が使われます。
+> 直したはずの動きが変わらないときは、`app/main.py` を見直してください。
+
+---
+
+### 演習 5.2 の解答
+
+`app/dependencies.py`（末尾に追記）
+
+```python
+def get_note_or_404(note_id: int = Path(ge=1)) -> dict:
+    """id でメモを探す。見つからなければ 404 で止める。"""
+    for note in notes:
+        if note["id"] == note_id:
+            return note
+    raise HTTPException(
+        status_code=404,
+        detail=f"id {note_id} のメモは見つかりませんでした",
+    )
+```
+
+```diff
+- from app.data import tasks
++ from app.data import notes, tasks
+```
+
+`app/routers/notes.py`（3つの窓口）
+
+```python
+@router.get("/{note_id}", response_model=NoteRead)
+def read_note(note: dict = Depends(get_note_or_404)):
+    return note
+
+
+@router.patch("/{note_id}", response_model=NoteRead)
+def update_note(new_note: NoteUpdate, note: dict = Depends(get_note_or_404)):
+    changes = new_note.model_dump(exclude_unset=True)
+    for key, value in changes.items():
+        note[key] = value
+    return note
+
+
+@router.delete("/{note_id}", status_code=204)
+def delete_note(note: dict = Depends(get_note_or_404)):
+    notes.remove(note)
+    return None
+```
+
+```diff
+- from fastapi import APIRouter, Path
++ from fastapi import APIRouter, Depends
++ 
++ from app.dependencies import get_note_or_404
+```
+
+`GET /notes/1`
+
+```json
+{"id":1,"text":"会議は水曜に変更","pinned":false,"author":{"name":"山田"}}
+```
+
+`GET /notes/99`
+
+```json
+{"error":{"status":404,"message":"id 99 のメモは見つかりませんでした","detail":null}}
+```
+
+`GET /notes/0`
+
+```json
+{"error":{"status":422,"message":"リクエストの形式が正しくありません","detail":[{"type":"greater_than_equal","loc":["path","note_id"],"msg":"Input should be greater than or equal to 1","input":"0","ctx":{"ge":1}}]}}
+```
+
+`DELETE /notes/1`（1回目）
+
+```text
+HTTP/1.1 204 No Content
+```
+
+`DELETE /notes/1`（2回目）
+
+```json
+{"error":{"status":404,"message":"id 1 のメモは見つかりませんでした","detail":null}}
+```
+
+**解説**
+
+3つの窓口が、どれも**2〜3行**になりました。
+
+| 消えたもの | どこへ行ったか |
+|-----------|--------------|
+| `for note in notes:` | `get_note_or_404` の中（5.4.1） |
+| `if note["id"] == note_id:` | 同上 |
+| `return None`（見つからないとき） | `raise HTTPException(...)` に置き換わった |
+| `note_id: int = Path(ge=1)` | 依存の引数に移った |
+
+`Path(ge=1)` を依存側に書いたので、**窓口の関数からは `note_id` が消えています。**
+それでも `/notes/0` が `422` になるのは、**依存の引数も FastAPI が検査する**からです（5.3.1）。
+
+`PATCH` の `response_model` から `| None` を外せたのは、
+`null` を返す道が無くなったからです（5.4.1）。
+
+`404` のボディが `{"detail": "..."}` の形で返ってきた場合は、
+5.4.3 の統一ハンドラが登録されていません。`app/main.py` を確認してください。
+
+> **よくある間違い**
+> **`DELETE` で `notes.remove(note)` の代わりに `del notes[note_id]` と書く**間違いです。
+> リストの**位置**と `id` は別物です（python-text 4.1.2）。
+> `id` が 3 のメモが `notes[3]` にあるとは限らず、
+> 削除したあとは必ずずれます。**依存が返した辞書そのものを `remove` してください。**
+
+> **よくある間違い**
+> 依存の引数名を `id` にしてしまう間違いです。
+>
+> ```python
+> def get_note_or_404(id: int = Path(ge=1)) -> dict:     # ❌
+> ```
+>
+> パスの波括弧の名前（`{note_id}`）と一致しないので、
+> `missing` の `422` になります（3.1.1）。
+> さらに `id` は Python の組み込み関数の名前でもあるため、避けてください（python-text 2.3.4）。
+
+---
+
+### 演習 5.3 の解答
+
+`app/errors.py`（末尾に追記）
+
+```python
+class DuplicateNoteError(Exception):
+    """同じ本文のメモが、すでにあるときの例外。"""
+
+    def __init__(self, text: str) -> None:
+        self.text = text
+```
+
+`app/routers/notes.py`（`create_note` の先頭に追加）
+
+```python
+@router.post("", response_model=NoteRead, status_code=201)
+def create_note(new_note: NoteCreate):
+    for note in notes:
+        if note["text"] == new_note.text:
+            # HTTP の都合はここに書かない。変換はハンドラの担当
+            raise DuplicateNoteError(new_note.text)
+    new_id = max([note["id"] for note in notes]) + 1
+    ...
+```
+
+```diff
++ from app.errors import DuplicateNoteError
+```
+
+`app/main.py`（例外ハンドラを追記）
+
+```python
+@app.exception_handler(DuplicateNoteError)
+def handle_duplicate_note(request: Request, exc: DuplicateNoteError) -> JSONResponse:
+    """同じ本文のメモが登録されたときの返し方。"""
+    logger.warning("同じ本文のメモが登録されました text=%s", exc.text[:10])
+    return JSONResponse(
+        status_code=409,
+        content={
+            "error": {
+                "status": 409,
+                "message": f"「{exc.text}」と同じ本文のメモが、すでにあります",
+                "detail": None,
+            }
+        },
+    )
+```
+
+```diff
+- from app.errors import DuplicateCodeError
++ from app.errors import DuplicateCodeError, DuplicateNoteError
+```
+
+`{"text": "会議は水曜に変更", "author": {"name": "山田", "email": "yamada@example.com"}}` を送った結果
+
+```json
+{"error":{"status":409,"message":"「会議は水曜に変更」と同じ本文のメモが、すでにあります","detail":null}}
+```
+
+サーバーのターミナル
+
+```text
+2026-09-04 05:31:11,275 WARNING app.main: 同じ本文のメモが登録されました text=会議は水曜に変更
+INFO:     127.0.0.1:51012 - "POST /notes HTTP/1.1" 409 Conflict
+```
+
+**解説**
+
+役割分担が、5.4.2 の `DuplicateCodeError` とまったく同じ形になっています。
+
+| 場所 | 担当 |
+|------|------|
+| `app/routers/notes.py` | 「重複している」という**事実**を投げる |
+| `app/errors.py` | その事実を表す**例外の形** |
+| `app/main.py` のハンドラ | 事実を **HTTP（`409` と JSON）に翻訳する** |
+
+ルーターに `409` も `JSONResponse` も出てこないのが、この分担の狙いです。
+`409` を `400` に変えたくなったときも、**直すのはハンドラ1か所**です。
+
+`exc.text` で本文を取り出せるのは、例外の `__init__` で `self.text = text` と
+保存しているからです（python-text 8.2.1）。
+
+> **よくある間違い**
+> **ハンドラを書き忘れる**間違いです。例外を投げるところまでは書いたのに、
+> `app/main.py` に `@app.exception_handler(DuplicateNoteError)` が無い状態です。
+>
+> ```text
+> Internal Server Error
+> ```
+>
+> レスポンスは `500` になり、ターミナルにトレースバックが出ます（5.4.2）。
+> **自作の例外とハンドラは対で書く**と覚えてください。
+
+> **よくある間違い**
+> ログに**本文を丸ごと**出してしまう間違いです。
+>
+> ```python
+> logger.warning("同じ本文のメモ text=%s", exc.text)     # 長い本文がそのまま残る
+> ```
+>
+> 100文字のメモが、そのままログに残ります。
+> 5.5.3 のとおり、**ログには「後から追うのに必要な最小限」**を出してください。
+> ここでは `exc.text[:10]` として先頭10文字だけにしています。
+
+> **別解**
+> 「重複していないか」の判定そのものを、依存に切り出す書き方もできます。
+>
+> ```python
+> def check_duplicate_text(new_note: NoteCreate) -> NoteCreate:
+>     for note in notes:
+>         if note["text"] == new_note.text:
+>             raise DuplicateNoteError(new_note.text)
+>     return new_note
+> ```
+>
+> 登録と更新の両方で同じ判定が必要になったら、こちらのほうが得です（5.3.2）。
+
+---
+
+### 演習 5.4 の解答
+
+`app/routers/notes.py`（ロガーと `/slow` を追加し、各窓口にログを足す）
+
+```python
+import logging
+import time
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/notes", tags=["notes"])
+
+
+# 固定のパスは、波括弧付きより先に書く（3.1.4）
+@router.get("/slow")
+def read_slow():
+    # 2秒だけ何もせずに待つ（遅い処理のかわり）
+    time.sleep(2)
+    return {"message": "終わりました"}
+
+
+@router.get("", response_model=NoteListResponse)
+def read_notes():
+    logger.debug("メモの一覧を返します 件数=%s", len(notes))
+    return {"count": len(notes), "notes": notes}
+```
+
+```python
+    notes.append(created)
+    # 本文は先頭10文字だけ。email は出さない
+    logger.info("メモを登録しました id=%s text=%s", new_id, created["text"][:10])
+    return created
+```
+
+```python
+    for key, value in changes.items():
+        note[key] = value
+    logger.info("メモを更新しました id=%s 変更=%s", note["id"], list(changes))
+    return note
+```
+
+```python
+    notes.remove(note)
+    logger.info("メモを削除しました id=%s", note["id"])
+    return None
+```
+
+`POST /notes` を実行したときのターミナル
+
+```text
+2026-09-04 05:31:11,271 INFO app.routers.notes: メモを登録しました id=2 text=買い物
+2026-09-04 05:31:11,272 INFO app.main: POST /notes -> 201 (0.0024 秒)
+INFO:     127.0.0.1:51008 - "POST /notes HTTP/1.1" 201 Created
+```
+
+`PATCH /notes/1` に `{"pinned": true}` を送ったとき
+
+```text
+2026-09-04 05:31:11,281 INFO app.routers.notes: メモを更新しました id=1 変更=['pinned']
+```
+
+`.env` が `DEBUG=true` のときの `GET /notes`
+
+```text
+2026-09-04 05:31:11,251 DEBUG app.routers.notes: メモの一覧を返します 件数=1
+2026-09-04 05:31:11,252 INFO app.main: GET /notes -> 200 (0.0025 秒)
+```
+
+`.env` を `DEBUG=false` にして**再起動**したあとの `GET /notes`
+
+```text
+2026-09-04 05:31:20,118 INFO app.main: GET /notes -> 200 (0.0021 秒)
+```
+
+`GET /notes/slow`
+
+**Windows（PowerShell）**
+
+```powershell
+curl.exe -i http://127.0.0.1:8000/notes/slow
+```
+
+**macOS / Linux**
+
+```bash
+curl -i http://127.0.0.1:8000/notes/slow
+```
+
+```text
+HTTP/1.1 200 OK
+content-type: application/json
+x-process-time: 2.0014
+
+{"message":"終わりました"}
+```
+
+```text
+2026-09-04 05:31:13,296 INFO app.main: GET /notes/slow -> 200 (2.0016 秒)
+```
+
+**解説**
+
+ログの中身の選び方が、この演習の要点です（5.5.3）。
+
+| 出したもの | 理由 |
+|-----------|------|
+| `id` | 後から「どのメモの話か」を追える |
+| 本文の先頭10文字 | どのメモか見当が付く。全文は要らない |
+| 変更された項目の名前（`['pinned']`） | 何が変わったかが分かる。値そのものは要らない |
+
+`author` の `email` を出していないのは、
+**4.4.2 でレスポンスから外したものを、ログに残しては同じことだから**です。
+
+`created["text"][:10]` は、python-text 2.4.2 のスライスです。
+本文が10文字より短くてもエラーにはならず、そのまま全部が入ります。
+
+`DEBUG` のログが `.env` の切り替えで消えるのは、
+`basicConfig` の `level` を `settings.debug` から決めているからです（5.5.2）。
+**`.env` を変えたら再起動が要る**ことも、あわせて確認できたはずです（4.6.2）。
+
+`/slow` の `x-process-time` が `2.0` 前後になるのは、
+ミドルウェアが「行き」で時刻を覚え、「帰り」で差を取っているからです（5.6.2）。
+`time.sleep(2)` の2秒が、そのまま数字に出ています。
+
+> **よくある間違い**
+> **`/notes/slow` が `422` になる**間違いです。
+>
+> ```json
+> {"error":{"status":422,"message":"リクエストの形式が正しくありません","detail":[{"type":"int_parsing","loc":["path","note_id"],"msg":"Input should be a valid integer, unable to parse string as an integer","input":"slow"}]}}
+> ```
+>
+> `@router.get("/{note_id}")` より**後ろ**に `/slow` を書いています。
+> `slow` が `note_id` として読まれ、整数に変換できずに弾かれました（3.1.4）。
+> **固定のパスは、波括弧付きより先に書いてください。**
+
+> **よくある間違い**
+> `DEBUG` のログが出ないとき、`.env` を直したのに**再起動していない**ことがほとんどです（4.6.2）。
+> `main.py` の保存による自動リロード（2.4.3）は、`.env` の変更を見ていません。
+
+> **別解**
+> 処理時間が長いときだけ警告を出す、という書き方もできます。
+>
+> ```python
+> if elapsed > 1.0:
+>     logger.warning("時間がかかっています %s (%.4f 秒)", request.url.path, elapsed)
+> ```
+>
+> 窓口が増えてくると、**すべての `INFO` を読むより、遅いものだけを拾うほうが実用的**です。
+> レベルの使い分け（5.5.2）が効いてくる場面です。
