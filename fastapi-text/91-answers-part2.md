@@ -808,3 +808,726 @@ SQLite では `null` は最も小さい値として扱われるため、降順�
 > `no such column: notes.created_at` で `500` になります（6.6.1）。
 
 ---
+
+## 第7章
+
+### 理解度チェック
+
+**問 7.1 の解答**
+
+- ① 認証
+- ② 認可
+- ③ `401`（Unauthorized）
+- ④ `403`（Forbidden）
+
+**解説**
+
+順番は必ず「認証 → 認可」です（7.1.1）。
+**誰か分からないうちは、何をしてよいかも決められません。**
+
+| コード | 状況 | 一言でいうと |
+|-------|------|------------|
+| `401` | トークンが無い・不正・期限切れ | **あなたが誰か分からない** |
+| `403` | 誰かは分かったが、その操作は許されていない | **あなたには許可がない** |
+
+`401` の英語名が Unauthorized（認可されていない）なので紛らわしいのですが、
+**`401` は認証の話**です。名前ではなく意味で覚えてください。
+
+---
+
+**問 7.2 の解答**
+
+**2. 実行するたびに違うソルトが混ぜられるから**
+
+**解説**
+
+`bcrypt.gensalt()` が、呼ばれるたびに違う**ソルト**を作ります（7.2.2）。
+そのため、同じパスワードでも保存される値は毎回変わります。
+
+これは不具合ではなく、**そのために付いている仕組み**です。
+
+- 同じパスワードを使っている2人が、違う値で保存される
+- 1人分を破っても、他の人には使えない
+- よくあるパスワードのハッシュ値の一覧表と照合できない
+
+7.3.1 で山田さんと鈴木さんの `hashed_password` を並べて確認したとおり、
+**同じ `password123` でも、保存されている値は別のもの**になっていました。
+
+照合できるのは、**ソルトがハッシュ値の中に一緒に入っている**からです（7.2.3）。
+
+---
+
+**問 7.3 の解答**
+
+**3. パスワード**
+
+**解説**
+
+JWT のペイロードは、**鍵が無くても誰でも読めます**（7.4.1）。
+`base64.urlsafe_b64decode` を使えば、その場で中身が出ます。
+
+**JWT は暗号化ではありません。** 署名が付いているだけです。
+
+| 署名でできること | 署名でできないこと |
+|---------------|----------------|
+| 中身が書き換えられていないと確かめる | **中身を隠す** |
+
+そのため、入れてよいのは「他人に見られても困らないもの」だけです。
+名前・発行時刻・有効期限は問題ありませんが、
+パスワード・クレジットカード番号・住所などは入れてはいけません。
+
+---
+
+**問 7.4 の解答**
+
+`response_model` に書いた項目だけが外に返るため、
+`hashed_password` を書くと**ハッシュ値がそのまま利用者に渡ってしまう**からです。
+
+**解説**
+
+平文よりはましですが、**手元に持ち帰ってゆっくり総当たりできる状態**を渡したことになります（7.3.1）。
+
+`UserRead` は「返してよい項目の一覧」として働きます（4.4.2）。
+逆にいえば、**`response_model` を付け忘れた窓口では何も守られません**（6.4.2）。
+
+```json
+{"id":3,"name":"佐藤","email":"sato@example.com","hashed_password":"$2b$12$rur2xye...","created_at":"..."}
+```
+
+ユーザーを返す窓口には、**必ず `response_model=UserRead` を付けてください。**
+
+---
+
+**問 7.5 の解答**
+
+「そのユーザーは存在しません」と返すと、
+**どのユーザー名が登録されているかを、外から総当たりで調べられる**ためです。
+
+**解説**
+
+名前が特定できれば、攻撃する側は**パスワードだけを攻めればよくなります**（7.5.1）。
+両方をまとめて「ユーザー名またはパスワードが違います」と返すことで、
+名前とパスワードの両方を同時に当てる必要が出てきます。
+
+同じ考え方を、ユーザー登録の重複メッセージにも使いました（7.3.2）。
+
+> **補足**
+> 常に隠すのが正解ではありません。
+> 社内向けのツールのように利用者の一覧が公開されているなら、
+> 正確なメッセージのほうが親切です。
+> **判断せずに全部返してしまう**のが、いちばんよくありません。
+
+---
+
+**問 7.6 の解答**
+
+**秘密鍵が漏れたときに、発行済みのトークンをまとめて無効にできる**場面です。
+
+**解説**
+
+JWT の検証は、署名と有効期限を確かめるだけで行われます（7.4.4）。
+データベースを見ないので速いのですが、その裏返しとして
+**「このトークンだけ無効にしたい」という取り消しができません**（7.4.3）。
+
+鍵を変えれば、**それまでに配ったトークンの署名がすべて合わなくなります。**
+全員がログインし直すことになりますが、
+**鍵が漏れたときに全員を強制ログアウトさせる唯一の手段**です（7.6.1）。
+
+`.env` を GitHub に上げてしまったときも、消すだけでは足りません（履歴に残ります）。
+**鍵を作り直してください。**
+
+---
+
+**問 7.7 の解答**
+
+窓口が増えるたびに**同じ判定をコピーする**ことになり、
+**1か所だけ書き忘れたときに気づけません。**
+
+**解説**
+
+書き忘れた窓口は、エラーも出さずに**そのまま動きます**（7.5.3）。
+「他人のタスクが消せてしまう」という形で表に出るのは、誰かのデータが消えたあとです。
+
+依存にまとめておけば、守る場所は `Depends(get_my_task)` の1行で決まります。
+
+| 書き方 | 認可の判定が書かれている場所 |
+|-------|------------------------|
+| 窓口ごとに `if` | 窓口の数だけ散らばる |
+| **依存にまとめる** | **`app/dependencies.py` の1か所** |
+
+5.4.1 で「探して無ければ `404`」を依存にまとめたのと、まったく同じ考え方です。
+
+---
+
+### 演習 7.1 の解答
+
+`app/schemas.py`（`NoteCreate` から `author` を消す）
+
+```diff
+  class NoteCreate(BaseModel):
+      """メモを登録するときに受け取る形。"""
+  
+      text: str = Field(min_length=1, max_length=100)
+      pinned: bool = False
+-     author: Author
+```
+
+`app/routers/notes.py`（`create_note` の部分）
+
+```python
+@router.post("", response_model=NoteRead, status_code=201)
+def create_note(
+    new_note: NoteCreate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    found = db.scalar(select(Note).where(Note.text == new_note.text))
+    if found is not None:
+        raise DuplicateNoteError(new_note.text)
+
+    note = Note(
+        text=new_note.text,
+        pinned=new_note.pinned,
+        # 作成者は、送られてきた値ではなくトークンから決める
+        author_name=current_user.name,
+        author_email=current_user.email,
+    )
+    db.add(note)
+    db.commit()
+    db.refresh(note)
+    logger.info("メモを登録しました id=%s text=%s", note.id, note.text[:10])
+    return note
+```
+
+```diff
+- from app.dependencies import get_db, get_note_or_404, note_list_params
++ from app.dependencies import (
++     get_current_user,
++     get_db,
++     get_note_or_404,
++     note_list_params,
++ )
+  from app.errors import DuplicateNoteError
+- from app.models import Note
++ from app.models import Note, User
+```
+
+動かした結果です。
+
+トークンなしで `POST /notes`
+
+```json
+{"error":{"status":401,"message":"Not authenticated","detail":null}}
+```
+
+`/docs` の「Authorize」で**佐藤さん**としてログインしてから、`POST /notes`
+
+```json
+{"text": "牛乳を買う"}
+```
+
+```json
+{"id":2,"text":"牛乳を買う","pinned":false,"author":{"name":"佐藤"},"created_at":"2026-09-05T07:20:11.412233"}
+```
+
+トークンなしで `GET /notes`
+
+```json
+{"count":2,"notes":[{"id":1,"text":"会議は水曜に変更","pinned":false,"author":{"name":"山田"},"created_at":null},{"id":2,"text":"牛乳を買う","pinned":false,"author":{"name":"佐藤"},"created_at":"2026-09-05T07:20:11.412233"}]}
+```
+
+**解説**
+
+`create_task`（7.5.3）と1対1で対応します。
+
+| メモ側 | タスク側 | 参照 |
+|-------|---------|------|
+| `current_user: User = Depends(get_current_user)` | 同じ | 7.5.2 |
+| `NoteCreate` から `author` を消す | `TaskCreate` から `owner` を消す | 7.5.3 |
+| `author_name=current_user.name` | `owner_name=current_user.name` | 7.5.3 |
+
+**`author`（`name` と `email` を持つほう）は、これで使われなくなります。**
+`app/schemas.py` から削除して構いません。
+**`AuthorRead`（返すときに使う、`name` だけのほう）は残してください。**
+
+`app/routers/notes.py` に、トークンやハッシュを扱うコードが1行も出てこないことも確認してください。
+**認証の処理は、`Depends(get_current_user)` という1行に閉じ込められています**（7.5.2）。
+
+> **よくある間違い**
+> **`GET /notes` にも `Depends(get_current_user)` を付けてしまう**間違いです。
+> 課題では「一覧と1件取得は認証なしのまま」と指定しています。
+> 付けてしまうと、第9章でログイン前の画面に一覧を出せなくなります（7.5.3 の表）。
+>
+> 逆に、**実際のサービスでは一覧も守ることが多い**ことも覚えておいてください。
+> どこを守るかは、作るものによって決めます。
+
+> **よくある間違い**
+> **`NoteCreate` から `author` を消し忘れる**間違いです。
+> 消し忘れても動いてしまいますが、`/docs` の `Request body` に `author` が残り、
+> **送った値が黙って無視される**という分かりにくい状態になります。
+> 使わない項目は、受け取る形からも消してください。
+
+---
+
+### 演習 7.2 の解答
+
+`app/dependencies.py`（末尾に追記）
+
+```python
+def get_my_note(
+    note: Note = Depends(get_note_or_404),
+    current_user: User = Depends(get_current_user),
+) -> Note:
+    """自分のメモだけを取り出す。他人のものなら 403 で止める。"""
+    if note.author_name != current_user.name:
+        raise HTTPException(
+            status_code=403,
+            detail="このメモを操作する権限がありません",
+        )
+    return note
+```
+
+`app/routers/notes.py`（`update_note` と `delete_note` の `Depends` を差し替える）
+
+```diff
+  @router.patch("/{note_id}", response_model=NoteRead)
+  def update_note(
+      new_note: NoteUpdate,
+-     note: Note = Depends(get_note_or_404),
++     note: Note = Depends(get_my_note),
+      db: Session = Depends(get_db),
+  ):
+```
+
+```diff
+  @router.delete("/{note_id}", status_code=204)
+- def delete_note(note: Note = Depends(get_note_or_404), db: Session = Depends(get_db)):
++ def delete_note(note: Note = Depends(get_my_note), db: Session = Depends(get_db)):
+```
+
+```diff
+  from app.dependencies import (
+      get_current_user,
+      get_db,
++     get_my_note,
+      get_note_or_404,
+      note_list_params,
+  )
+```
+
+（`get_note_or_404` は `GET /notes/{note_id}` でまだ使うので、残します。）
+
+動かした結果です。**佐藤さん**でログインした状態で試しています。
+
+`PATCH /notes/1`（山田さんが作ったメモ）
+
+```json
+{"error":{"status":403,"message":"このメモを操作する権限がありません","detail":null}}
+```
+
+`PATCH /notes/2`（佐藤さん自身のメモ。`{"pinned": true}` を送る）
+
+```json
+{"id":2,"text":"牛乳を買う","pinned":true,"author":{"name":"佐藤"},"created_at":"2026-09-05T07:20:11.412233"}
+```
+
+`PATCH /notes/999`（ログイン済み）
+
+```json
+{"error":{"status":404,"message":"id 999 のメモは見つかりませんでした","detail":null}}
+```
+
+`DELETE /notes/1`（トークンなし）
+
+```json
+{"error":{"status":401,"message":"Not authenticated","detail":null}}
+```
+
+**解説**
+
+`get_my_task`（7.5.3）と同じ形です。3つの依存が積み重なっています。
+
+| 依存 | 確かめること | 通らなければ |
+|------|------------|------------|
+| `get_note_or_404` | そのメモがあるか | `404` |
+| `get_current_user` | トークンが正しいか | `401` |
+| `get_my_note` 自身 | 作成者本人か | `403` |
+
+**どれが先に返るかは、`get_my_note` の引数を書いた順で決まります**（7.5.3）。
+`note` を先に書いたので、存在しない `id` は**トークンの有無に関係なく `404`** です。
+
+`app/routers/notes.py` に `403` という数字が1つも出てこないことを確認してください。
+**HTTP の都合を窓口に書かない**という、5.4.2 からの一貫した方針です。
+
+> **よくある間違い**
+> **`GET /notes/{note_id}` まで `get_my_note` に差し替えてしまう**間違いです。
+> 課題では「1件取得は変えない」と指定しています。
+> 差し替えると、**他人のメモを読むだけで `403`** になります。
+>
+> 「読む」と「書き換える」で守り方を変えられることが、
+> 認可を依存に分けておく利点です。
+
+> **補足：2人目のユーザーの作り方**
+> この演習は、**2人分のユーザーとメモ**が無いと確かめられません。
+> `POST /users` でもう1人登録し（7.3.1）、
+> `/docs` の「Authorize」で**ログインし直してから**それぞれのメモを作ってください。
+> Logout を押さずに Authorize すると、前の人のトークンが残っていることがあります（7.5.2 の補足）。
+
+---
+
+### 演習 7.3 の解答
+
+`app/schemas.py`（末尾に追記）
+
+```python
+class PasswordUpdate(BaseModel):
+    """パスワードを変更するときに受け取る形。"""
+
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=72)
+
+    @field_validator("new_password")
+    @classmethod
+    def new_password_must_fit_72_bytes(cls, value: str) -> str:
+        if len(value.encode("utf-8")) > 72:
+            raise ValueError("パスワードは UTF-8 で 72 バイト以内にしてください")
+        return value
+```
+
+`app/routers/users.py`（末尾に追記）
+
+```python
+@router.patch("/me/password", status_code=204)
+def update_my_password(
+    body: PasswordUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if not verify_password(body.current_password, current_user.hashed_password):
+        # 失敗しても、パスワードそのものはログに出さない
+        logger.warning("パスワード変更に失敗しました name=%s", current_user.name)
+        raise HTTPException(status_code=401, detail="現在のパスワードが違います")
+
+    current_user.hashed_password = hash_password(body.new_password)
+    db.commit()
+    logger.info("パスワードを変更しました id=%s", current_user.id)
+    return None
+```
+
+```diff
+- from fastapi import APIRouter, Depends
++ from fastapi import APIRouter, Depends, HTTPException
+```
+
+```diff
+- from app.schemas import UserCreate, UserRead
++ from app.schemas import PasswordUpdate, UserCreate, UserRead
+- from app.security import hash_password
++ from app.security import hash_password, verify_password
+```
+
+動かした結果です。
+
+`current_password` を間違えたとき
+
+```json
+{"error":{"status":401,"message":"現在のパスワードが違います","detail":null}}
+```
+
+`new_password` に `"abc"` を送ったとき
+
+```json
+{"error":{"status":422,"message":"リクエストの形式が正しくありません","detail":[{"type":"string_too_short","loc":["body","new_password"],"msg":"String should have at least 8 characters","input":"abc","ctx":{"min_length":8}}]}}
+```
+
+正しく変更したとき
+
+```text
+HTTP/1.1 204 No Content
+```
+
+変更後、**古いパスワード**でログイン
+
+```json
+{"error":{"status":401,"message":"ユーザー名またはパスワードが違います","detail":null}}
+```
+
+**新しいパスワード**でログイン
+
+```json
+{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...","token_type":"bearer"}
+```
+
+**解説**
+
+組み合わせているのは、すでに書いたものばかりです。
+
+| やること | 使うもの | 参照 |
+|---------|---------|------|
+| ログイン必須にする | `Depends(get_current_user)` | 7.5.2 |
+| 現在のパスワードを照合する | `verify_password` | 7.2.3 |
+| 新しいパスワードを保存する | `hash_password` | 7.2.3 |
+| 属性を書き換えて保存する | `commit`（`add` は不要） | 6.4.3 |
+| 本文なしで返す | `status_code=204` + `return None` | 4.4.3 |
+
+**`db.add(current_user)` を書いていない**ことに注目してください。
+`current_user` は `get_current_user` がセッションから取り出したオブジェクトなので、
+セッションが変更を追跡しています（6.4.3）。
+
+**`current_password` を確かめている理由**も押さえてください。
+トークンさえあれば変更できてしまうと、
+**端末を離席中に操作された場合や、トークンが盗まれた場合に、
+パスワードごと乗っ取られます。**
+「重要な操作の前に、もう一度パスワードを確かめる」のは、よく使われる形です。
+
+> **よくある間違い**
+> **`current_password` の照合をせずに変更させてしまう**間違いです。
+> 完成条件に「`current_password` を間違えると `401`」を入れているのは、
+> ここを飛ばさないためです。
+>
+> なお、間違えたときに返すのは **`401`**（あなただと確認できない）です。
+> `403`（許可がない）ではありません（7.1.1）。
+
+> **補足：変更後に、古いトークンはどうなるか**
+> **そのまま使えます。**
+> トークンの検証は署名と有効期限だけで行われ、パスワードを見ないからです（7.4.3）。
+>
+> 「パスワードを変えたら、他の端末からは追い出したい」という要求は自然ですが、
+> それには**トークンを失効させる仕組み**が要ります（7.6 の一覧）。
+> このテキストの範囲では作りません。
+
+---
+
+### 演習 7.4 の解答
+
+`app/models.py`（`User` に1行足す）
+
+```diff
+      hashed_password: Mapped[str] = mapped_column(String(100))
++     is_admin: Mapped[bool] = mapped_column(default=False)
+      created_at: Mapped[datetime | None] = mapped_column(default=datetime.now)
+```
+
+マイグレーションを作ります。
+
+**Windows（PowerShell）**
+
+```powershell
+alembic revision --autogenerate -m "add is_admin to users"
+```
+
+**macOS / Linux**
+
+```bash
+alembic revision --autogenerate -m "add is_admin to users"
+```
+
+```text
+INFO  [alembic.autogenerate.compare] Detected added column 'users.is_admin'
+```
+
+**生成されたファイルは、そのままでは適用できません。**
+
+```python
+def upgrade() -> None:
+    op.add_column('users', sa.Column('is_admin', sa.Boolean(), nullable=False))
+```
+
+```text
+sqlalchemy.exc.OperationalError: (sqlite3.OperationalError)
+Cannot add a NOT NULL column with default value NULL
+```
+
+7.3.1 の注意のとおり、`server_default` を足します。
+
+```python
+def upgrade() -> None:
+    op.add_column(
+        'users',
+        # 既存の行に入れる値が要るので、server_default を自分で足す
+        sa.Column('is_admin', sa.Boolean(), nullable=False, server_default=sa.text('0')),
+    )
+
+
+def downgrade() -> None:
+    op.drop_column('users', 'is_admin')
+```
+
+```text
+INFO  [alembic.runtime.migration] Running upgrade e8da293f486f -> f229f7f3b77d, add is_admin to users
+```
+
+`app/dependencies.py`（末尾に追記）
+
+```python
+def get_current_admin(current_user: User = Depends(get_current_user)) -> User:
+    """管理者だけを通す。管理者でなければ 403 で止める。"""
+    if not current_user.is_admin:
+        raise HTTPException(status_code=403, detail="管理者だけが実行できます")
+    return current_user
+```
+
+`app/schemas.py`（`UserRead` に1行足す）
+
+```diff
+      id: int
+      name: str
+      email: str
++     is_admin: bool = False
+      created_at: datetime | None = None
+```
+
+`app/routers/admin.py`（ファイル全体）
+
+```python
+"""管理者だけが使う窓口。"""
+
+import logging
+
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+
+from app.dependencies import get_current_admin, get_db, get_task_or_404
+from app.models import Task, User
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.delete("/tasks/{task_id}", status_code=204)
+def delete_any_task(
+    task: Task = Depends(get_task_or_404),
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    # commit のあとは属性を読めないので、先に取っておく（6.4.4）
+    task_id = task.id
+    owner_name = task.owner_name
+    db.delete(task)
+    db.commit()
+    logger.warning("管理者がタスクを削除しました id=%s owner=%s 管理者=%s",
+                   task_id, owner_name, admin.name)
+    return None
+```
+
+`app/main.py`（登録を1行足す）
+
+```diff
+- from app.routers import auth, misc, tasks, users
++ from app.routers import admin, auth, misc, tasks, users
+```
+
+```diff
+  app.include_router(auth.router)
++ app.include_router(admin.router)
+  app.include_router(misc.router)
+```
+
+管理者を1人作ります。**`fastapi-lesson` で**実行してください（`id` は自分の環境の値に置き換えます）。
+
+**Windows（PowerShell）**
+
+```powershell
+python -c "from app.database import SessionLocal; from app.models import User; db = SessionLocal(); u = db.get(User, 1); u.is_admin = True; db.commit(); print(u.name, u.is_admin); db.close()"
+```
+
+**macOS / Linux**
+
+```bash
+python -c "from app.database import SessionLocal; from app.models import User; db = SessionLocal(); u = db.get(User, 1); u.is_admin = True; db.commit(); print(u.name, u.is_admin); db.close()"
+```
+
+```text
+山田 True
+```
+
+動かした結果です。
+
+管理者ではない人（佐藤さん）の `GET /users/me`
+
+```json
+{"id":3,"name":"佐藤","email":"sato@example.com","is_admin":false,"created_at":"2026-09-05T07:13:52.587963"}
+```
+
+その佐藤さんが `DELETE /admin/tasks/1`
+
+```json
+{"error":{"status":403,"message":"管理者だけが実行できます","detail":null}}
+```
+
+トークンなしで `DELETE /admin/tasks/1`
+
+```json
+{"error":{"status":401,"message":"Not authenticated","detail":null}}
+```
+
+管理者（山田さん）の `GET /users/me`
+
+```json
+{"id":1,"name":"山田","email":"yamada@example.com","is_admin":true,"created_at":"2026-09-05T07:13:51.158970"}
+```
+
+その山田さんが、**鈴木さんのタスク**を `DELETE /admin/tasks/2`
+
+```text
+HTTP/1.1 204 No Content
+```
+
+存在しない `id` を `DELETE /admin/tasks/999`
+
+```json
+{"error":{"status":404,"message":"id 999 のタスクは見つかりませんでした","detail":null}}
+```
+
+サーバーのターミナル
+
+```text
+2026-09-05 07:25:26,058 WARNING app.routers.admin: 管理者がタスクを削除しました id=2 owner=鈴木 管理者=山田
+```
+
+**解説**
+
+新しい考え方は1つもありません。**これまでの部品の組み合わせ**です。
+
+| 要求 | 使ったもの | 参照 |
+|------|-----------|------|
+| 列を1つ足す | Alembic（`server_default` の調整あり） | 6.6.3・7.3.1 |
+| 管理者だけを通す | `get_current_user` を使う依存 | 7.5.3 |
+| 見つからなければ `404` | `get_task_or_404` | 6.4.2 |
+| 窓口をまとめる | `APIRouter(prefix="/admin")` | 5.2.3 |
+
+**`get_current_admin` が `get_current_user` を使っている**ところが要点です。
+「認証（誰か）」の上に「認可（管理者か）」を重ねる形になっており、
+7.1.1 の「順番は認証 → 認可」がそのままコードの構造になっています。
+
+**削除のログを `WARNING` にしている**のも意図的です（5.5.2）。
+管理者が他人のデータを消す操作は、あとから「誰が・いつ・何を」を追えるようにしておきます。
+
+> **よくある間違い**
+> **`is_admin` を `Mapped[bool | None]` にする**間違いです。
+> 6.6.3 で「あとから足す列は `| None`」と書いたので、機械的に付けたくなります。
+>
+> しかし `is_admin` は「管理者か、そうでないか」の2通りしかありません。
+> `None` を許すと、`if not current_user.is_admin:` は通るものの、
+> **「管理者かどうか決まっていない人」という意味の分からない状態**が作れてしまいます。
+> 空を許さない代わりに、`server_default` で既存の行の値を決めます（7.3.1）。
+
+> **よくある間違い**
+> **`DELETE /tasks/{task_id}` のほうを、管理者も通れるように書き換えてしまう**間違いです。
+>
+> ```python
+> if task.owner_name != current_user.name and not current_user.is_admin:   # ❌ 課題とは違う
+> ```
+>
+> 動きますが、**「本人の操作」と「管理者の操作」が同じログ・同じ窓口になります。**
+> あとから「管理者が消したものだけ調べたい」と思っても分けられません。
+> 課題で URL を分けているのは、そのためです。
+
+> **補足：管理者を作る窓口は作らない**
+> 「管理者を作る API」を用意すると、**そこが破られたら全部終わり**です。
+> 実際のサービスでも、最初の管理者はデータベースを直接操作して作り、
+> それ以降は管理者だけが昇格させられる形にすることが多くあります。
+> このテキストでは、`python -c` から直接書き換える形にしました。
+
+---
