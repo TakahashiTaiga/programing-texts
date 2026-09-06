@@ -1531,3 +1531,534 @@ HTTP/1.1 204 No Content
 > このテキストでは、`python -c` から直接書き換える形にしました。
 
 ---
+
+## 第8章
+
+### 理解度チェック
+
+**問 8.1 の解答**
+
+- ① `test_`
+- ② `assert`
+- ③ `AssertionError`
+- ④ fixture（フィクスチャ）
+- ⑤ `conftest.py`
+
+**解説**
+
+①は、**ファイル名と関数名の両方**に必要です（8.2.1）。
+どちらか片方でも規則から外れると、pytest はそのテストを**探しません。**
+エラーも出ず `collected 0 items` と表示されるだけなので、
+「0 件は成功ではない」ことを覚えておいてください。
+
+④と⑤は、8.4.2 で扱ったものです。
+`conftest.py` は**名前が決まっている**ファイルで、
+同じディレクトリ以下のテストから `import` なしで使えます。
+
+---
+
+**問 8.2 の解答**
+
+**2**（ファイル名か関数名が `test_` で始まっていない）
+
+**解説**
+
+`collected 0 items` は「**1つも見つからなかった**」という意味です（8.2.1）。
+テストが1つも実行されていないので、成功でも失敗でもありません。
+
+よくある原因は次の3つです。
+
+| 原因 | 直し方 |
+|------|-------|
+| ファイル名が `security_test.py`・`tests_security.py` など | **`test_` で始める**（`test_security.py`） |
+| 関数名が `def check_...():` など | **`test_` で始める** |
+| `pytest.ini` の `testpaths` が、テストの無い場所を指している | 指す先を直す |
+
+1 は誤りです。全部通ったときは `4 passed` のように**件数が表示されます。**
+3 は、`assert` を書き忘れたテストでも**見つかりはします**（そして必ず通ってしまいます）。
+
+---
+
+**問 8.3 の解答**
+
+**4**（データベースも自動的にテスト用に切り替わる）
+
+**解説**
+
+`TestClient` がやってくれるのは、**サーバーを起動せずにアプリを呼ぶこと**だけです（8.3.1）。
+**接続先のデータベースは、`app/database.py` に書いたまま**（`.env` の `DATABASE_URL`）です。
+
+だから 8.3 の段階では、テストを実行するたびに `app.db` にタスクが増え、
+8.3.4 の実験では**本物のデータが消えました。**
+切り替えるには、`dependency_overrides` で `get_db` を差し替える必要があります（8.4.3）。
+
+1・2・3 は正しい説明です。とくに 2 が重要で、
+例外ハンドラ（5.4.2）もミドルウェア（5.6）も本物が動くからこそ、
+`{"error": {...}}` の形（5.4.3）までテストで確かめられます。
+
+---
+
+**問 8.4 の解答**
+
+`POST /auth/token` は `OAuth2PasswordRequestForm` で受け取る窓口で、
+**JSON ではなくフォーム形式で送る決まり**になっているからです（7.5.1）。
+`json=` で送ると `422` が返ります。
+
+**解説**
+
+`data=` はフォーム形式（`username=佐藤&password=password123` の形）、
+`json=` は JSON として送ります（8.3.3）。
+
+ログインだけがフォーム形式なのは、**OAuth2 という標準がそう決めていて、
+`/docs` の「Authorize」ボタンもその形で送るから**です（7.5.1）。
+テストからも、`/docs` からも、同じ窓口を同じ形で呼べることになります。
+
+---
+
+**問 8.5 の解答**（2つ挙げられていれば正解）
+
+- 実行するたびにデータが増え、`app.db` が汚れていく
+- テストがデータを消してしまう（8.3.4 の実験で、山田さんのタスクが消えた）
+- 何件入っているか分からないので、`count` の値を確かめるテストが書けない
+- すでに入っているデータに依存するため、**実行する順番や状況で結果が変わる**
+- `DATABASE_URL` が本番を指していた場合、**利用者のデータが消える**
+
+**解説**
+
+8.4.1 の表がそのまま答えです。
+とくに4つ目は、じわじわ効いてきます。
+**結果が安定しないテストは信用されなくなり、やがて誰も実行しなくなります。**
+
+「テスト用のデータベースを分ける」のは、この5つをまとめて解決するためです。
+
+---
+
+**問 8.6 の解答**
+
+テストが1つ終わるたびにテーブルを消すことで、
+**次のテストが、必ず空の状態から始まるようにするため**です。
+前のテストが作ったデータが残っていると、実行の順番によって結果が変わります。
+
+**解説**
+
+`db` fixture は `yield` の前で `create_all`、後ろで `drop_all` をしています（8.4.2）。
+`get_db`（6.5.1）と同じ、**`yield` の前が準備・後ろが後片付け**という形です。
+
+これがあるおかげで、次のような**強いテスト**が書けます。
+
+```python
+    assert response.json() == {"count": 0, "tasks": []}
+```
+
+`app.db` を使っていたときは、`count` が何になるか分からないので
+`assert "count" in response.json()` としか書けませんでした（8.3.2）。
+
+---
+
+**問 8.7 の解答**
+
+先に直してしまうと、**そのテストが本当にバグを捕まえられるのかを確かめられない**からです。
+失敗するところを一度見てから直すと、テストが働いていることを確認できます。
+
+**解説**
+
+8.5.2 の手順です。「テストを書いた → 通った」だけでは、
+**そもそもバグを再現できていないだけ**かもしれません。
+
+8.3.4 でやった実験も同じ形でした。
+`!=` を `==` に変えて `assert 204 == 403` を**目で見てから**戻したので、
+`test_他人のタスクは削除できない` が確かに認可を守っていると分かります。
+
+---
+
+### 演習 8.1 の解答
+
+`tests/conftest.py`（末尾に追記）
+
+```python
+@pytest.fixture
+def yamada(db: Session) -> User:
+    """テスト用のユーザー（山田さん）をもう1人作る。"""
+    user = User(
+        name="山田",
+        email="yamada@example.com",
+        hashed_password=hash_password("password123"),
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@pytest.fixture
+def yamada_note(db: Session, yamada: User) -> Note:
+    """山田さんのメモを1件作る（他人のメモとして使う）。"""
+    note = Note(
+        text="会議は水曜に変更",
+        pinned=False,
+        author_name=yamada.name,
+        author_email=yamada.email,
+    )
+    db.add(note)
+    db.commit()
+    db.refresh(note)
+    return note
+```
+
+`fastapi-lesson/tests/test_notes.py`（新規作成）
+
+```python
+"""メモの窓口のテスト。"""
+
+from fastapi.testclient import TestClient
+
+from app.models import Note
+
+
+def test_一覧は登録されているメモだけを返す(client: TestClient, yamada_note: Note) -> None:
+    response = client.get("/notes")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["count"] == 1
+    assert data["notes"][0]["text"] == "会議は水曜に変更"
+
+
+def test_メモが1件も無ければ空の一覧を返す(client: TestClient) -> None:
+    response = client.get("/notes")
+
+    assert response.status_code == 200
+    assert response.json() == {"count": 0, "notes": []}
+
+
+def test_1件取得はトークンなしでもできる(client: TestClient, yamada_note: Note) -> None:
+    response = client.get(f"/notes/{yamada_note.id}")
+
+    assert response.status_code == 200
+    assert response.json()["author"]["name"] == "山田"
+
+
+def test_存在しないidは404を返す(client: TestClient) -> None:
+    response = client.get("/notes/9999")
+
+    assert response.status_code == 404
+    assert response.json()["error"]["message"] == "id 9999 のメモは見つかりませんでした"
+```
+
+実行した結果です。
+
+```text
+tests/test_notes.py ....                                                 [ 20%]
+tests/test_schemas.py .                                                  [ 25%]
+tests/test_security.py ....                                              [ 45%]
+tests/test_tasks.py ...........                                          [100%]
+
+======================== 20 passed, 1 warning in 7.22s =========================
+```
+
+**解説**
+
+`yamada_task` fixture（8.4.2）と1対1で対応します。
+
+| メモ側 | タスク側 | 参照 |
+|-------|---------|------|
+| `yamada_note` fixture | `yamada_task` fixture | 8.4.2 |
+| `client` を引数に書く | 同じ | 8.4.2 |
+| `f"/notes/{yamada_note.id}"` | `f"/tasks/{yamada_task.id}"` | 8.4.2 |
+
+**`yamada_note` が `yamada` を引数に取っている**ところがポイントです。
+fixture は別の fixture を使えるので（8.4.2）、
+`author_name=yamada.name` と書けば、**ユーザーとメモの名前が食い違いません。**
+
+`yamada` を使わず `author_name="山田"` と直接書いても、この演習のテストは通ります。
+ただし、あとで名前を変えたくなったときに**2か所直すことになります。**
+
+`Note` は `conftest.py` の先頭ですでに `import` してあります（8.4.2）。
+`# noqa: F401` というコメントが付いていますが、
+**実際に使うようになったあとも、そのままで構いません**（`Task` と `User` のために必要な印だからです）。
+
+> **よくある間違い**
+> **`tests/test_notes.py` にも `client = TestClient(app)` と書いてしまう**間違いです。
+>
+> ```python
+> from app.main import app
+> client = TestClient(app)          # ❌ conftest.py の client と別物になる
+> ```
+>
+> こう書くと、**`get_db` が差し替えられていないクライアント**ができあがります。
+> そのテストだけ `app.db` を見にいくので、`count` が 0 にならず失敗します。
+> **`client` は引数で受け取ってください。**
+
+> **よくある間違い**
+> **`id` を決め打ちする**間違いです。
+>
+> ```python
+> response = client.get("/notes/1")     # ❌ 1 とは限らない
+> ```
+>
+> `db` fixture が毎回テーブルを作り直すので `id` は 1 から始まりますが、
+> **fixture を足したり順番を変えたりすると簡単にずれます。**
+> `yamada_note.id` のように、**作ったものから取り出して**ください。
+
+---
+
+### 演習 8.2 の解答
+
+`tests/test_notes.py`（末尾に追記）
+
+```python
+def test_トークンなしでは登録できない(client: TestClient) -> None:
+    response = client.post("/notes", json={"text": "牛乳を買う"})
+
+    assert response.status_code == 401
+    assert response.json()["error"]["message"] == "Not authenticated"
+
+
+def test_ログインすればメモを登録できる(client: TestClient, sato_headers: dict) -> None:
+    response = client.post("/notes", json={"text": "牛乳を買う"}, headers=sato_headers)
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["text"] == "牛乳を買う"
+    assert data["author"]["name"] == "佐藤"
+
+
+def test_登録したメモは一覧にも出てくる(client: TestClient, sato_headers: dict) -> None:
+    client.post("/notes", json={"text": "牛乳を買う"}, headers=sato_headers)
+
+    response = client.get("/notes")
+
+    assert response.json()["count"] == 1
+```
+
+**解説**
+
+`sato_headers` fixture（8.4.2）を引数に書くだけで、次の3つが済んでいます。
+
+1. 佐藤さんを `test.db` に作る（`sato` fixture）
+2. `POST /auth/token` でログインする
+3. `Authorization: Bearer ...` の形に組み立てる
+
+**送るボディに `author` が入っていない**ことも確認してください。
+演習 7.1 で `NoteCreate` から消したので、送っても無視されます。
+`author` が `"佐藤"` になるのは、`create_note` が `current_user` から入れているからです。
+
+3つ目のテストは、**「登録が一覧に反映される」ことの確認**です。
+`POST` が `201` を返しても、`commit` を書き忘れていれば保存されません（6.5.2）。
+**登録したものを読み直すところまで**を1つのテストにしておくと、そこまで守れます。
+
+> **補足：`app/routers/notes.py` を1行も変えていないこと**
+> 完成条件に入れてあるのは、**テストを書くためにアプリを変える必要が無い**ことを
+> 確かめてほしいからです。
+>
+> もしテストのためにアプリ側を変えたくなったら、それは
+> 「テストしにくい書き方になっている」という合図です（8.5.1）。
+> このアプリでは `Depends` で部品を受け取る形にしてあるので（5.3）、外から差し替えられます。
+
+---
+
+### 演習 8.3 の解答
+
+`tests/test_notes.py`（末尾に追記）
+
+```python
+def test_他人のメモは編集できない(
+    client: TestClient, sato_headers: dict, yamada_note: Note
+) -> None:
+    response = client.patch(
+        f"/notes/{yamada_note.id}", json={"pinned": True}, headers=sato_headers
+    )
+
+    assert response.status_code == 403
+    assert response.json()["error"]["message"] == "このメモを操作する権限がありません"
+
+
+def test_自分のメモは編集できる(client: TestClient, sato_headers: dict) -> None:
+    created = client.post("/notes", json={"text": "牛乳を買う"}, headers=sato_headers)
+    note_id = created.json()["id"]
+
+    response = client.patch(f"/notes/{note_id}", json={"pinned": True}, headers=sato_headers)
+
+    assert response.status_code == 200
+    assert response.json()["pinned"] is True
+
+
+def test_存在しないidはログイン済みでも404になる(client: TestClient, sato_headers: dict) -> None:
+    response = client.patch("/notes/9999", json={"pinned": True}, headers=sato_headers)
+
+    assert response.status_code == 404
+```
+
+`get_my_note` を**わざと壊した**ときの結果です。
+
+```diff
+  def get_my_note(
+      note: Note = Depends(get_note_or_404),
+      current_user: User = Depends(get_current_user),
+  ) -> Note:
+-     if note.author_name != current_user.name:
++     if note.author_name == current_user.name:
+```
+
+```text
+=========================== short test summary info ============================
+FAILED tests/test_notes.py::test_他人のメモは編集できない - assert 200 == 403
+FAILED tests/test_notes.py::test_自分のメモは編集できる - assert 403 == 200
+2 failed, 28 passed, 1 warning in 14.41s
+```
+
+**2つとも失敗しました。** `!=` に戻すと、また全部通ります。
+
+**解説**
+
+`test_他人のタスクは削除できない` と `test_自分のタスクは削除できる`（8.4.2）の、メモ版です。
+
+**失敗が2つ出る**ことに意味があります。
+
+| 失敗したテスト | 表示 | 意味 |
+|--------------|------|------|
+| `test_他人のメモは編集できない` | `assert 200 == 403` | **他人のメモが編集できてしまった** |
+| `test_自分のメモは編集できる` | `assert 403 == 200` | **自分のメモが編集できなくなった** |
+
+「許されるはず」と「許されないはず」の**両方**を書いておくと、
+条件をひっくり返す間違いが確実に捕まります。
+片方だけだと、たとえば `if True:` と書き換えても気づけないことがあります。
+
+3つ目のテストは、**依存が呼ばれる順番**（7.5.3）の確認です。
+`get_my_note` の引数を入れ替えて `current_user` を先に書くと、
+存在しない `id` でも `403` が返るようになり、このテストが失敗します。
+
+> **よくある間違い**
+> **「自分のメモ」を fixture で作ろうとする**間違いです。
+> `sato_note` のような fixture を作ってもよいのですが、
+> **`sato` fixture と作成者の名前を必ず揃える**必要があります。
+>
+> 解答では `POST /notes` で作っています。
+> **API を通して作れば、作成者はトークンから決まる**ので（演習 7.1）、
+> 食い違いようがありません。
+
+---
+
+### 演習 8.4 の解答
+
+`fastapi-lesson/tests/test_users.py`（新規作成）
+
+```python
+"""ユーザーの窓口のテスト。"""
+
+from fastapi.testclient import TestClient
+
+from app.models import User
+
+
+def test_トークンなしではパスワードを変更できない(client: TestClient) -> None:
+    response = client.patch(
+        "/users/me/password",
+        json={"current_password": "password123", "new_password": "newpassword456"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_現在のパスワードが違えば401になる(client: TestClient, sato_headers: dict) -> None:
+    response = client.patch(
+        "/users/me/password",
+        json={"current_password": "wrongpassword", "new_password": "newpassword456"},
+        headers=sato_headers,
+    )
+
+    assert response.status_code == 401
+    assert response.json()["error"]["message"] == "現在のパスワードが違います"
+
+
+def test_短すぎる新しいパスワードは422になる(client: TestClient, sato_headers: dict) -> None:
+    response = client.patch(
+        "/users/me/password",
+        json={"current_password": "password123", "new_password": "abc"},
+        headers=sato_headers,
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["detail"][0]["type"] == "string_too_short"
+
+
+def test_パスワードを変更すると古いほうではログインできなくなる(
+    client: TestClient, sato_headers: dict, sato: User
+) -> None:
+    changed = client.patch(
+        "/users/me/password",
+        json={"current_password": "password123", "new_password": "newpassword456"},
+        headers=sato_headers,
+    )
+    assert changed.status_code == 204
+
+    old = client.post("/auth/token", data={"username": "佐藤", "password": "password123"})
+    assert old.status_code == 401
+
+    new = client.post("/auth/token", data={"username": "佐藤", "password": "newpassword456"})
+    assert new.status_code == 200
+    assert "access_token" in new.json()
+```
+
+実行した結果です（演習 8.1〜8.3 のぶんも含めた全体）。
+
+```text
+tests/test_notes.py ..........                                           [ 33%]
+tests/test_schemas.py .                                                  [ 36%]
+tests/test_security.py ....                                              [ 50%]
+tests/test_tasks.py ...........                                          [ 86%]
+tests/test_users.py ....                                                 [100%]
+
+======================== 30 passed, 1 warning in 14.30s ========================
+```
+
+**解説**
+
+4つ目が、この演習の中心です。**変更したことを、変更後の動きで確かめています。**
+
+```python
+    assert changed.status_code == 204        # 変更できた
+    assert old.status_code == 401            # 古いパスワードでは入れない
+    assert new.status_code == 200            # 新しいパスワードで入れる
+```
+
+`204` が返っただけでは、**本当に保存されたかは分かりません**（`commit` 忘れなど）。
+`test_自分のタスクは削除できる`（8.4.2）で、削除後に `404` を確かめたのと同じ考え方です。
+
+**このテストだけ `assert` が4つあります。**
+8.1.2 で「1つのテストで確かめるのは1つ」と書きましたが、
+ここで確かめているのは「**パスワードが入れ替わった**」という**1つのこと**です。
+その1つを示すのに3回の操作が要る、という形なので、分けないほうが読みやすくなります。
+
+最後の完成条件（`app.db` の佐藤さんのパスワードが変わっていない）は、
+**何もしなくても満たされます。** 理由は3つの積み重ねです。
+
+| 仕組み | 効果 | 参照 |
+|-------|------|------|
+| `client` fixture が `get_db` を差し替える | アプリは `test.db` を読み書きする | 8.4.3 |
+| `sato` fixture が `test.db` にユーザーを作る | `app.db` の佐藤さんとは**別人** | 8.4.2 |
+| `db` fixture がテスト後に `drop_all` する | テストが作ったものは全部消える | 8.4.2 |
+
+**テストの中の「佐藤さん」は、`app.db` の佐藤さんではありません。**
+名前が同じだけの、テスト用に作られた別のデータです。
+
+> **よくある間違い**
+> **ログインに `json=` を使ってしまう**間違いです。
+>
+> ```python
+> old = client.post("/auth/token", json={"username": "佐藤", "password": "password123"})   # ❌
+> ```
+>
+> `422` が返るので、`assert old.status_code == 401` が
+> `assert 422 == 401` で失敗します。
+> **ログインだけは `data=`** です（8.3.3・7.5.1）。
+
+> **補足：変更後も、古いトークンは使えたままです**
+> このテストでは `sato_headers`（変更前に取ったトークン）を使い続けていますが、
+> **パスワードを変えたあとも `401` にはなりません。**
+> トークンの検証は署名と有効期限だけで行われ、パスワードを見ないからです（7.4.3）。
+>
+> これは演習 7.3 の解答の補足で触れた話です。
+> **テストを書くと、こうした仕様が自分の手で確かめられます。**
+
+---
