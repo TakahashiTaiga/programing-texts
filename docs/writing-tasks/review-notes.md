@@ -55,6 +55,12 @@
   - ③ **`pytest "tests/test_security.py::test_正しいパスワードなら検証に通る"` が PowerShell で通るか**（8.2.3。日本語を含む引数の引用符の扱い）
   - ④ **`warnings summary` に出る `DeprecationWarning`**（starlette / anyio の版によって出たり出なかったりします）。本文には「合否に影響しない」と注記済みですが、文言が変わっていたら 8.2.3 の補足を差し替えてください
 - [ ] `fastapi-text` 8.4.2 の **`Base.metadata.drop_all` を使った後片付け**が、Windows でも問題なく動くか（`test.db` のファイルは残したまま、テーブルだけ作り直す形にしてあります。ファイルを削除する形にしていないのは、Windows でファイルが掴まれたままになるのを避けるためです）
+- [ ] `fastapi-text` 10.2.2 の **`fastapi run app/main.py` の起動時の表示**（本文は `production mode` / `Server started at http://0.0.0.0:8000` の形で記載）。Linux で確認したものなので、Windows / macOS の表示と食い違わないか確認してください。**このコマンドを実行すると、同じネットワークの他の端末から届く状態になります**（本文にも注意を書いていますが、社内ネットワークなどで試す場合はご注意ください）
+- [ ] `fastapi-text` 演習 10.2 の前提：**第9章で `.env` に足した `CORS_ORIGINS` が、`.env.example` に足されていません。**
+      演習はこの抜けを見つけて直させる形にしてありますが、第9章の 9.1.3 に `.env.example` への追記を足すという直し方もあります。
+      その場合は演習 10.2 の「足りなかったのは `CORS_ORIGINS` です」（解答編）も合わせて直してください
+- [ ] `fastapi-text` `.env.example` の **`SECRET_KEY` の行が2つになる**問題（4.6.3 で `SECRET_KEY=` を書き、7.4.2 でもう一度追記しているため）。
+      解答編 演習 10.2 の「よくある間違い」で触れていますが、7.4.2 側を「置き換える」と書き直すほうが親切かもしれません
 - [ ] `docker-text` 2.1〜2.2 Docker Desktop のインストールとトラブル対処
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
 
