@@ -24,10 +24,10 @@
 |----|-----------|
 | react-text | **13 / 13（完成）** |
 | python-text | **13 / 13（完成）** |
-| fastapi-text | 11 / 12 |
-| docker-text | 1 / 10 |
+| fastapi-text | **12 / 12（完成）** |
+| docker-text | 2 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **38 / 59** |
+| **合計** | **40 / 59** |
 
 ---
 
@@ -117,7 +117,7 @@
 | F-08 | 完了 | 第8章 テスト | `fastapi-text/08-testing.md` | part2 | 中 | pytest（`pytest==9.1.1` を別途 `pip install`）＋ `TestClient`。**本文・解答編のコードと出力は `fastapi==0.115.6` / `pytest==9.1.1` / `httpx==0.28.1` / `sqlalchemy==2.0.36` / `bcrypt==4.2.1` / `pyjwt==2.10.1` / Python 3.11 で実際に実行して確認済み**（本文16件・演習14件のテストがすべて green）。`fastapi-lesson/pytest.ini`（`pythonpath = .` / `testpaths = tests`）と `tests/`（`conftest.py` / `test_security.py` / `test_schemas.py` / `test_tasks.py`）を新規追加。**テストは `test.db` を使い、`app.dependency_overrides[get_db]` で差し替える**（5.3.4 の伏線を回収）。8.3 ではあえて `app.db` を使ってデータが増える・消えるのを体験させ、8.4 で分離する構成。8.3.4 で `get_my_task` の `!=` を `==` に壊してテストが捕まえる実演あり。8.1.1 / 8.3.1 / 8.4.1 / 8.4.2 / 8.4.3 / 8.5.2 に Mermaid 図。glossary にリグレッション・正常系・異常系・テストクライアント・fixture・`conftest.py`・カバレッジ・httpx を追加。第9章のスタブを新規作成 |
 | F-09 | 完了 | 第9章 実践：React と繋ぐ | `fastapi-text/09-practice-connect-react.md` | part2 | 大 | react-text 第10章の `task-app` を API に繋ぎ変える章。**`src/api/client.js` / `src/api/tasks.js` を新設**し、`localStorage` によるタスク保存をやめる（トークンの保存にだけ `localStorage` を使う）。`toTask` で API の形（`done` / `owner.name` / `{count, tasks}`）をアプリの形（`isDone` / `ownerName`）へ変換。**`created_at` が既存データで `null` のため、並べ替えは `id` に変更**。FastAPI 側の変更は `app/config.py` の `cors_origins` と `app/main.py` の `CORSMiddleware` のみ（`.env` に `CORS_ORIGINS`）。**React 側の上限 30 文字と API 側の 20 文字の食い違いを、9.3.3 の題材として意図的に使ってから 20 にそろえる**。9.1.2（2つ）/ 9.2.1 / 9.2.2 / 9.3.1 / 9.4.1 に Mermaid 図。glossary にオリジン・同一オリジンポリシー・プリフライトリクエストを追加し、CORS の定義を「制限する仕組み」から「許可を出す仕組み」に修正。第10章のスタブを新規作成 |
 | F-10 | 完了 | 第10章 次のステップ | `fastapi-text/10-next-steps.md` | part2 | 小 | 到達度チェックリスト（32項目）、デプロイの概観（`fastapi dev` と **`fastapi run`** の違い・手元と本番の対応表・**死活監視と `503`**）、公開前チェック8項目、`.env.example` の突き合わせ（**第9章で `CORS_ORIGINS` が抜けていたのを演習で回収**）、手順書の書き方と docker-text への橋渡し。**特定のデプロイ先の手順は意図的に書いていない**（10.2.4）。演習の `/health`（`200` と `503`）と `conftest.py` の fixture は `fastapi==0.115.6` / `sqlalchemy==2.0.36` / `pytest==9.1.1` / `httpx==0.28.1` / Python 3.11 で実行して確認済み。10.1.2 / 10.2.2 / 10.3.2 と解答編に Mermaid 図。解答編 その2 を「第6章〜第10章」に改題し第10章を追記 |
-| F-FIN | 未着手 | 通し確認 | — | — | 小 | **PR #33〜#36（F-07〜F-10）がマージされるまで着手できない。** 第7章〜第10章が `main` に無い状態で通し確認をしても、リンク切れも用語のブレも検出できないため。マージ後に着手すること |
+| F-FIN | 完了 | 通し確認 | — | — | 小 | PR #38（`task/F-FIN-review`）で実施済み。**この行は D-01 の実行時に、RUNBOOK 4.6 に従って状態の反映漏れを補正したもの**（`main` 側は PR 未マージのため「未着手」のままだった）。内容は PR #38 を参照 |
 
 ### F-07 の注記
 
@@ -137,7 +137,7 @@
 | ID | 状態 | 章 | 出力ファイル | 解答編 | 規模 | 備考 |
 |----|------|----|------------|--------|------|------|
 | D-00 | 完了 | 第0章 はじめに | `docker-text/00-introduction.md` | — | 小 | 0.1.1 に react-text / python-text / fastapi-text の戻り場所つき前提表と `node --version` / `python --version` の確認（**入っていなくても第5章までは読める**と明記）、0.1.2 に3冊で踏んだつまずきの一覧と「渡す相手に伝える7手順」→ `docker compose up` 1行の比較（Mermaid 図）、0.2.2 に **OS だけでなく CPU（Apple Silicon か否か）を伝える**指示と環境依存の要因表・質問テンプレート・秘密情報の伏せ方、0.3 に進め方（壊して作り直せる／空き容量 20 GB／確認の輪の Mermaid 図）。**`docker` コマンドは `docker compose up` をゴールとして名前だけ見せ、実行はさせない**（インストールは第2章）。コードを書かない章のため理解度チェック／演習はなし（R-00 / P-00 / F-00 と同じ扱い）。README の 0.3 に項（0.3.1〜0.3.3）を追加。第1章のスタブを新規作成 |
-| D-01 | 未着手 | 第1章 Docker が解決する問題 | `docker-text/01-why-docker.md` | あり | 中 | 前3冊の苦労を具体的に回収する |
+| D-01 | 完了 | 第1章 Docker が解決する問題 | `docker-text/01-why-docker.md` | あり | 中 | **コマンドを1つも打たない章**（インストールは第2章）。1.1 でアプリが動く土台を **① 設定 / ② ライブラリ / ③ ランタイム / ④ OS** の4層に整理し、3冊で踏んだトラブルを各層に割り当てる。組み合わせ爆発（162 通り）→「組み合わせを1つに固定して環境ごと配る」へ接続。1.1.3 で `requirements.txt` / `venv` が揃えられるのは②までと明示。1.2 は仮想マシンとコンテナの積層図を Mermaid で対比し、**Windows / macOS では Linux の仮想マシンを1つだけ動かしてその中にコンテナを並べる**ことを補足（第2章で WSL2 が必要になる理由）。1.3 でイメージ＝設計図／コンテナ＝実物、`名前:タグ`、Docker Hub の読み方（`nginx` を例に Compressed size まで）、**`latest` は「最新」ではない**（詳細は 2.5.5）。1.4 は手順の **A / B / C 仕分け**を別題材（議事録ツール）で実演してから演習に渡す。**解答編 `90-answers.md` を新規作成**（docker-text は分割せず1ファイル）。1.1.1 / 1.1.2 / 1.1.3 / 1.2.1 / 1.2.2 / 1.3.2 / 1.3.3 / 1.4.2 / 1.4.3 に Mermaid 図（SVG→PNG は使用せず）。演習はすべて**ブラウザとメモだけで完結**する形にした（演習 1.2 は Docker Hub の閲覧のみ）。glossary に仮想マシン・ホスト OS・ゲスト OS・ハイパーバイザ・カーネル・プロセス・ランタイム・組み合わせ爆発・タグ・レジストリ・Docker Hub・本番環境・開発環境を追加。README の解答編にリンクを追加。第2章のスタブを新規作成 |
 | D-02 | 未着手 | 第2章 インストールと基本操作 | `docker-text/02-install-and-basics.md` | あり | 大 | ★要検証。2.2 が生命線 |
 | D-03 | 未着手 | 第3章 Dockerfile | `docker-text/03-dockerfile.md` | あり | 大 | |
 | D-04 | 未着手 | 第4章 ボリュームとネットワーク | `docker-text/04-volumes-and-networks.md` | あり | 大 | |
