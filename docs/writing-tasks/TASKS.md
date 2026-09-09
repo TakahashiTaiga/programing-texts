@@ -25,9 +25,9 @@
 | react-text | **13 / 13（完成）** |
 | python-text | **13 / 13（完成）** |
 | fastapi-text | **12 / 12（完成）** |
-| docker-text | 3 / 10 |
+| docker-text | 4 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **41 / 59** |
+| **合計** | **42 / 59** |
 
 ---
 
@@ -139,7 +139,7 @@
 | D-00 | 完了 | 第0章 はじめに | `docker-text/00-introduction.md` | — | 小 | 0.1.1 に react-text / python-text / fastapi-text の戻り場所つき前提表と `node --version` / `python --version` の確認（**入っていなくても第5章までは読める**と明記）、0.1.2 に3冊で踏んだつまずきの一覧と「渡す相手に伝える7手順」→ `docker compose up` 1行の比較（Mermaid 図）、0.2.2 に **OS だけでなく CPU（Apple Silicon か否か）を伝える**指示と環境依存の要因表・質問テンプレート・秘密情報の伏せ方、0.3 に進め方（壊して作り直せる／空き容量 20 GB／確認の輪の Mermaid 図）。**`docker` コマンドは `docker compose up` をゴールとして名前だけ見せ、実行はさせない**（インストールは第2章）。コードを書かない章のため理解度チェック／演習はなし（R-00 / P-00 / F-00 と同じ扱い）。README の 0.3 に項（0.3.1〜0.3.3）を追加。第1章のスタブを新規作成 |
 | D-01 | 完了 | 第1章 Docker が解決する問題 | `docker-text/01-why-docker.md` | あり | 中 | **コマンドを1つも打たない章**（インストールは第2章）。1.1 でアプリが動く土台を **① 設定 / ② ライブラリ / ③ ランタイム / ④ OS** の4層に整理し、3冊で踏んだトラブルを各層に割り当てる。組み合わせ爆発（162 通り）→「組み合わせを1つに固定して環境ごと配る」へ接続。1.1.3 で `requirements.txt` / `venv` が揃えられるのは②までと明示。1.2 は仮想マシンとコンテナの積層図を Mermaid で対比し、**Windows / macOS では Linux の仮想マシンを1つだけ動かしてその中にコンテナを並べる**ことを補足（第2章で WSL2 が必要になる理由）。1.3 でイメージ＝設計図／コンテナ＝実物、`名前:タグ`、Docker Hub の読み方（`nginx` を例に Compressed size まで）、**`latest` は「最新」ではない**（詳細は 2.5.5）。1.4 は手順の **A / B / C 仕分け**を別題材（議事録ツール）で実演してから演習に渡す。**解答編 `90-answers.md` を新規作成**（docker-text は分割せず1ファイル）。1.1.1 / 1.1.2 / 1.1.3 / 1.2.1 / 1.2.2 / 1.3.2 / 1.3.3 / 1.4.2 / 1.4.3 に Mermaid 図（SVG→PNG は使用せず）。演習はすべて**ブラウザとメモだけで完結**する形にした（演習 1.2 は Docker Hub の閲覧のみ）。glossary に仮想マシン・ホスト OS・ゲスト OS・ハイパーバイザ・カーネル・プロセス・ランタイム・組み合わせ爆発・タグ・レジストリ・Docker Hub・本番環境・開発環境を追加。README の解答編にリンクを追加。第2章のスタブを新規作成 |
 | D-02 | 完了 | 第2章 インストールと基本操作 | `docker-text/02-install-and-basics.md` | あり | 大 | ★要検証（インストール画面・WSL2 / BIOS / Apple Silicon / プロキシの手順は実機未確認。`review-notes.md` に検証依頼あり）。**本文・解答編のコマンドと出力は Docker Engine 29.3.1（linux/amd64）で実際に実行して確認済み**（`hello-world` / `nginx:1.27` / `python:3.13-slim` / `python:3.12-slim`）。**`docker images` の表示が Docker 29 で変わった**ため、29 の列を本文に載せ、28 以前の列を補足で併記（2.5.1）。D-02 の注記の5項目は 2.2.1〜2.2.5 で網羅（**プロキシ用に 2.2.5 を新設し、README の章立てにも追加**）。`stop` / `rm` の違いは 2.4.5 の状態遷移図に集約。`--rm`（2.4.3）と `docker run イメージ コマンド`（2.5.4）を演習 2.3 の下敷きとして本文に用意。**`docker system prune -a --volumes` はこの本では最後まで使わない方針**を 2.7.1 で明記。2.1.1 / 2.1.3 / 2.2 / 2.3.2 / 2.3.3 / 2.4.5 / 2.5.3 / 2.7.1 / 2.7.2 に Mermaid 図（SVG→PNG は使用せず）。glossary にデーモン・CLI・nginx・Web サーバー・フォアグラウンド実行・バックグラウンド実行・アーキテクチャ・Rosetta 2・プロキシ・prune を追加。第3章のスタブを新規作成 |
-| D-03 | 未着手 | 第3章 Dockerfile | `docker-text/03-dockerfile.md` | あり | 大 | |
+| D-03 | 完了 | 第3章 Dockerfile | `docker-text/03-dockerfile.md` | あり | 大 | ★要検証（**`docker build` 系の出力は実機未確認**。`review-notes.md` に検証依頼あり）。練習用に `docker-lesson`（`main.py` + `requirements.txt`）を新規に作り、3.2 で1命令ずつ Dockerfile を育てる構成。**`ENTRYPOINT` の確認は 3.3.3**（ビルドを学んだあと）に置き、3.2.7 は説明のみ。`CMD` は **`fastapi dev` ではなく `fastapi run`**（`127.0.0.1` 問題。`0.0.0.0` の詳細は第4章 4.4.3 に送った）。3.4.3 は**わざと順番を入れ替えてビルド時間を比較**する体験に。3.6 は `fastapi-lesson` に `.dockerignore` と `Dockerfile` の2ファイルを足すだけの形にし、**`app.db` を焼き込まない**ため `no such table: tasks` になるところを見せて、`docker exec` → `alembic upgrade head` → `python -m app.seed` で回復させ、**作り直すと消える**ことを第4章（ボリューム）への動機にした。3.1.1 / 3.1.2 / 3.3.1 / 3.4.1 / 3.4.2 / 3.4.3 / 3.5.1 / 3.6.3 に Mermaid 図（SVG→PNG は使用せず）。演習 3.2 は**第2章 演習 2.2（`docker cp`）の回収**。glossary にベースイメージ・ビルド（Docker）・ビルドコンテキスト・`.dockerignore`・ビルドキャッシュを追加。第4章のスタブを新規作成 |
 | D-04 | 未着手 | 第4章 ボリュームとネットワーク | `docker-text/04-volumes-and-networks.md` | あり | 大 | |
 | D-05 | 未着手 | 第5章 Docker Compose | `docker-text/05-compose.md` | あり | 大 | |
 | D-06 | 未着手 | 第6章 実践：React + FastAPI + MySQL | `docker-text/06-practice-full-stack.md` | あり | 大 | ★3冊分の成果物を統合 |

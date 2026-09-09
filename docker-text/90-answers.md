@@ -921,3 +921,469 @@ Are you sure you want to continue? [y/N]
 > **消える対象を目で見て確認できる**ので、慣れないうちはこちらのほうが安全です。
 > ただし第6章では、画面では追いきれない数を扱うようになります。
 > **コマンドで測って消せること**を、この段階で身につけておいてください。
+
+---
+
+## 第3章
+
+### 理解度チェック
+
+**問 3.1 の解答**
+
+- ① **`RUN`**
+- ② **`CMD`**
+
+**解説**
+
+この2つの取り違えは、Dockerfile を書き始めた人がほぼ全員通る間違いです（3.2.4 / 3.2.5）。
+
+| 命令 | いつ動くか | 結果はどこに残るか |
+|------|----------|-----------------|
+| `RUN` | **`docker build` のとき**（1回だけ） | **イメージのレイヤ**に残る |
+| `CMD` | **`docker run` のとき**（起動のたび） | 残らない。実行されるだけ |
+
+見分け方は、「**作るときの作業か、動かすときの作業か**」です。
+
+- パッケージのインストール、ファイルの配置 → **作るときの作業**なので `RUN`
+- サーバーの起動、スクリプトの実行 → **動かすときの作業**なので `CMD`
+
+サーバーの起動を `RUN` に書いてしまうと、ビルドがその行で待ち続け、
+**いつまでも終わりません。** ビルドが進まないときは、まずここを疑ってください。
+
+**問 3.2 の解答**
+
+**2. `pip install` が再実行される**
+
+**解説**
+
+3.4.3 で実際に体験した状態です。この Dockerfile は、
+
+```dockerfile
+COPY . .
+RUN pip install --no-cache-dir -r requirements.txt
+```
+
+の順番になっています。`main.py` を変更すると `COPY . .` のレイヤが作り直しになり、
+**それより下にある `RUN pip install` も、道連れで作り直しになります**（3.4.2）。
+
+インストールする内容は1文字も変わっていないのに、20 秒以上待たされます。
+直し方は、`requirements.txt` だけを先にコピーすることです（3.2.5 / 3.4.3）。
+
+```dockerfile
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+```
+
+**選択肢 3 が誤り**である点も確認してください。
+キャッシュが効いても、**変更したファイルは必ず入り直します**（3.4.2 の「よくある間違い」）。
+「キャッシュ＝古いコードが入る」ではありません。
+
+**問 3.3 の解答**
+
+**3. `requirements.txt`**
+
+**解説**
+
+`requirements.txt` は、**`RUN pip install -r requirements.txt` が読むファイル**です（3.2.4）。
+除外すると、ビルドは次のエラーで失敗します。
+
+```text
+ERROR: failed to solve: failed to compute cache key: "/requirements.txt": not found
+```
+
+残りの3つは、いずれも `.dockerignore` に書くべきものです（3.5.1 / 3.5.2）。
+
+| 除外するもの | 理由 |
+|------------|------|
+| `.venv/` | あなたのパソコン向けに作られたもの。**コンテナの中では `RUN pip install` が入れ直す** |
+| `node_modules/` | 同じ理由。加えて数百 MB あり、送るだけで時間がかかる |
+| `.env` | **秘密の値が入っている。** イメージに焼き込むと、渡した相手に一緒に渡ってしまう |
+
+**問 3.4 の解答**
+
+- **原因**：`EXPOSE` は「このポートを使う」という申告にすぎず、**ポートを公開しない**ため
+- **対処**：`docker run` に **`-p 8000:8000`** を付けて起動し直す
+
+**解説**
+
+3.2.6 で扱ったとおりです。`EXPOSE` を書いても書かなくても、
+ブラウザから繋がるかどうかは **`-p`（2.3.3）だけ**で決まります。
+
+`docker ps` の `PORTS` 列を見ると、状態がはっきりします。
+
+```text
+PORTS
+8000/tcp                   ← EXPOSE だけ。外からは繋がらない
+0.0.0.0:8000->8000/tcp     ← -p を付けた。外から繋がる
+```
+
+**矢印（`->`）があるかどうか**が見分け方です。
+
+なお、`-p` を付けても繋がらない原因がもう1つあります。
+コンテナの中のサーバーが `127.0.0.1` で待っている場合です（3.2.5 の表）。
+FastAPI なら、`fastapi dev` ではなく **`fastapi run`** を使ってください。
+
+**問 3.5 の解答**
+
+**解答例**
+
+`.` は**ビルドコンテキスト**、つまり「いまいるディレクトリの中身を、
+材料としてまるごと Docker デーモンに送る」という指定です。
+`COPY` でコピーできるのは、この送られた範囲の中にあるファイルだけです。
+
+**解説**
+
+3.3.1 の図のとおり、ビルドは**あなたのパソコンではなくデーモンが行います**（2.1.3）。
+デーモンは、あなたのディレクトリを勝手に覗けません。
+だから、**材料を先に送る**必要があります。
+
+ここから、次の2つが説明できます。
+
+- `COPY ../secret.txt .` が失敗する理由（送られた範囲の外にあるため。3.2.3）
+- `.venv/` を除外するとビルドが速くなる理由（送る量が減るため。3.5.1）
+
+**問 3.6 の解答**
+
+**解答例**
+
+`alembic upgrade head` で作られた `app.db` は、**そのコンテナの書き込み層**にありました。
+コンテナを削除すると書き込み層ごと消えるため、
+新しく作ったコンテナはイメージの状態（テーブルが無い状態）から始まります。
+
+**解説**
+
+第1章 1.3.2 の図が、そのまま当てはまります。
+
+| どこにあるか | コンテナを消すと |
+|------------|---------------|
+| イメージのレイヤ（アプリのコード） | **残る**（何個作り直しても同じ） |
+| コンテナの書き込み層（`app.db`） | **消える** |
+
+第2章の演習 2.2 で、`docker cp` で差し替えた `index.html` が元に戻ったのと、まったく同じ現象です。
+
+**「では `RUN alembic upgrade head` と Dockerfile に書けばよいのでは」**と考えた場合、
+半分だけ正解です。テーブルの器はイメージに入りますが、
+**アプリを使い始めてから増えたデータは、やはりコンテナを消すたびに消えます。**
+必要なのは、データを**コンテナの外**に置くことです（第4章）。
+
+---
+
+### 演習問題
+
+### 演習 3.1 の解答
+
+**解答例（`main.py` の変更）**
+
+```diff
+  @app.get("/")
+  def read_root():
+-     return {"message": f"{greeting} from a container! (v3)"}
++     return {"message": f"{greeting} from a container! by 田中"}
+```
+
+**解答例（実行したコマンドの順）**
+
+```bash
+docker build -t greeting-api:0.3.0 .
+docker images
+docker run -d --name greet3 -p 8000:8000 greeting-api:0.3.0
+docker run --rm greeting-api:0.3.0 python --version
+docker rm -f greet3
+docker ps -a
+```
+
+**実行結果**
+
+ビルドの出力で、`pip install` の行が `CACHED` になります。
+
+```text
+ => CACHED [3/5] COPY requirements.txt .                                         0.0s
+ => CACHED [4/5] RUN pip install --no-cache-dir -r requirements.txt              0.0s
+ => [5/5] COPY . .                                                               0.1s
+```
+
+`docker images` には2行並びます（ID は別のものになります）。
+
+```text
+IMAGE                  ID             DISK USAGE   CONTENT SIZE
+greeting-api:0.3.0     c41b7e9a2d38        281MB         88.4MB
+greeting-api:0.2.0     7f3c1ab29e04        281MB         88.4MB
+```
+
+最後のコマンドは、サーバーではなくバージョン表示になります。
+
+```text
+Python 3.13.7
+```
+
+**「なぜサーバーが起動しないか」の解答例**
+
+イメージ名のあとにコマンドを書くと、`CMD` に書いた
+`fastapi run main.py --port 8000` が**丸ごと差し替えられる**ためです（3.2.7 / 3.3.3）。
+
+**解説**
+
+この演習の要点は、**キャッシュが効く範囲を目で確認する**ことです。
+
+`main.py` を変えたのに `pip install` が `CACHED` になったのは、
+その手前の `COPY requirements.txt .` までが前回とまったく同じだからです（3.4.2）。
+もし `CACHED` にならなかった場合は、Dockerfile が 3.4.3 の実験用（`COPY . .` が先）のままです。
+3.2.6 の完成形に戻してください。
+
+> **よくある間違い**
+> `docker build -t greeting-api .`（タグ無し）で作ってしまう間違いです。
+> それでは `greeting-api:latest` になり、`0.2.0` との区別が付きません。
+> **中身を変えたら、必ず別のタグを付けてください**（3.3.2）。
+
+> **補足：2つのイメージは 281 MB ずつ場所を取っているのか**
+> 取っていません。共通のレイヤ（`python:3.13-slim` と `pip install` の結果）は**共有されます**（3.4.1）。
+> 増えたのは `COPY . .` のレイヤ（数百バイト）だけです。
+> `DISK USAGE` の列は「このイメージが使っている合計」なので、単純に足すと二重に数えることになります。
+
+---
+
+### 演習 3.2 の解答
+
+**解答例（`nginx-custom/Dockerfile`）**
+
+```dockerfile
+FROM nginx:1.27
+
+COPY index.html /usr/share/nginx/html/index.html
+```
+
+**解答例（実行したコマンドの順）**
+
+```bash
+docker build -t my-nginx:0.1.0 .
+docker run -d --name mysite -p 8080:80 my-nginx:0.1.0
+docker rm -f mysite
+docker run -d --name mysite -p 8080:80 my-nginx:0.1.0
+docker rm -f mysite
+```
+
+**実行結果**
+
+`http://localhost:8080` に「Docker で作った自分のイメージです」と表示されます。
+**削除して作り直しても、同じ表示のままです。**
+
+**「`CMD` を書かなくても nginx が起動する理由」の解答例**
+
+`CMD` を書かない場合、**ベースイメージの `CMD` がそのまま引き継がれる**ためです（3.2.5 の補足）。
+`nginx:1.27` には nginx を起動する `CMD` が書かれているので、それが使われます。
+
+**「演習 2.2 との違い」の解答例**
+
+演習 2.2 では `docker cp` で**コンテナの書き込み層**を書き換えたため、
+コンテナを作り直すと元の「Welcome to nginx!」に戻りました。
+今回は `COPY` で**イメージのレイヤ**に入れたので、
+そのイメージから作るコンテナには、最初から自分のページが入っています（3.2.3 の比較表）。
+
+**解説**
+
+2行で書けてしまう Dockerfile ですが、この章の要点がすべて入っています。
+
+| 行 | 何をしているか |
+|----|--------------|
+| `FROM nginx:1.27` | 土台に、動く Web サーバーを丸ごと持ってくる（3.2.1） |
+| `COPY index.html /usr/...` | **絶対パス**を指定して、決まった場所にファイルを置く（3.2.3） |
+
+`WORKDIR` を書かなかったのは、`COPY` の行き先を絶対パスで指定したためです。
+`WORKDIR` は「以降の命令の現在地」を決めるものなので、
+現在地を使わないなら書く必要はありません（3.2.2）。
+
+> **よくある間違い**
+> コピー先を `/usr/share/nginx/html`（ディレクトリ）ではなく、
+> `/usr/share/nginx/html/index.html`（ファイル名まで）と書く形を推奨しています。
+> ディレクトリを指定しても動きますが、**ファイル名を変えたときに事故ります。**
+> `mypage.html` をコピーしてディレクトリだけ指定すると、
+> `index.html` は元のまま残り、**「Welcome to nginx!」が表示され続けます。**
+
+> **別解：確認を `docker exec` で行う**
+> ブラウザの代わりに、コンテナの中を直接見ても確認できます（2.6.1）。
+>
+> ```bash
+> docker exec mysite cat /usr/share/nginx/html/index.html
+> ```
+>
+> ブラウザのキャッシュに惑わされないので、**表示が変わらないときの切り分け**に使えます。
+
+---
+
+### 演習 3.3 の解答
+
+**解答例（`hello-cli/Dockerfile`）**
+
+```dockerfile
+FROM python:3.13-slim
+
+WORKDIR /code
+
+COPY greet.py .
+
+ENTRYPOINT ["python", "greet.py"]
+
+CMD ["World"]
+```
+
+**解答例（実行したコマンドと結果）**
+
+```bash
+docker build -t hello-cli:0.1.0 .
+```
+
+```bash
+docker run --rm hello-cli:0.1.0 世界
+```
+
+```text
+Hello, 世界!
+```
+
+```bash
+docker run --rm hello-cli:0.1.0 世界 --times 3
+```
+
+```text
+Hello, 世界!
+Hello, 世界!
+Hello, 世界!
+```
+
+```bash
+docker run --rm hello-cli:0.1.0
+```
+
+```text
+Hello, World!
+```
+
+```bash
+docker run --rm hello-cli:0.1.0 --help
+```
+
+```text
+usage: greet.py [-h] [--times TIMES] name
+
+名前を受け取ってあいさつする
+
+positional arguments:
+  name           あいさつする相手の名前
+
+options:
+  -h, --help     show this help message and exit
+  --times TIMES  繰り返す回数
+```
+
+**「`requirements.txt` と `RUN` が要らない理由」の解答例**
+
+`argparse` は Python の**標準ライブラリ**で、Python 本体に最初から入っています。
+`FROM python:3.13-slim` の時点で使える状態なので、追加のインストールが要りません（3.2.4）。
+
+**解説**
+
+要点は、**固定する側と、差し替えられる側の役割分担**です（3.2.7）。
+
+| 命令 | 書いた内容 | 役割 |
+|------|----------|------|
+| `ENTRYPOINT` | `["python", "greet.py"]` | **常に実行される。** 使う人には変えられない |
+| `CMD` | `["World"]` | **引数の既定値。** 書き換えられる |
+
+`docker run --rm hello-cli:0.1.0 世界` は、
+`ENTRYPOINT` の後ろに `世界` が付いて `python greet.py 世界` になります。
+`CMD` の `World` は、引数を渡したときは捨てられます。
+
+**`CMD` だけで書くとどうなるか**も確かめておくと、違いがはっきりします。
+
+```dockerfile
+CMD ["python", "greet.py", "World"]
+```
+
+この形で `docker run --rm hello-cli:0.1.0 世界` を実行すると、
+`CMD` が丸ごと `世界` に差し替わり、次のエラーになります。
+
+```text
+docker: Error response from daemon: failed to create task for container:
+failed to create shim task: OCI runtime create failed: ... exec: "世界":
+executable file not found in $PATH
+```
+
+**「`世界` というコマンドを実行しようとした」**という意味です。
+「引数だけを受け取りたい」場合は `ENTRYPOINT` を使う、という判断の根拠がこれです。
+
+> **よくある間違い**
+> `ENTRYPOINT ["python"]` と書き、`CMD ["greet.py", "World"]` にする書き方です。
+> これでも `docker run --rm hello-cli:0.1.0` は動きますが、
+> **引数を1つ渡した瞬間に `CMD` が丸ごと消えて `greet.py` まで失われます。**
+>
+> ```text
+> docker run --rm hello-cli:0.1.0 世界   →  python 世界  を実行しようとして失敗
+> ```
+>
+> **「使う人に差し替えさせたい部分だけ」を `CMD` に置いてください。**
+
+> **補足：`--help` が読めることの意味**
+> `docker run --rm hello-cli:0.1.0 --help` で、python-text 第10章の `argparse` の説明が
+> そのまま表示されました。
+> **利用者は Python を1つもインストールしていません。**
+> それでも、あなたの作ったコマンドが使えます。これが「配れる」ということです。
+
+---
+
+### 演習 3.4 の解答
+
+**解答例（比較の表）**
+
+| 順番 | `app/main.py` を1行変えて再ビルドしたときの時間 | `CACHED` の行数 |
+|------|--------------------------------------------|----------------|
+| `COPY requirements.txt .` が先（3.6.1 の形） | **約 2 秒** | 3 行（`WORKDIR` / `COPY requirements.txt` / `RUN pip install`） |
+| `COPY . .` が先（入れ替えた形） | **約 25 秒** | 1 行（`WORKDIR` のみ） |
+
+差は **20 秒以上**です（数字はパソコンと回線で変わります。**桁の違い**を見てください）。
+
+**「なぜ差が出るのか」の解答例**
+
+`COPY . .` を先に書くと、`app/main.py` の変更でそのレイヤが作り直しになり、
+**その下にある `RUN pip install` も道連れで作り直しになる**ためです（3.4.2）。
+`requirements.txt` の中身は変わっていないので、本来やり直す必要はありません。
+
+**解説**
+
+この演習でいちばん大事なのは、**`CACHED` の行を数える**ところです。
+時間はパソコンや回線で変わりますが、**`CACHED` の行数は原理どおりに変わります。**
+
+「1つ崩れたら以降は全部」なので、`CACHED` は必ず**上から連続**します。
+途中で `CACHED` が復活することはありません。
+もし、そう見えたら、行を読み違えています。
+
+**掃除の解答例**
+
+```bash
+docker images
+docker rmi fastapi-lesson:test
+docker rmi greeting-api:0.2.0
+docker system df
+```
+
+| イメージ | どうするか | 理由 |
+|---------|----------|------|
+| `fastapi-lesson:0.1.0` | **残す** | 第4章でそのまま使う |
+| `greeting-api:0.3.0` | 残してもよい | 演習の続きで使える。容量が厳しければ消す |
+| `fastapi-lesson:test` / `greeting-api:bad-order` | **消す** | 実験用。役目が終わっている |
+| `python:3.13-slim` | **残す** | 消すと、次のビルドで取得からやり直しになる |
+
+> **よくある間違い**
+> `docker rmi python:3.13-slim` まで消してしまう間違いです。
+> エラーにはなりませんが、次のビルドで**ダウンロードからやり直し**になります。
+> **ベースイメージは、ビルドの材料**です（2.5.3 の `rm` → `rmi` の順とあわせて確認してください）。
+
+> **補足：ビルドキャッシュも溜まります**
+> この演習では、フルビルドを何度も走らせました。
+> `docker system df` の `Build Cache` の行が数 GB になっていることがあります。
+>
+> ```bash
+> docker builder prune
+> ```
+>
+> で消せます。消えるのはキャッシュだけで、イメージもコンテナも消えません（3.4.4 の補足）。
