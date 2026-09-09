@@ -78,6 +78,7 @@
   - 2.2.2 **BIOS で仮想化が無効になっている**
   - 2.2.3 **Apple Silicon での注意点**
   - 2.2.4 「Cannot connect to the Docker daemon」
+  - 2.2.5 **会社や学校のネットワークで `docker pull` が失敗する**
 - 2.3 最初のコンテナを動かす
   - 2.3.1 `docker run hello-world`
   - 2.3.2 何が起きたのかを追う

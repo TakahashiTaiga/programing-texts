@@ -49,7 +49,36 @@
   - ③ **4.4.3 の `DELETE` が `204` を返し、ボディが空になること**（`return None` で空になることは確認済みですが、`curl -i` の表示は環境差があります）
   - ④ **`/docs` に表示される送信例・レスポンス例の値**（4.2.1 / 4.4.1）。Swagger UI が自動生成する見本なので、UI の更新で値が変わります。本文には「値そのものは手元と違って構わない」と注記済みです
 - [ ] `fastapi-text` 4.6.2 の **`.env` に日本語（全角括弧を含む）をクォート無しで書く**例。Linux では確認済みですが、Windows のメモ帳などで **UTF-8 以外の文字コードで保存された場合**の挙動は未確認です（本文は VS Code で作る前提。必要なら「文字コードは UTF-8」の注記を足してください）
-- [ ] `docker-text` 2.1〜2.2 Docker Desktop のインストールとトラブル対処
+- [ ] `docker-text` 第2章（D-02）。**本文・解答編に載せた `docker` コマンドの出力は、
+      Docker Engine 29.3.1（linux/amd64）で実際に実行した結果です**（`hello-world` / `nginx:1.27` /
+      `python:3.13-slim` / `python:3.12-slim`）。ただし**インストールと OS 固有のトラブル対処は実機未確認**です。
+      **この章で環境が立ち上がらないと以降の章がすべて読めなくなるため、公開前に必ず通しで実行してください。**
+  - [ ] 2.1.1 Windows のインストーラの画面。とくに **「Use WSL 2 instead of Hyper-V (recommended)」**という
+        チェックボックスの文言と、完了時の **「Close and restart」**のボタン名（版によって変わります）
+  - [ ] 2.1.2 macOS の `.dmg` の画面と、初回起動時の **「Docker Desktop needs privileged access」**の文言。
+        あわせて、**Docker アカウントのサインインを求める画面をスキップして進めるか**（本文は「不要」と書いています）
+  - [ ] 2.1.3 クジラのアイコンのメニューに出る状態表示（本文は `Docker Desktop is running` /
+        `starting` / `stopped` の3つで書いています）
+  - [ ] 2.2.1 `wsl --status` / `wsl -l -v` / `wsl --install` / `wsl --update` の**実際の出力**（Windows 実機）。
+        本文の `wsl -l -v` の例は `docker-desktop` の1行だけを載せています
+  - [ ] 2.2.1 Docker Desktop が出す **「WSL 2 installation is incomplete」**の文言
+  - [ ] 2.2.2 タスクマネージャーの **「仮想化:」**の行の日本語表記（Windows の版で変わります）と、
+        「Windows の機能の有効化または無効化」の項目名（本文は「仮想マシン プラットフォーム」
+        「Linux 用 Windows サブシステム」）
+  - [ ] 2.2.3 Apple Silicon での **platform 不一致の警告文**（本文は
+        `WARNING: The requested image's platform (linux/amd64) does not match the detected host platform (linux/arm64/v8) and no specific platform was requested`）と、
+        Docker Desktop の設定 General にある **「Use Rosetta for x86_64/amd64 emulation on Apple Silicon」**の項目名
+  - [ ] 2.2.4 **デーモンが止まっているときのメッセージ**。本文には macOS 版
+        （`Cannot connect to the Docker daemon at unix:///var/run/docker.sock. Is the docker daemon running?`）と
+        Windows 版（`open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.`）を
+        載せていますが、**この2つだけは Docker Desktop 実機で未確認**です
+        （Linux で確認した `failed to connect to the docker API at ...` は別途 2.2.4 に併記しています）
+  - [ ] 2.2.5 Docker Desktop の設定 **Resources → Proxies** の項目名と、プロキシ環境でのエラー文言3種
+  - [ ] 2.5.1 **`docker images` の列**。Docker 29 では `IMAGE` / `ID` / `DISK USAGE` / `CONTENT SIZE` に変わっており、
+        本文はこちらを主にして 28 以前の `REPOSITORY` / `TAG` / `IMAGE ID` / `CREATED` / `SIZE` を補足で併記しています。
+        **学習者がインストールする Docker Desktop がどちらの表示になるかを確認し、必要なら主従を入れ替えてください**
+  - [ ] 2.5.2 Docker Hub の**取得回数の上限**（本文は数値を書かず「公式サイトを確認」としています）
+  - [ ] 2.1.1 の「大企業での業務利用は有料」という記述（ライセンス条件は変わります。公開前に公式の記載を確認してください）
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
 
 > **とくに各本の第1〜2章（環境構築）は、必ず自分で通しで実行してください。**
