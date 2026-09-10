@@ -120,6 +120,25 @@
   - [ ] 4.6.3 **Windows のバインドマウントでファイル監視が届かないこと**そのもの
         （本文は「効かないことがある」と書いています。**WSL2 側に置いた場合との差**もあわせて確認してください）。
         `WATCHFILES_FORCE_POLLING=true` で再起動がかかることは Linux で確認済み
+- [ ] `docker-text` 第5章（D-05）。**本文・解答編の `docker compose` / MySQL 系の出力は、実機未確認です。**
+      Compose の挙動は概ね安定していますが、次は実機で通してください（`fastapi-lesson` の `compose.yaml` は
+      第3章 3.6 の `Dockerfile` が前提）。
+  - [ ] 5.1.2 **`docker compose version`** の表示（`v2.31.0` は執筆時点の想定。実際のバージョンで置き換える）
+  - [ ] 5.2.2 / 5.2.3 / 5.4.3 の **`docker compose up` / `ps` の出力**（コンテナ名 `プロジェクト名-サービス名-連番`、
+        `Network ... Created` の行、`PORTS` 列の形）が、手元の Compose v2 と一致するか
+  - [ ] 5.2.4 **名前付きボリュームの接頭辞**（`fastapi-lesson_api-data`）と、宣言忘れ時の
+        `refers to undefined volume api-data` の実際の文言
+  - [ ] 5.3.1 **`mysql:8.4` の起動ログ**（`ready for connections` の行・`Version` と `port: 3306` の表記）。
+        初回初期化にかかる時間の実測
+  - [ ] 5.3.2 **`socket.gethostbyname('db')`** が返す IP（`172.18.0.2` は例）と、存在しない名前での
+        `socket.gaierror: [Errno -2] Name or service not known`
+  - [ ] 5.6.1 **`depends_on: - db` だけのとき、起動直後に `ConnectionRefusedError: [Errno 111] Connection refused`**
+        になる瞬間があること（タイミング依存。`down -v` 直後に試すこと）
+  - [ ] 5.6.2 **`healthcheck`（`mysqladmin ping -h 127.0.0.1`）と `condition: service_healthy`** の動作。
+        `db` が `Healthy` になってから `api` が `Started` になること・`docker compose ps` の `(healthy)` 表示。
+        **`mysqladmin ping` が認証なしでも「応答あり（exit 0）」を返すか**を、使っている MySQL 8.4 のバージョンで確認
+  - [ ] 5.6.3 **`docker compose run --rm --build api python wait_for_db.py`** が、`まだ繋がりません` を経て
+        `db:3306 に繋がりました` に至ること
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
 
 > **とくに各本の第1〜2章（環境構築）は、必ず自分で通しで実行してください。**

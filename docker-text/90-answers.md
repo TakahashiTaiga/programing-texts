@@ -1921,3 +1921,431 @@ docker network rm app-net
 > Docker Compose では**書かなくても自動で行われます**（5.3.3）。
 > ただし「サービス名で呼び合える」仕組みの中身は、いまここで見たものと同じです。
 > **Compose が魔法に見えないよう、手で1度やっておく**のがこの演習の目的でした。
+
+---
+
+## 第5章
+
+### 理解度チェック
+
+**問 5.1 の解答**
+
+- ① **YAML**
+- ② **インデント（字下げ）**
+- ③ **タブ**
+
+**解説**
+
+YAML の3つのルール（5.2.1）を、そのまま問うています。
+
+- 入れ子は波かっこ `{ }` ではなく、**字下げの深さ**で表します（JSON との違い）
+- 字下げは**半角スペース2つ**が基本で、**タブ文字は禁止**です
+- もう1つ、「コロンのあとに半角スペースが要る」も忘れやすいルールです（`image:nginx` は誤り）
+
+エラーが出たら、まず**行番号の出ている行の字下げ**を見る、が鉄則でした。
+
+**問 5.2 の解答**
+
+**2. `build: .`**
+
+**解説**
+
+イメージの指定は2通りありました（5.2.3）。
+
+| 書き方 | 意味 |
+|--------|------|
+| `image: 名前:タグ` | **すでにある**イメージを使う（公式イメージやビルド済みの自作イメージ） |
+| `build: .` | いまいるディレクトリの **`Dockerfile` からその場でビルド**する |
+
+`.`（ドット）は、第3章 3.3.1 の `docker build ... .` の最後の `.`（ビルドコンテキスト）と同じで、
+**「`Dockerfile` のある場所」**を指します。`image: .`（選択肢1）は、`.` という名前のイメージを探そうとして失敗します。
+
+**問 5.3 の解答**
+
+**3. `db`（サービス名）**
+
+**解説**
+
+同じ `compose.yaml` のサービスは、**サービス名で名前解決できます**（5.3.2）。
+
+- `localhost` / `127.0.0.1`（選択肢1・2）は、第4章 4.5.4 のとおり**呼びに行った側のコンテナ自身**を指すため、`db` には届きません
+- `fastapi-lesson_default`（選択肢4）は**ネットワークの名前**であって、接続先の名前ではありません
+
+第6章で API を MySQL に繋ぐときも、接続先は `db`（サービス名）になります。
+
+**問 5.4 の解答**
+
+**3. `down` はボリュームを残し、`down -v` はボリュームごと消す**
+
+**解説**
+
+`docker compose down` は、**コンテナとネットワークを片付けますが、ボリュームは残します**（5.4.2）。
+データ（データベースの中身や `app.db`）をうっかり消さないための設計です。
+
+**`-v` を付けたときだけ**、そのプロジェクトのボリュームが中身ごと消えます。
+第2章 2.7 で `docker system prune -a --volumes` を避けたのと同じで、
+**「消えて困るデータがあるときに、うっかり `-v` を付けない」**が大事でした。
+
+なお、`down`（`-v` なし）でも**ネットワークは消えます**（選択肢2は誤り）。
+
+**問 5.5 の解答**
+
+**変えるコマンド**：`docker compose up -d --build`（`--build` を足す）。
+
+**理由**：`build:` を使ったサービスは、`docker compose up -d` だけだと**既存のイメージを使い回す**ため、
+コードを直しても古いイメージのまま起動してしまう。`--build` を付けると、**ビルドし直してから**起動する（5.4.4）。
+
+**解説**
+
+これは第4章 4.3.3 の「よくある間違い」（コードのパスにボリュームを被せると古いまま）とは別の原因ですが、
+**症状は同じ「直したのに反映されない」**です。原因が2つあることを押さえておくと、切り分けが速くなります。
+
+| 症状 | 原因 | 直し方 |
+|------|------|-------|
+| 直したのに反映されない | `--build` を付けずに `up` した | `up -d --build`（5.4.4） |
+| 直したのに反映されない | コードのパスに名前付きボリュームを被せた | ボリュームを消す（第4章 4.3.3） |
+
+開発中は、そもそもバインドマウント + `fastapi dev`（第4章 4.2.2、第6章 6.4）を使えば、`--build` 自体が不要になります。
+
+**問 5.6 の解答**
+
+**保証していること**：`db`（相手の）**コンテナが起動した**こと。
+
+**保証していないこと**：`db` の中の MySQL が**接続を受け付けられる状態（準備完了）になった**こと（5.6.1）。
+
+**解説**
+
+MySQL は、コンテナが起動してから `ready for connections` になるまで、**初回は十数秒〜数十秒かかります**（5.3.1）。
+`depends_on: - db` は「起動の順番」だけを決めるので、**その時間差の間は接続に失敗します**（`Connection refused`）。
+
+この時間差を埋める方法が2つありました。
+
+1. **ヘルスチェック** + `condition: service_healthy`（相手が「健康」になるまで待つ。5.6.2）
+2. **アプリ側でリトライ**（繋がるまで自分で待つ。5.6.3）
+
+この2つは重ねて使えます。
+
+**問 5.7 の解答**
+
+**値を移すファイル**：`.env`（`compose.yaml` と同じディレクトリ）。
+
+**`compose.yaml` での書き方**：`${MYSQL_ROOT_PASSWORD}` のように、**`${...}` で参照する**（5.5.2）。
+
+**解説**
+
+Compose は、`compose.yaml` と同じディレクトリの `.env` を**自動で読み込み**、`${...}` を置き換えます。
+これで、`compose.yaml` には秘密の値そのものが載らなくなります。
+置き換えが効いているかは、`docker compose config`（差し込み後の設定を表示）で確認できました（5.5.2）。
+
+さらに、`.env` は **`.gitignore` に入れて共有せず**、項目の見本だけを `.env.example` で共有する——
+ここまでが1組でした（5.5.3）。
+
+---
+
+### 演習問題
+
+### 演習 5.1 の解答
+
+**compose.yaml**
+
+`compose-lesson/compose.yaml`
+
+```yaml
+services:
+  web:
+    image: nginx:1.27
+    ports:
+      - "8080:80"
+```
+
+**起動と確認**
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+```text
+NAME                     IMAGE        SERVICE   STATUS         PORTS
+compose-lesson-web-1     nginx:1.27   web       Up 3 seconds   0.0.0.0:8080->80/tcp
+```
+
+ブラウザで `http://localhost:8080` を開くと、nginx の初期ページが出ます。
+
+**後片付け**
+
+```bash
+docker compose down
+```
+
+```text
+[+] Running 2/2
+ ✔ Container compose-lesson-web-1  Removed
+ ✔ Network compose-lesson_default  Removed
+```
+
+**解説**
+
+書き写したのは2つだけです。
+
+| `docker run` | `compose.yaml` |
+|-------------|----------------|
+| `nginx:1.27` | `image: nginx:1.27` |
+| `-p 8080:80` | `ports: - "8080:80"` |
+
+`--name mysite` に当たるのは**サービス名**（`web`）ですが、`compose.yaml` では
+コンテナ名は `プロジェクト名-サービス名-連番`（`compose-lesson-web-1`）に自動でなります。
+サービス名は自由なので、`site` でも `nginx` でも構いません。
+
+`down` の出力に **`Container ... Removed` と `Network ... Removed` の両方**が出るのが、`docker rm` との違いです。
+第4章では `docker rm -f` と `docker network rm` を別々に打っていたものが、1回で済みます。
+
+### 演習 5.2 の解答
+
+**compose.yaml**
+
+`fastapi-lesson/compose.yaml`
+
+```yaml
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - api-data:/data
+    environment:
+      DATABASE_URL: sqlite:////data/app.db
+
+volumes:
+  api-data:
+```
+
+**データを入れて確認**
+
+```bash
+docker compose up -d
+docker compose exec api alembic upgrade head
+docker compose exec api python -m app.seed
+```
+
+`http://localhost:8000/tasks` に3件のデータが返ります。
+
+**残ることの確認**
+
+```bash
+docker compose down
+docker compose up -d
+```
+
+`alembic` も `seed` もし直さずに `GET /tasks` を実行すると、同じ3件が返ります。
+
+**ボリューム名の確認**
+
+```bash
+docker volume ls
+```
+
+```text
+DRIVER    VOLUME NAME
+local     fastapi-lesson_api-data
+```
+
+メモに書く名前は **`fastapi-lesson_api-data`**（接頭辞付き）です。
+
+**解説**
+
+つまずきやすいのは、末尾の `volumes:` 宣言です。**2か所に書く**のを忘れると、
+`service "api" refers to undefined volume api-data` というエラーになります（5.2.4）。
+
+| 書く場所 | 役割 |
+|---------|------|
+| サービスの中の `volumes:` | **どこに繋ぐか**（`api-data:/data`） |
+| ファイル末尾の `volumes:` | **この名前のボリュームを使う、という宣言** |
+
+ボリューム名に接頭辞（`fastapi-lesson_`）が付くのは、Compose がプロジェクト名（既定でディレクトリ名）を
+前に付けるためでした（5.2.4）。**第4章で `docker run` で作った `api-data` とは別物**なので、
+「第4章のデータが空に見える」ときは、別のボリュームを見ているだけだと思い出してください。
+
+> **よくある間違い**
+> `down` に `-v` を付けてしまうと、`api-data` が消えて、次の `up` は空から始まります。
+> **「残ることの確認」では `-v` を付けない**のが大事でした（5.4.2）。
+
+### 演習 5.3 の解答
+
+**compose.yaml**
+
+`fastapi-lesson/compose.yaml`
+
+```yaml
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - api-data:/data
+    environment:
+      DATABASE_URL: sqlite:////data/app.db
+
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: appdb
+    volumes:
+      - db-data:/var/lib/mysql
+
+volumes:
+  api-data:
+  db-data:
+```
+
+**起動と確認**
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+```text
+NAME                   IMAGE                SERVICE   STATUS         PORTS
+fastapi-lesson-api-1   fastapi-lesson-api   api       Up 5 seconds   0.0.0.0:8000->8000/tcp
+fastapi-lesson-db-1    mysql:8.4            db        Up 5 seconds   3306/tcp
+```
+
+`docker compose logs db` に `ready for connections` が出るのを待ってから、名前解決を確認します。
+
+```bash
+docker compose exec api python -c "import socket; print(socket.gethostbyname('db'))"
+```
+
+```text
+172.18.0.2
+```
+
+存在しない名前だと失敗します（メモに残す2つ目の結果）。
+
+```bash
+docker compose exec api python -c "import socket; print(socket.gethostbyname('dbx'))"
+```
+
+```text
+socket.gaierror: [Errno -2] Name or service not known
+```
+
+自動ネットワークの確認と後片付けです。
+
+```bash
+docker network ls    # fastapi-lesson_default があることを確認
+docker compose down
+```
+
+**解説**
+
+`db` に **`ports` を書かない**のが、この演習のいちばんの狙いです（5.3.1）。
+`db` に用があるのは `api` だけで、パソコンのブラウザから直接触る必要はありません。
+第4章 4.5 で「コンテナ同士の通信に `-p` は要らない」と学んだとおりです。
+
+`db` が IP アドレスに引けて、`dbx` が引けない——この差が、
+**「`compose.yaml` に書いたサービス名が、そのまま呼ぶ名前になる」**ことの証拠です（5.3.2）。
+第4章 4.5.1 では手作業でネットワークを作らないと引けなかったものが、Compose では最初から効いています（5.3.3）。
+
+> **補足：`db-data` の宣言も忘れない**
+> `db` でも名前付きボリューム（`db-data`）を使うので、末尾の `volumes:` に `db-data:` の行を足します。
+> `api-data` と `db-data` の**2つ**が並ぶのが正解です。
+
+### 演習 5.4 の解答
+
+**段階1：`depends_on` だけ（限界を見る）**
+
+`api` に `depends_on: - db` だけを書きます。
+
+```yaml
+  api:
+    build: .
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    volumes:
+      - api-data:/data
+    environment:
+      DATABASE_URL: sqlite:////data/app.db
+```
+
+```bash
+docker compose down -v
+docker compose up -d
+docker compose exec api python -c "import socket; socket.create_connection(('db', 3306), timeout=3)"
+```
+
+起動直後は、こうなります（メモに残す1つ目の結果）。
+
+```text
+ConnectionRefusedError: [Errno 111] Connection refused
+```
+
+**段階2：ヘルスチェックを足す**
+
+`db` に `healthcheck` を、`api` の `depends_on` を `condition: service_healthy` に書き換えます
+（完成形は 5.6.2 の `compose.yaml` と同じ）。
+
+```yaml
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    # （ports / volumes / environment は段階1と同じ）
+
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s
+```
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+```text
+ ✔ Container fastapi-lesson-db-1     Healthy
+ ✔ Container fastapi-lesson-api-1    Started
+```
+
+`docker compose ps` の `db` に `(healthy)` が付きます。確認できたら後片付けです。
+
+```bash
+docker compose down -v
+```
+
+**メモに書く違い（例）**
+
+- **`depends_on` だけ**：`api` が起動した時点で、`db` は**まだ準備中のことがある**（接続は拒まれる）
+- **ヘルスチェックあり**：`api` が起動した時点で、`db` は**必ず準備完了している**（接続できる）
+
+**解説**
+
+`depends_on` が保証するのは「**起動した**」まで、ヘルスチェックが保証するのは「**準備できた**」までです（5.6.1 の図）。
+この違いを体で覚えるのが、この演習の目的でした。
+
+MySQL の初回起動はデータベースの初期化に時間がかかるため、この差が**はっきり観測できます**。
+2回目以降（`down -v` をしていない場合）は初期化済みで速く、差が見えにくくなります。
+**差を見たいときは、毎回 `down -v` でまっさらにしてから**試すのがコツです。
+
+> **補足：ヘルスチェックのパスワード**
+> `mysqladmin ping -h 127.0.0.1` は「MySQL が応答するか」だけを見ています（5.6.2 の注意）。
+> より厳密にログインまで確かめたい場合は、ユーザーとパスワードを渡す形にしますが、
+> 学習段階では、まず**起動順を制御できることを体験する**のが目的でした。
+> もっとも確実なのは、相手の状態に頼らずアプリ側でリトライすること（5.6.3）です。
