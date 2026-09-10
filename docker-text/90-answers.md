@@ -1387,3 +1387,537 @@ docker system df
 > ```
 >
 > で消せます。消えるのはキャッシュだけで、イメージもコンテナも消えません（3.4.4 の補足）。
+
+---
+
+## 第4章
+
+### 理解度チェック
+
+**問 4.1 の解答**
+
+- ① **バインドマウント**
+- ② **名前付きボリューム**
+
+**解説**
+
+`-v` の左側の**書き方だけ**で、Docker はどちらかを判断します（4.1.2）。
+
+| 左側の書き方 | 判定 | 例 |
+|------------|------|-----|
+| `/` を含む（パスに見える） | バインドマウント | `-v "$(pwd)/site:/usr/share/nginx/html"` |
+| `/` を含まない（名前に見える） | 名前付きボリューム | `-v api-data:/data` |
+
+この判定は**打ち間違いを吸収しません。** `-v api-data/:/data` のように
+うっかりスラッシュを付けると、**`api-data` という名前のディレクトリを探すバインドマウント**に変わります。
+「ボリュームを指定したはずなのにデータが残らない」ときは、まず左側にスラッシュが混じっていないかを見てください。
+
+**問 4.2 の解答**
+
+**2. ボリュームの中身が優先され、古いコードのまま動く**
+
+**解説**
+
+4.3.3 の「よくある間違い」で扱った状態です。仕組みは次のとおりです。
+
+1. 空の名前付きボリュームを初めてマウントすると、
+   Docker は**イメージの中のそのパスの中身を、ボリュームへコピーします**
+2. そのため1回目は正常に動きます（3 が誤りである理由）
+3. 2回目以降、**ボリュームはもう空ではない**ので、コピーは行われません
+4. イメージをビルドし直しても、**マウントによってボリュームの中身が上に被さります**（4 が誤りである理由）
+
+結果として、**ビルドは成功しているのに、動いているのは古いコード**という状態になります。
+エラーが1つも出ないため、原因にたどり着くのに時間がかかる種類の失敗です。
+
+> **見分け方**
+> 「直したはずなのに反映されない」と思ったら、コンテナの中の実物を見てください。
+>
+> ```bash
+> docker exec api cat /code/app/main.py
+> ```
+>
+> ここに古い内容が出れば、この問題です。**ボリュームを削除して作り直せば直ります。**
+>
+> ```bash
+> docker rm -f api
+> docker volume rm api-code
+> ```
+
+**問 4.3 の解答**
+
+**3. 使われていない匿名ボリュームだけ**
+
+**解説**
+
+`docker volume prune` の確認メッセージに、そのまま書かれています（4.3.2）。
+
+```text
+WARNING! This will remove anonymous local volumes not used by at least one container.
+```
+
+**`anonymous`（匿名）** は、`-v /data` のように**左側の名前を書かずに**起動したときに
+自動で作られるボリュームのことです。`docker volume ls` に、長い英数字の名前で並びます。
+
+**名前を付けたボリュームは、`prune` では消えません。**
+これが「データベースには必ず名前付きボリュームを使う」理由の1つです。
+消したいときは、`docker volume rm 名前` で**意図的に**消します。
+
+なお、名前付きも含めて消す `--all` というオプションもありますが、
+**このテキストでは使いません**（2.7.1 の方針と同じで、消える範囲が見えにくいためです）。
+
+**問 4.4 の解答**
+
+**確認する行**：`docker logs` の **`Uvicorn running on http://...`** の行。
+
+**正常な状態**：**`http://0.0.0.0:8000`** になっていること。
+`http://127.0.0.1:8000` になっていたら、コンテナの外からは繋がりません（4.4.3）。
+
+**解説**
+
+この失敗が厄介なのは、**どこにもエラーが出ない**ところです。
+
+| 見るもの | この失敗のときの表示 |
+|---------|-------------------|
+| `docker ps` | `Up 2 minutes`（正常に見える） |
+| `docker logs` | `Application startup complete.`（正常に見える） |
+| ブラウザ | 接続がリセットされる／ページが動作していない |
+
+コンテナの中の `127.0.0.1` は**コンテナ自身**を指すので、
+サーバーは「自分からの接続だけ受け付ける」状態で正しく動いています。
+`-p` で道は開いているのに、**入口で断られている**わけです。
+
+対処は、起動コマンドに **`--host 0.0.0.0`** を足すことです。
+
+**Windows（PowerShell）**
+
+```powershell
+docker run -d --name api-dev -p 8000:8000 -v "${PWD}:/code" fastapi-lesson:0.1.0 fastapi dev app/main.py --host 0.0.0.0 --port 8000
+```
+
+**macOS / Linux**
+
+```bash
+docker run -d --name api-dev -p 8000:8000 -v "$(pwd):/code" fastapi-lesson:0.1.0 fastapi dev app/main.py --host 0.0.0.0 --port 8000
+```
+
+**`fastapi run`（本番用）は既定で `0.0.0.0`、`fastapi dev`（開発用）は既定で `127.0.0.1`** です。
+第3章 3.2.5 で `CMD` に `fastapi dev` を書かないと決めたのは、この違いが理由でした。
+
+**問 4.5 の解答**
+
+**URL**：`http://api:8000`
+
+**理由**：`localhost` は「実行している自分自身」を指す名前なので、
+別のコンテナの中で `localhost` と書くと、**呼びに行った側のコンテナ自身**を指してしまうため。
+
+**解説**
+
+`localhost` が誰を指すかは、**どこで実行しているか**で変わります（4.5.4）。
+
+| 実行している場所 | `localhost` が指すもの |
+|----------------|--------------------|
+| パソコンのブラウザ | パソコン自身 |
+| `api` を呼びに行くコンテナの中 | **そのコンテナ自身** |
+
+そして、コンテナ名で呼べるようにするには、**両方のコンテナが同じネットワークにいる必要があります**（4.5.2）。
+既定のままでは名前を引けず、`Name or service not known` になります。
+
+もう1つ、混同しやすい点を確認しておきます。
+
+> **ポート番号は、`-p` の左側ではなく右側（コンテナの中の番号）を書きます。**
+> `-p 8080:8000` で起動していても、他のコンテナから呼ぶときは `http://api:8000` です。
+> **コンテナ同士の通信は `-p` を通らない**からです（4.5.3）。
+
+**問 4.6 の解答**
+
+**「無い」と言われているのは、`start.sh` ではなく、それを実行するプログラム（`/bin/sh`）のほうです。**
+CRLF で保存されていると、1行目のシバンが `#!/bin/sh` + `\r` になり、
+Linux は **`/bin/sh\r` という名前のプログラム**を探して失敗します。
+
+**解説**
+
+エラーメッセージが `./start.sh` を指しているので、
+スクリプトが見つからないのだと考えてしまいますが、**ファイルは存在しています。**
+
+```text
+exec ./start.sh: no such file or directory
+```
+
+確かめるには、行末を見えるようにします（4.6.1）。
+
+**Windows（PowerShell）**
+
+```powershell
+docker run --rm -v "${PWD}:/w" -w /w python:3.13-slim sh -c "cat -A start.sh | head -3"
+```
+
+**macOS / Linux**
+
+```bash
+docker run --rm -v "$(pwd):/w" -w /w python:3.13-slim sh -c "cat -A start.sh | head -3"
+```
+
+```text
+#!/bin/sh^M$
+```
+
+**`^M$` が CRLF、`$` だけなら LF** です。
+
+直し方は、VS Code の右下のステータスバーで **`CRLF` をクリックして `LF` に変える**こと。
+再発を防ぐには、`.gitattributes` に `* text=auto eol=lf` を書きます（4.6.2）。
+
+> **よくある間違い**
+> `chmod +x` を忘れたときにも似たエラー（`permission denied`）が出ますが、**文言が違います。**
+> `no such file or directory` なら改行コード、`permission denied` なら実行権限、と切り分けてください。
+
+---
+
+### 演習問題
+
+### 演習 4.1 の解答
+
+**コマンド**
+
+**Windows（PowerShell）**
+
+```powershell
+cd bind-lesson
+docker run -d --name readonly-site -p 8080:80 -v "${PWD}/site:/usr/share/nginx/html:ro" nginx:1.27
+```
+
+**macOS / Linux**
+
+```bash
+cd bind-lesson
+docker run -d --name readonly-site -p 8080:80 -v "$(pwd)/site:/usr/share/nginx/html:ro" nginx:1.27
+```
+
+**マウントの確認**
+
+```bash
+docker inspect readonly-site --format '{{json .Mounts}}'
+```
+
+```text
+[{"Type":"bind","Source":"/Users/yamada/bind-lesson/site","Destination":"/usr/share/nginx/html","Mode":"ro","RW":false,"Propagation":"rprivate"}]
+```
+
+**`RW` が `false`** になっています。`Mode` にも `ro` が入ります。
+
+**書き込みが拒否されること**
+
+```bash
+docker exec readonly-site sh -c "echo test > /usr/share/nginx/html/test.txt"
+```
+
+```text
+sh: 1: cannot create /usr/share/nginx/html/test.txt: Read-only file system
+```
+
+**パソコン側からの変更が反映される理由**
+
+`:ro` が禁止しているのは、**コンテナ側からの書き込みだけ**だからです（4.2.4）。
+あなたがエディタで書き換えるのは制限されておらず、コンテナは**読む**ことは許されているので、
+書き換えた内容はそのまま見えます。
+
+**後片付け**
+
+```bash
+docker rm -f readonly-site
+```
+
+**解説**
+
+`:ro` は「コンテナに触らせない」ための指定です。
+公開するだけの HTML、読ませるだけの設定ファイルには付けておくと、
+**コンテナの中のプログラムの不具合で、手元のファイルが壊れる事故**を防げます。
+
+> **よくある間違い**
+> `:ro` を書く位置の間違いです。**いちばん右**（コンテナ側のパスのあと）に書きます。
+>
+> ```text
+> -v "${PWD}/site:ro:/usr/share/nginx/html"   ← 誤り
+> -v "${PWD}/site:/usr/share/nginx/html:ro"   ← 正しい
+> ```
+>
+> 誤った書き方をすると、`ro` という名前のディレクトリを探しに行くなど、
+> 意図しない形で解釈されます。
+
+---
+
+### 演習 4.2 の解答
+
+**コマンド**
+
+**Windows（PowerShell）**
+
+```powershell
+cd docker-lesson
+docker run -d --name greet-dev -p 8000:8000 -v "${PWD}:/code" greeting-api:0.2.0 fastapi dev main.py --host 0.0.0.0 --port 8000
+```
+
+**macOS / Linux**
+
+```bash
+cd docker-lesson
+docker run -d --name greet-dev -p 8000:8000 -v "$(pwd):/code" greeting-api:0.2.0 fastapi dev main.py --host 0.0.0.0 --port 8000
+```
+
+**起動の確認**
+
+```bash
+docker logs greet-dev
+```
+
+```text
+INFO:     Will watch for changes in these directories: ['/code']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [1] using WatchFiles
+```
+
+ブラウザで `http://localhost:8000` を開くと、`main.py` のメッセージが表示されます。
+
+```json
+{"message":"Hello from a container!"}
+```
+
+**書き換えて保存すると**
+
+```text
+WARNING:  WatchFiles detected changes in 'main.py'. Reloading...
+```
+
+`/ping` を追加した場合も同じで、保存した直後に `http://localhost:8000/ping` が使えます。
+
+```json
+{"message":"pong"}
+```
+
+**後片付け**
+
+```bash
+docker rm -f greet-dev
+```
+
+**解説**
+
+この演習で組み合わせたものは3つです。**どれが欠けても動きません。**
+
+| 要素 | 書いた部分 | 欠けるとどうなるか | 本文 |
+|------|----------|-----------------|------|
+| バインドマウント | `-v "${PWD}:/code"` | イメージの中の古いコードが動き続ける | 4.2.2 |
+| `CMD` の差し替え | `fastapi dev main.py ...` | `CMD` の `fastapi run` が動き、保存しても反映されない | 3.2.5 |
+| 待ち受けの指定 | `--host 0.0.0.0` | 起動はするが、ブラウザから繋がらない | 4.4.3 |
+
+本文（4.2.2）は `fastapi-lesson` を例にしていたので、
+アプリの場所が `app/main.py` でした。`docker-lesson` は `main.py` が直下にあるため、
+**そこだけ読み替えます。** `-v` の右側が `/code` なのは、
+`Dockerfile` の `WORKDIR /code`（3.2.2）に合わせているからです。
+
+> **よくある間違い**
+> `docker-lesson` ではなく、**1つ上のディレクトリで実行してしまう**間違いです。
+> `${PWD}` はコマンドを打った時点のディレクトリなので、
+> `/code` に `docker-lesson` の**親**が丸ごと入り、`main.py` が見つからなくなります。
+>
+> ```text
+> Path does not exist main.py
+> ```
+>
+> `docker inspect greet-dev --format '{{json .Mounts}}'` の `Source` を確認してください（4.2.3）。
+
+> **別解：`--rm` を付けて使い捨てにする**
+> 開発中の起動は、終わったら消す前提でも構いません。
+>
+> ```bash
+> docker run --rm -d --name greet-dev -p 8000:8000 -v "$(pwd):/code" greeting-api:0.2.0 fastapi dev main.py --host 0.0.0.0 --port 8000
+> ```
+>
+> （Windows の PowerShell では `$(pwd)` を `${PWD}` に読み替えてください。）
+>
+> `docker stop greet-dev` するだけで削除まで終わります（2.4.3）。
+
+---
+
+### 演習 4.3 の解答
+
+**起動**
+
+**Windows（PowerShell）**
+
+```powershell
+cd fastapi-lesson
+docker run -d --name api-a -p 8001:8000 -v api-data-a:/data -e DATABASE_URL=sqlite:////data/app.db fastapi-lesson:0.1.0
+docker run -d --name api-b -p 8002:8000 -v api-data-b:/data -e DATABASE_URL=sqlite:////data/app.db fastapi-lesson:0.1.0
+```
+
+**macOS / Linux**
+
+```bash
+cd fastapi-lesson
+docker run -d --name api-a -p 8001:8000 -v api-data-a:/data -e DATABASE_URL=sqlite:////data/app.db fastapi-lesson:0.1.0
+docker run -d --name api-b -p 8002:8000 -v api-data-b:/data -e DATABASE_URL=sqlite:////data/app.db fastapi-lesson:0.1.0
+```
+
+4.3.3 のコマンドから変えたのは、**3か所だけ**です。
+
+| 変えた場所 | `api-a` | `api-b` | 変えてよい理由 |
+|----------|---------|---------|--------------|
+| コンテナ名 | `api-a` | `api-b` | 同じ名前は使えない（2.4.5） |
+| `-p` の**左側** | `8001` | `8002` | 左は自由（4.4.1）。同じにすると `port is already allocated`（4.4.2） |
+| ボリューム名 | `api-data-a` | `api-data-b` | 別の入れ物にすることが、この演習の目的 |
+
+**`-p` の右側（`8000`）と `DATABASE_URL` は、2つとも同じ**です。
+コンテナの中は互いに独立した世界なので、
+**中では同じポート・同じパスを使っていても、まったく干渉しません。**
+
+**テーブルとデータの用意**
+
+```bash
+docker exec api-a alembic upgrade head
+docker exec api-a python -m app.seed
+docker exec api-b alembic upgrade head
+docker exec api-b python -m app.seed
+```
+
+```text
+3 件のタスクを追加しました。
+```
+
+**片方にだけ追加する**
+
+`http://localhost:8001/docs` を開き、`POST /tasks` を `Try it out` → `Execute` で1件追加します
+（入力する内容は fastapi-text 第4章で決めた形のままで構いません）。
+
+**件数の比較**
+
+| URL | 件数 |
+|-----|------|
+| `http://localhost:8001/tasks` | **4 件** |
+| `http://localhost:8002/tasks` | 3 件 |
+
+**`api-a` を作り直しても残る**
+
+```bash
+docker rm -f api-a
+docker run -d --name api-a -p 8001:8000 -v api-data-a:/data -e DATABASE_URL=sqlite:////data/app.db fastapi-lesson:0.1.0
+```
+
+`http://localhost:8001/tasks` は、**4 件のまま**です。
+
+**後片付け**
+
+```bash
+docker rm -f api-a api-b
+docker volume rm api-data-a api-data-b
+docker volume ls
+```
+
+```text
+DRIVER    VOLUME NAME
+local     api-data
+```
+
+4.3.3 で使った `api-data` だけが残っていれば正解です。
+
+**解説**
+
+この演習が示しているのは、**「コンテナは使い捨て、データはボリューム」を徹底すると、
+同じイメージから何組でも独立した環境を作れる**ということです。
+
+- 本番用とテスト用を、同じイメージで並べて動かす
+- 壊れたほうのコンテナだけ作り直す
+- データを消したいときは、ボリュームだけ消す
+
+第6章で、React・FastAPI・MySQL の3つを並べるときも、考え方はまったく同じです。
+
+> **よくある間違い**
+> ボリュームを分けずに、`-v api-data:/data` を**両方に指定してしまう**間違いです。
+> エラーは出ませんが、**2つの API が同じ SQLite ファイルを同時に開きます。**
+> 片方で追加したタスクがもう片方にも出るだけでなく、
+> 書き込みが重なると `database is locked` というエラーが起きることがあります。
+> **「別々のデータにしたい」なら、ボリュームも別々にしてください。**
+
+---
+
+### 演習 4.4 の解答
+
+**ネットワークを作って起動する**
+
+```bash
+docker network create app-net
+docker run -d --name greet --network app-net greeting-api:0.2.0
+```
+
+**`-p` を書いていない**ので、`docker ps` の `PORTS` 列は空、
+または `8000/tcp`（`EXPOSE` の申告だけ）と表示されます。
+
+**1つ目の失敗：ブラウザから繋がらない**
+
+`http://localhost:8000` は開けません。
+**`-p` を書いていないので、パソコンからコンテナへの道が1本もない**からです（4.4.1）。
+コンテナ自体は正常に動いています。
+
+**成功する呼び出し**
+
+```bash
+docker run --rm --network app-net python:3.13-slim python -c "import urllib.request; print(urllib.request.urlopen('http://greet:8000/', timeout=5).read().decode())"
+```
+
+```text
+{"message":"Hello from a container!"}
+```
+
+**`-p` を1つも書いていないのに繋がります。**
+コンテナ同士の通信は `-p` を通らず、ネットワークの中で直接やりとりするためです（4.5.3）。
+
+**2つ目の失敗：`localhost` に変える**
+
+```bash
+docker run --rm --network app-net python:3.13-slim python -c "import urllib.request; print(urllib.request.urlopen('http://localhost:8000/', timeout=5).read().decode())"
+```
+
+```text
+urllib.error.URLError: <urlopen error [Errno 111] Connection refused>
+```
+
+`localhost` は**呼びに行った側のコンテナ自身**を指し、
+そのコンテナの 8000 番には誰もいないため拒否されます（4.5.4）。
+
+**3つ目の失敗：`--network` を外す**
+
+```bash
+docker run --rm python:3.13-slim python -c "import urllib.request; print(urllib.request.urlopen('http://greet:8000/', timeout=5).read().decode())"
+```
+
+```text
+urllib.error.URLError: <urlopen error [Errno -2] Name or service not known>
+```
+
+既定のネットワークには名前を引く仕組みが無いため、**`greet` が誰なのか分かりません**（4.5.1）。
+
+**後片付け**
+
+```bash
+docker rm -f greet
+docker network rm app-net
+```
+
+**解説**
+
+3つの失敗は、**メッセージが違うので区別できます。** ここが実務で効いてきます。
+
+| メッセージ | 意味 | 直し方 |
+|-----------|------|-------|
+| （ブラウザが繋がらない） | 外への道が無い | `-p` を足す（4.4.1） |
+| `Connection refused` | **相手は見つかったが、そこで誰も待っていない** | 宛先の名前・ポート番号を見直す（4.5.4） |
+| `Name or service not known` | **相手の名前すら分からない** | 同じネットワークに入れる（4.5.2） |
+
+`Connection refused` と `Name or service not known` の違いは、
+**「住所は分かったが留守」か「住所が分からない」か**の違いです。
+この2つを取り違えると、直す場所を間違えます。
+
+> **補足：第5章では、これを設定ファイルに書きます**
+> ネットワークを作り、両方に `--network` を付ける——この手順は、
+> Docker Compose では**書かなくても自動で行われます**（5.3.3）。
+> ただし「サービス名で呼び合える」仕組みの中身は、いまここで見たものと同じです。
+> **Compose が魔法に見えないよう、手で1度やっておく**のがこの演習の目的でした。
