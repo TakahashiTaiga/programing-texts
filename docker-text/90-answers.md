@@ -2349,3 +2349,616 @@ MySQL の初回起動はデータベースの初期化に時間がかかるた�
 > より厳密にログインまで確かめたい場合は、ユーザーとパスワードを渡す形にしますが、
 > 学習段階では、まず**起動順を制御できることを体験する**のが目的でした。
 > もっとも確実なのは、相手の状態に頼らずアプリ側でリトライすること（5.6.3）です。
+
+---
+
+## 第6章
+
+### 理解度チェック
+
+**問 6.1 の解答**
+
+- ① **`http://localhost:8000`**（`localhost`）
+- ② **`db`**（サービス名）
+- ③ **ブラウザ**
+- ④ **外**
+
+**解説**
+
+この章でいちばん間違えやすい点を、そのまま問うています（6.1.2）。
+
+React のコードは `web` コンテナの中に置かれていますが、**実行するのはブラウザ**です。
+`web` コンテナがやっているのは、**JavaScript のファイルを配ること**だけです。
+配られたものを動かすブラウザは、あなたのパソコンの上で動いていて、
+**Docker のネットワークの中にはいません。**
+
+だから、ブラウザから見える住所（`ports` で公開したパソコン側のポート）を書きます。
+
+一方、`api` から `db` への通信（6.1.2 の③）は、**両方ともネットワークの中**で起きます。
+こちらはサービス名で引けます（5.3.2）。
+
+> **覚え方**
+> **「ブラウザから呼ぶなら `localhost`、コンテナから呼ぶならサービス名」**
+> どちらの立場で書いているコードなのかを、先に決めてください。
+
+---
+
+**問 6.2 の解答**
+
+**2. `db` に用があるのは `api` だけで、コンテナ同士の通信に公開は要らないから**
+
+**解説**
+
+第4章 4.5 で確かめたとおり、**同じネットワークにいるコンテナ同士は、`-p`（`ports`）無しで通信できます。**
+`ports` は「パソコン側から入れるようにする」ための設定です（4.4.1）。
+
+`db` に用があるのは `api` だけなので、パソコン側に開ける必要がありません。
+むしろ**開けないほうが安全**です。開けると、パソコンの 3306 番が
+（設定によっては同じネットワークの他の機器からも）触れるようになります。
+
+他の選択肢が誤りである理由です。
+
+| 選択肢 | なぜ誤りか |
+|--------|-----------|
+| 1. MySQL はポートを使わない | 使います。`3306` です（6.2.3 のログの `port: 3306`） |
+| 3. `healthcheck` が効かなくなる | 関係ありません。`healthcheck` はコンテナの中で実行されます |
+| 4. ボリュームを使うと `ports` を書けない | 関係ありません。両方書けます（`api` が実際にそうです） |
+
+`docker compose ps` で `db` の `PORTS` が **`3306/tcp` だけ**（`0.0.0.0:...->` が付かない）に
+なっているのが、公開していない状態の見分け方でした（6.5.2）。
+
+---
+
+**問 6.3 の解答**
+
+**3. `./web:/app` のバインドマウントで隠れてしまう、コンテナ側の `node_modules` を残すため**
+
+**解説**
+
+6.4.2 の図のとおりです。バインドマウント（`./web:/app`）は、
+**コンテナの `/app` を、パソコンの `web/` で丸ごと置き換えます。**
+
+パソコンの `web/` には `node_modules` がありません（6.1.3 で消しました）。
+そのため、`npm ci` でコンテナの中に入れたはずの `node_modules` が**見えなくなります。**
+
+```text
+web-1  | sh: 1: vite: not found
+```
+
+`- /app/node_modules` は、**その場所だけマウントの対象から外す**指定です。
+結果として「ソースはパソコンから、ライブラリはコンテナの中のものを」という形になります。
+
+選択肢1は逆です（パソコン側には `node_modules` がありません）。
+選択肢2の「速くするため」は結果的にそうなる面もありますが、**目的ではありません**。
+選択肢4も誤りで、`npm ci` は `Dockerfile` で必ず実行されます（6.4.1）。
+
+> **よくある間違い**
+> この2行は**順番も意味があります。** `- ./web:/app` を先に書き、
+> **そのあとに** `- /app/node_modules` を書きます。
+> より深いパスの指定があとから効く、と考えてください。
+
+---
+
+**問 6.4 の解答**
+
+**原因**：MySQL のユーザーとパスワードは、**ボリュームが空だった最初の1回の起動でだけ**作られます。
+`.env` を書き換えても、すでに初期化済みのボリュームの中身は変わりません。
+
+**対処**：`docker compose down -v` でボリュームごと消してから、`docker compose up -d` でやり直します
+（**データベースの中身も消えます**）。
+
+**解説**
+
+6.2.3 の注意で扱った点です。`docker compose logs db` を見ると、はっきり分かります。
+
+| 状況 | ログに出るもの |
+|------|--------------|
+| 初回（ボリュームが空） | `Creating database appdb` / `Creating user appuser` |
+| 2回目以降 | **出ない**（初期化済みなので） |
+
+「パスワードを直したのに直らない」ときは、**`Creating user` のログが出ているか**を確認してください。
+出ていなければ、初期化はもう終わっています。
+
+`down`（`-v` なし）では**ボリュームが残る**ので直りません（5.4.2）。
+**`-v` が必要**だ、というのがこの問題の答えです。
+
+> **補足：データを消さずに変える方法もあります**
+> MySQL に入って `ALTER USER` という SQL を実行すれば、データを消さずにパスワードを変えられます。
+> ただし、それは 5冊目（mysql-text）の内容です。
+> **学習段階では、`down -v` でまっさらにするほうが確実**です。
+
+---
+
+**問 6.5 の解答**
+
+**読むべきでない理由**：ログに何も流れないということは、**リクエストが `api` に届いていない**からです。
+届いていないコードをいくら読んでも、原因はそこにありません。
+
+**疑うべき場所**：`web` 側の API の住所（`VITE_API_BASE_URL`。6.4.3）と、
+`api` の `ports` が公開されているか（6.5.2）です。
+
+**解説**
+
+6.6.2 の注意で扱った、切り分けの要点です。
+
+`docker compose logs -f api` にリクエストが流れるかどうかで、**問題の場所が2つに割れます。**
+
+| ログに流れるか | 何が起きているか | 直す場所 |
+|--------------|----------------|---------|
+| **流れない** | リクエストが `api` に届いていない | `web` 側の住所、`ports` |
+| **流れる（`200 OK`）のに画面に出ない** | 届いて答えたが、ブラウザが渡さなかった | **CORS**（`CORS_ORIGINS`） |
+| 流れる（`500`） | 届いて、`api` の中で失敗した | `api` のコード・`db` との接続 |
+
+**「ログに流れるか」の一言で、疑う範囲が半分になります。**
+`api` のコードを読み始めるのは、**ログに `500` が出てから**で十分です。
+
+演習 6.3 の壊し方1と2は、この2行を体験するための課題でした。
+
+---
+
+**問 6.6 の解答**
+
+`&&`（前のコマンドが成功したら次に進む）は**シェルの機能**なので、
+シェルに解釈させないと、ただの文字列として `python` に渡されてしまうからです。
+
+**解説**
+
+`command:` に書いたものは、**そのままコンテナの中で実行されます。**
+`sh -c` を付けずに次のように書くと、
+
+```yaml
+    command: python wait_for_db.py && alembic upgrade head && fastapi run app/main.py --port 8000
+```
+
+`python` に対して `wait_for_db.py`、`&&`、`alembic`、`upgrade` …… という
+**引数がずらりと並んだ**ものとして渡ります。`python` は `&&` を理解しないので失敗します。
+
+`sh -c "..."` は、「**シェルを起動して、この文字列をコマンドとして解釈させる**」という意味です。
+シェルなら `&&` を理解するので、3つのコマンドが順に実行されます。
+
+> **補足：`&&` と `;` の違い**
+> `;` でつなぐと、**前が失敗しても次に進みます。**
+> ここでは「`db` に繋がらなければマイグレーションしても意味がない」ので、
+> **失敗したらそこで止まる `&&`** が正解です。
+> 止まれば `api` は `Restarting` になり、**異常に気づけます**（6.3.3 のよくある間違い）。
+
+---
+
+**問 6.7 の解答**
+
+**2. MySQL 8 が既定で使う認証方式（`caching_sha2_password`）の計算に必要だから**
+
+**解説**
+
+6.3.2 の①で扱いました。`cryptography` を入れずに起動すると、次のエラーで止まります。
+
+```text
+RuntimeError: 'cryptography' package is required for sha256_password or caching_sha2_password auth methods
+```
+
+MySQL 8 は、パスワードをそのまま送らず、**暗号を使ったやり取り**で認証します。
+PyMySQL 単体はその計算ができないので、計算を担当するライブラリを別に入れます。
+
+**「入れておけば動くから」で済ませない**のが、このテキストの方針です。
+エラーメッセージに `cryptography` と書いてあるので、**メッセージを読めば自力でたどり着ける**種類の問題でもあります。
+
+他の選択肢は、いずれも `cryptography` の役割ではありません。
+`.env` は暗号化されません（だから `.gitignore` で守ります。5.5.3）。
+HTTPS の通信は、このライブラリを入れても有効になりません（別の設定です）。
+`SECRET_KEY` を作るのは、Python に最初から入っている `secrets` です（6.3.2）。
+
+---
+
+### 演習問題
+
+### 演習 6.1 の解答
+
+**手順と結果**
+
+まず起動して、初期データを入れます。
+
+```bash
+docker compose up -d
+docker compose ps
+docker compose exec api python -m app.seed
+```
+
+```text
+3 件のタスクを追加しました。
+```
+
+MySQL の中を見ます。
+
+```bash
+docker compose exec db mysql -u appuser -p appdb
+```
+
+```sql
+SELECT id, title FROM tasks;
+```
+
+```text
++----+--------------------+
+| id | title              |
++----+--------------------+
+|  1 | 牛乳を買う         |
+|  2 | レポートを書く     |
+|  3 | 部屋を片づける     |
++----+--------------------+
+3 rows in set (0.00 sec)
+```
+
+**`down`（`-v` なし）のあと**
+
+```bash
+docker compose down
+docker compose up -d
+docker compose exec db mysql -u appuser -p appdb
+```
+
+```sql
+SELECT id, title FROM tasks;
+```
+
+```text
+3 rows in set (0.00 sec)      ← 同じ3件が返る
+```
+
+**`down -v` のあと**
+
+```bash
+docker compose down -v
+docker compose up -d
+docker compose exec db mysql -u appuser -p appdb
+```
+
+```sql
+SHOW TABLES;
+```
+
+```text
++------------------+
+| Tables_in_appdb  |
++------------------+
+| alembic_version  |
+| tasks            |
++------------------+
+```
+
+```sql
+SELECT id, title FROM tasks;
+```
+
+```text
+Empty set (0.00 sec)
+```
+
+**メモに書く答え（例）**
+
+> `down -v` でボリュームは消えたが、`up` のときに `api` の `command:` が
+> `alembic upgrade head` を実行するので、**テーブルだけは作り直される。**
+> 中身（行）は作り直されないので `Empty set` になる。
+
+**解説**
+
+この演習の狙いは、**「入れ物」と「中身」を分けて考えられるようになること**です。
+
+| 消えたもの | 作り直されるか | 誰が作るか |
+|-----------|--------------|-----------|
+| ボリューム（`db-data`） | `up` のときに空で作られる | Compose（5.2.4） |
+| テーブル（`tasks`） | **作り直される** | `command:` の `alembic upgrade head`（6.3.3） |
+| 行（3件のデータ） | **作り直されない** | `python -m app.seed`（手で実行する） |
+
+**テーブルが自動で戻るのに、データは戻らない。** この非対称が分かれば、
+「`down -v` したあとに何を打てばよいか」を自分で判断できます（6.6.3 の段階5の3行目が `seed` なのは、このためです）。
+
+> **よくある間違い**
+> `SELECT` で `Table 'appdb.tasks' doesn't exist` が出た場合、
+> **`api` がまだ起動し切っていません。** `command:` の3段階（6.3.3）が終わる前に
+> `SELECT` を打っています。`docker compose logs api` に
+> `Uvicorn running on http://0.0.0.0:8000` が出てから、もう一度試してください。
+
+---
+
+### 演習 6.2 の解答
+
+**SQLite に戻す**
+
+`compose.yaml` の `api` を、次のように変えます（変えるのは `DATABASE_URL` と `volumes` だけです）。
+
+```yaml
+  api:
+    build: ./api
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    volumes:
+      - api-data:/data
+    environment:
+      DATABASE_URL: sqlite:////data/app.db
+      SECRET_KEY: ${SECRET_KEY}
+      CORS_ORIGINS: '["http://localhost:5173"]'
+    command: sh -c "python wait_for_db.py && alembic upgrade head && fastapi run app/main.py --port 8000"
+```
+
+ファイル末尾のボリューム宣言にも足します（5.2.4）。
+
+```yaml
+volumes:
+  db-data:
+  api-data:
+```
+
+```bash
+docker compose up -d api
+docker compose logs api
+```
+
+```text
+fullstack-lesson-api-1  | db:3306 に繋がりました
+fullstack-lesson-api-1  | INFO  [alembic.runtime.migration] Running upgrade  -> 8f3d1c2a9b45, create tasks table
+fullstack-lesson-api-1  | INFO:     Uvicorn running on http://0.0.0.0:8000
+```
+
+```bash
+docker compose exec api python -m app.seed
+```
+
+`http://localhost:8000/docs` の `GET /tasks` で3件返ります。**MySQL のときと、まったく同じ動きです。**
+
+**MySQL に戻す**
+
+`DATABASE_URL` を元に戻して、`up -d api` するだけです。
+
+```yaml
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE}?charset=utf8mb4
+```
+
+```bash
+docker compose up -d api
+```
+
+`GET /tasks` を実行すると、**MySQL 側に入れていたデータ**が返ります
+（SQLite に入れたデータは `api-data` ボリュームに残っていますが、見に行かなくなります）。
+
+**メモに書く答え（例）**
+
+> `app/database.py` の `if settings.database_url.startswith("sqlite"):` は、
+> SQLite のときだけ `connect_args` に `check_same_thread` を入れる。
+> MySQL のときは `connect_args` が空のまま `create_engine` に渡るので、
+> `Invalid argument(s) 'check_same_thread'` にならない。
+
+**解説**
+
+fastapi-text 6.2.2 の「乗り換えは接続 URL の1行」を、実際に確かめる演習でした。
+
+**アプリのコードを1行も変えずに、保存先を差し替えられた**のは、
+`app/` の中が「接続先」を知らないからです。知っているのは `settings.database_url` だけで、
+その値は**外（環境変数）から与えられます。**
+
+```mermaid
+flowchart LR
+    E["compose.yaml の environment<br/>DATABASE_URL"] --> C["app/config.py<br/>settings.database_url"]
+    C --> D["app/database.py<br/>create_engine"]
+    D --> S["SQLite のファイル"]
+    D --> M["MySQL の db サービス"]
+```
+
+**設定を外に出しておくと、差し替えが1行で済む。** これは fastapi-text 4.6 から一貫している考え方で、
+第7章 7.5.1（開発用と本番用を分ける）にもそのまま繋がります。
+
+> **補足：`depends_on` と `wait_for_db.py` は残したままでよいのか**
+> SQLite に繋いでいる間、`api` は `db` を使いませんが、**待つこと自体は害になりません**
+> （起動が少し遅くなるだけです）。この演習では「1行だけ変える」ことが目的なので、残したままにしました。
+> 恒久的に SQLite にするなら、`depends_on` と `command:` の `python wait_for_db.py &&` は外します。
+
+---
+
+### 演習 6.3 の解答
+
+**壊し方1：API の住所を `http://api:8000` にする**
+
+```yaml
+      VITE_API_BASE_URL: http://api:8000
+```
+
+```bash
+docker compose up -d web
+```
+
+ブラウザの Network タブ：
+
+```text
+GET http://api:8000/tasks   net::ERR_NAME_NOT_RESOLVED
+```
+
+`docker compose logs -f api` には、**何も流れません。**
+
+**壊し方2：CORS の許可を別のオリジンにする**
+
+```yaml
+      CORS_ORIGINS: '["http://localhost:9999"]'
+```
+
+```bash
+docker compose up -d api
+```
+
+ブラウザの Console：
+
+```text
+Access to fetch at 'http://localhost:8000/tasks' from origin 'http://localhost:5173'
+has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present
+on the requested resource.
+```
+
+`docker compose logs -f api` には、**流れます。**
+
+```text
+fullstack-lesson-api-1  | INFO:     172.18.0.1:54310 - "GET /tasks HTTP/1.1" 200 OK
+```
+
+**壊し方3：接続 URL のパスワードを間違える**
+
+```yaml
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER}:wrong-password@db:3306/${MYSQL_DATABASE}?charset=utf8mb4
+```
+
+```bash
+docker compose up -d api
+docker compose ps
+```
+
+```text
+NAME                     IMAGE                  SERVICE   STATUS
+fullstack-lesson-api-1   fullstack-lesson-api   api       Restarting (1) 3 seconds ago
+```
+
+```bash
+docker compose logs api --tail 5
+```
+
+```text
+fullstack-lesson-api-1  | db:3306 に繋がりました
+fullstack-lesson-api-1  | sqlalchemy.exc.OperationalError: (pymysql.err.OperationalError)
+fullstack-lesson-api-1  | (1045, "Access denied for user 'appuser'@'172.18.0.3' (using password: YES)")
+```
+
+**メモに書く表（例）**
+
+| 壊し方 | ブラウザに出るもの | `api` のログ | 直す場所 |
+|--------|-----------------|-------------|---------|
+| 1（住所） | `ERR_NAME_NOT_RESOLVED` | **何も出ない** | `VITE_API_BASE_URL`（6.4.3） |
+| 2（CORS） | `blocked by CORS policy` | **`200 OK` が出る** | `CORS_ORIGINS`（6.3.2） |
+| 3（パスワード） | 画面が出ない／`ERR_CONNECTION_REFUSED` | **`Access denied`** で `Restarting` | `DATABASE_URL`（6.3.2） |
+
+**元に戻す**
+
+```bash
+docker compose up -d --build
+```
+
+**解説**
+
+壊し方1と2が、この演習の核心です。**ブラウザから見ると、どちらも「データが出ない」で同じに見えます。**
+区別できるのは、**`api` のログに流れるかどうか**だけです（6.6.2 の注意）。
+
+```mermaid
+flowchart TB
+    Q{"docker compose logs -f api に<br/>リクエストが流れるか"}
+    Q -->|"流れない"| A["api に届いていない<br/>→ web 側の住所・ports を疑う"]
+    Q -->|"流れる（200 OK）"| B["届いて答えている<br/>→ ブラウザが渡していない = CORS"]
+    Q -->|"流れる（500）"| C["届いて、api の中で失敗<br/>→ ログの続きを読む"]
+```
+
+壊し方3は、**ブラウザまで到達しない失敗**です。`api` そのものが起動できていないので、
+`docker compose ps` の `STATUS` を見るのが先になります（`Restarting` / `Exited`）。
+
+> **よくある間違い：壊し方3で `docker compose logs api` の先頭だけ読む**
+> `Restarting` のコンテナは、**失敗するたびにログが積み重なります。**
+> 先頭を読むと、何度も同じ内容を読むことになります。
+> **`--tail 5` を付けて、最後の数行だけ読む**のが速い読み方です（6.6.1）。
+
+> **補足：この3つ以外の壊し方も試してみてください**
+> `--host` を消す（4.4.3 の失敗が再現します）、`- /app/node_modules` を消す
+> （`vite: not found` になります。6.4.2）なども、良い練習になります。
+> **自分で壊せるものは、自分で直せます。**
+
+---
+
+### 演習 6.4 の解答
+
+**`compose.yaml` に足すサービス**
+
+```yaml
+  adminer:
+    image: adminer:4.8.1
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: db
+```
+
+調べて分かる2点は、次のとおりです。
+
+| 調べること | 答え | どこに書いてあるか |
+|-----------|------|-----------------|
+| 待ち受けるポート | **8080** | Docker Hub の `adminer` のページ |
+| 接続先を渡す環境変数 | **`ADMINER_DEFAULT_SERVER`** | 同ページの「Environment Variables」 |
+
+**起動と確認**
+
+```bash
+docker compose up -d
+docker compose ps
+```
+
+```text
+NAME                          IMAGE                  SERVICE   STATUS
+fullstack-lesson-adminer-1    adminer:4.8.1          adminer   Up 10 seconds
+fullstack-lesson-api-1        fullstack-lesson-api   api       Up 10 seconds
+fullstack-lesson-db-1         mysql:8.4              db        Up 45 seconds (healthy)
+fullstack-lesson-web-1        fullstack-lesson-web   web       Up 10 seconds
+```
+
+ブラウザで `http://localhost:8080` を開き、次を入力します。
+
+| 項目 | 入力する値 |
+|------|----------|
+| データベース種類 | MySQL |
+| サーバ | **`db`**（`ADMINER_DEFAULT_SERVER` を書いていれば、最初から入っています） |
+| ユーザ名 | `.env` の `MYSQL_USER`（`appuser`） |
+| パスワード | `.env` の `MYSQL_PASSWORD` |
+| データベース | `.env` の `MYSQL_DATABASE`（`appdb`） |
+
+ログインすると `tasks` テーブルが見え、「選択」を押すと 6.5.3 の段階3と**同じ3件**が表示されます。
+
+**メモに書く答え（例）**
+
+> **サービス名で呼べる理由**：`adminer` も `db` も、同じ `compose.yaml` に書かれているので、
+> Compose が自動で作る同じネットワーク（`fullstack-lesson_default`）に入る。
+> 同じネットワークの中では、サービス名がそのまま相手の名前として引ける（5.3.3 / 6.1.2 の③）。
+>
+> **本番で公開してはいけない理由**：Adminer はデータベースを**直接読み書きできる**画面で、
+> パスワードさえ分かれば誰でも全データを消せる。`ports` で公開するということは、
+> その入口を外に開けるということで、`db` に `ports` を書かないと決めた理由（6.1.2）と正面から反する。
+
+**解説**
+
+この演習は、**この章で学んだ部品の組み合わせだけで、新しいサービスを足せる**ことを確かめるものでした。
+
+| 使った部品 | どこで学んだか |
+|-----------|--------------|
+| `image:` でバージョンを固定する | 2.5.5 / 6.1.1 |
+| `ports` で公開する（空いている番号を選ぶ） | 4.4.2 / 6.1.2 |
+| `environment` で設定を渡す | 5.5.1 / 6.2.2 |
+| `depends_on` + `condition: service_healthy` | 5.6.2 / 6.3.3 |
+| サービス名で相手を呼ぶ | 5.3.2 / 6.1.2 |
+
+**`8080` を選ぶ理由**も、この章の知識です。`8000`（`api`）と `5173`（`web`）は使用中なので、
+そのまま書くと第4章 4.4.2 で見たポートの衝突が起きます。
+
+```text
+Error response from daemon: Ports are not available:
+exposing port TCP 0.0.0.0:8000 -> 0.0.0.0:0: listen tcp 0.0.0.0:8000: bind: address already in use
+```
+
+> **補足：`adminer` に `ADMINER_DEFAULT_SERVER` を書かなくても動きます**
+> この環境変数は、**ログイン画面の「サーバ」欄に最初から `db` を入れておく**だけのものです。
+> 書かなくても、毎回手で `db` と入力すれば繋がります。
+> **「必須の設定」と「便利のための設定」を見分ける**のも、公式ページを読むときの目の付けどころです。
+
+> **補足：Adminer の代わりに phpMyAdmin を使ってもよいか**
+> 構いません。必要な環境変数の名前が違う（`PMA_HOST`）だけで、考え方は同じです。
+> **公式ページで環境変数を調べて、サービス名を渡す**——この手順が身についていれば、
+> どの管理画面でも同じように足せます。
+
+> **注意：確認が終わったら、`adminer` は消しておくことを勧めます**
+> 便利な反面、**パスワードだけでデータベース全体を操作できる入口**です。
+> 学習用の環境でも、使わないときは `compose.yaml` から消しておくほうが安全です。
+> 第7章 7.4 で、この種の「開けっ放し」の危険を改めて扱います。

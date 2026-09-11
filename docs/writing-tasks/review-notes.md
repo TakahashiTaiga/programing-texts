@@ -139,6 +139,49 @@
         **`mysqladmin ping` が認証なしでも「応答あり（exit 0）」を返すか**を、使っている MySQL 8.4 のバージョンで確認
   - [ ] 5.6.3 **`docker compose run --rm --build api python wait_for_db.py`** が、`まだ繋がりません` を経て
         `db:3306 に繋がりました` に至ること
+- [ ] `docker-text` 第6章（D-06）。**3サービス（React + FastAPI + MySQL）の通し確認は実機未実施です。**
+      この章は前の5章ぶんを一度に使うため、**通しで1回動かしてもらえると効果がいちばん大きい章**です。
+      前提は、fastapi-text 第9章まで進めた `fastapi-lesson` と react-text 第10章の `task-app` です。
+  - [ ] 6.2.1 **`MYSQL_ROOT_PASSWORD` を渡さずに `mysql:8.4` を起動したときのエラー文**
+        （`Database is uninitialized and password option is not specified` と、続く3つの候補の並び）
+  - [ ] 6.2.3 **初期化ログの文言**（`Creating database appdb` / `Creating user appuser` /
+        `Giving user appuser access to schema appdb`）と、初回初期化にかかる時間の実測
+  - [ ] 6.2.4 **`docker compose exec db mysql -u appuser -p appdb` の対話**（`Enter password:` が出るか・
+        `mysql>` プロンプトの表示・`SHOW TABLES;` の `Empty set`）。TTY の割り当てがうまくいくか
+  - [ ] 6.3.2 **`PyMySQL==1.1.1` / `cryptography==44.0.0` で MySQL 8.4 に実際に接続できるか**（この章の最重要）。
+        バージョンは執筆時点の想定です。`cryptography` を入れずに起動したときの
+        `RuntimeError: 'cryptography' package is required for ...` の文言も確認してください
+  - [ ] 6.3.2 **`?charset=utf8mb4` を付けた接続 URL で、日本語が化けずに保存されるか**（6.5.3 の段階3の `SELECT` 結果）
+  - [ ] 6.3.2 `check_same_thread` を渡したままにしたときの
+        `TypeError: Invalid argument(s) 'check_same_thread' sent to create_engine()` の実際の文言
+  - [ ] 6.3.3 **`command: sh -c "python wait_for_db.py && alembic upgrade head && fastapi run app/main.py --port 8000"`**
+        が通り、`api` のログに3段階（`db:3306 に繋がりました` → `Running upgrade` → `Uvicorn running`）が並ぶか。
+        `alembic upgrade head` が **MySQL に対して**問題なく適用されるか（`String(20)` / `JSON` 型の列）
+  - [ ] 6.4.1 / 6.4.2 **`node:22-slim` + `npm ci` + `npm run dev -- --host`** で Vite が起動し、
+        `- ./web:/app` と `- /app/node_modules` の組み合わせでホットリロードが効くか。
+        `- /app/node_modules` を外したときに `vite: not found` になることも確認
+  - [ ] 6.4.2 **`vite.config.js` の `server.watch.usePolling` を `process.env.VITE_USE_POLLING` で切り替える形**が、
+        使っている Vite のバージョンで有効か（**Windows 実機での確認が必要**）
+  - [ ] 6.4.3 **`import.meta.env.VITE_API_BASE_URL` が、`compose.yaml` の `environment` から渡した値を拾うか。**
+        Vite が `process.env` の `VITE_` 付き変数を `import.meta.env` に載せる挙動に依存しています。
+        **拾わない場合は、`web/.env` を用意する形に本文を直す必要があります**（要確認）
+  - [ ] 6.5.2 **`docker compose up -d --build` の出力**（`Healthy` → `Started` の順・`docker compose ps` の3行と
+        `db` の `PORTS` が `3306/tcp` だけになること）と、初回ビルドにかかる時間の実測
+  - [ ] 6.6.1 3つの「起動できた印」の**実際の文言**（`ready for connections` / `Uvicorn running on http://0.0.0.0:8000` /
+        `Local:   http://localhost:5173/`）
+  - [ ] 演習 6.3 の3つの壊し方で、**ブラウザに出るエラー名**（`ERR_NAME_NOT_RESOLVED` /
+        `blocked by CORS policy` / `Access denied for user`）が解答編どおりになるか
+  - [ ] 演習 6.4 の **`adminer:4.8.1`** が起動し、`ADMINER_DEFAULT_SERVER: db` でログイン画面に `db` が入るか
+        （バージョンは執筆時点の想定。Docker Hub で現行版を確認してください）
+- [ ] **`docker-text` 4.6.3 の補足の修正（D-06 で判明した誤り）**
+      4.6.3 の末尾の補足に「React（Vite）でも同じことが起きます。そのときは Vite 用の環境変数
+      （`CHOKIDAR_USEPOLLING=true`）を使います」と書かれていますが、**これは誤りです。**
+      `CHOKIDAR_USEPOLLING` は Create React App（webpack-dev-server）の慣習で、
+      **Vite はこの環境変数を読みません。**
+      第6章 6.4.2 では、`vite.config.js` の `server.watch.usePolling` に書く正しい形を示し、
+      4.6.3 との違いを補足で説明しています。
+      **4.6.3 側の補足を「対処は第6章 6.4.2 で扱います」に書き換えてください**（D-04 の PR に手を入れるか、
+      マージ後に修正するかは、レビューの都合で決めてください）。D-06 からは 4.6.3 の本文を変更していません
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
 
 > **とくに各本の第1〜2章（環境構築）は、必ず自分で通しで実行してください。**
