@@ -2062,3 +2062,651 @@ tests/test_users.py ....                                                 [100%]
 > **テストを書くと、こうした仕様が自分の手で確かめられます。**
 
 ---
+
+## 第9章
+
+### 理解度チェック
+
+**問 9.1 の解答**
+
+- ① スキーム（`http` / `https` の部分）
+- ② ポート番号
+- ③ 同一オリジンポリシー
+- ④ CORS（Cross-Origin Resource Sharing）
+- ⑤ `OPTIONS`
+
+**解説**
+
+オリジンは**スキーム・ホスト・ポート番号**の3つで決まります（9.1.2）。
+パスは含まれないので、`http://localhost:5173/tasks` と
+`http://localhost:5173/about` は**同じオリジン**です。
+
+同一オリジンポリシーが「既定の禁止」で、CORS が「サーバーが出す例外的な許可」です。
+この2つは反対の働きをするので、名前を取り違えないでください。
+
+`OPTIONS` のプリフライトは、**ブラウザが勝手に送ります。**
+自分で書くことはありません（9.1.2）。
+
+---
+
+**問 9.2 の解答**
+
+**3**（リクエストは届いて処理されたが、ブラウザが結果を JavaScript に渡さなかった）
+
+**解説**
+
+サーバーのログに `GET /tasks -> 200` が出ている時点で、
+**リクエストは届き、正常に処理され、レスポンスも返っています**（9.1.1）。
+
+止めたのはブラウザです。CORS の検問は、**レスポンスが返ってきたあと**に行われます。
+
+| 選択肢 | なぜ違うか |
+|-------|----------|
+| 1. API のバグ | `200` を返せているので、コードは動いている |
+| 2. 届いていない | 届いていなければ、ログの行そのものが出ない |
+| 4. データベース | 失敗すれば `500` になる。`200` は出ない |
+
+**この順序（届く → 処理する → 返す → ブラウザが検問する）**を覚えておくと、
+9.4.1 の切り分けが速くなります。
+
+---
+
+**問 9.3 の解答**
+
+**2**（一覧の取得は成功し、ログインが必要な操作だけが失敗する）
+
+**解説**
+
+`GET /tasks` は、ヘッダーを何も足さずに送れるので**プリフライトが飛びません**（9.1.2）。
+そのため、`allow_headers` の設定に関係なく通ります。
+
+一方、`POST /tasks` は `Authorization` と `Content-Type` を足すので、
+プリフライトの `OPTIONS` が飛びます。
+そこで `Authorization` が許可されていないと、**本番のリクエストは送られません。**
+
+```text
+Network タブ:
+OPTIONS  /tasks   200   ← プリフライトは通るが、Authorization は許可されていない
+（POST の行が出ない）
+```
+
+**「一覧は出るのに、追加だけできない」**という症状になります。
+9.4.2 の早見表にも載せてあります。
+
+---
+
+**問 9.4 の解答**
+
+**解答例**
+
+`error.status` が `undefined` のときは**API まで届いていない**（サーバー停止・URL 違い・CORS）ので
+利用者は「サーバーを起動する」しかできず、`403` のときは**届いた上で拒否された**ので
+「別の人としてログインし直す」など、やることがまったく違うためです。
+
+**解説**
+
+エラーメッセージは、**利用者が次に何をすればよいかが分かるもの**にします（9.3.2）。
+
+| `error.status` | 実際に起きたこと | 利用者がやること |
+|---------------|---------------|----------------|
+| `undefined` | レスポンスが1つも返っていない | サーバーを起動する・URL を確かめる |
+| `401` | トークンが無い・切れた | ログインし直す |
+| `403` | 他人のデータを操作した | 何もできない（本人に頼む） |
+| `422` | 送った値が条件に合わない | 入力を直す |
+
+この4つを「エラーが発生しました」の1文にまとめてしまうと、
+**利用者は何も判断できません。**
+
+`fetch` がレスポンスを受け取れなかったときは `TypeError` を投げるだけで、
+ステータスコードは存在しません。**その「無いこと」自体が情報**になります。
+
+---
+
+**問 9.5 の解答**
+
+**解答例**
+
+React 側の検査は**ブラウザから使う人への親切**でしかなく、
+`curl` や別のプログラムから直接 API を呼べば、その検査は通らないためです。
+**守りはサーバー側にしか置けません。**
+
+**解説**
+
+9.1.4 の注意と同じ話です。
+**API の窓口は、ブラウザ以外からも呼べます。**
+
+```bash
+curl -X POST http://127.0.0.1:8000/tasks \
+  -H "Authorization: Bearer <トークン>" \
+  -H "Content-Type: application/json" \
+  -d '{"title":"あ"}'
+```
+
+`title` に 100 文字を入れて送れば、React 側の `MAX_LENGTH` は一切通りません。
+
+| 置く場所 | 役割 | 消すとどうなるか |
+|---------|------|----------------|
+| React 側 | **早く知らせる**（送る前に気づける） | 送信して待たされてからエラーになる。不便だが、データは守られる |
+| API 側 | **本当に守る** | **20文字を超えるデータが入る。** 直しようがない |
+
+**両方に置くのが正解**で、どちらか一方なら**サーバー側**を残します。
+
+---
+
+**問 9.6 の解答**
+
+**解答例**
+
+`msg` は Pydantic が出す英語の文で、ライブラリの版が上がると文言が変わることがあり、
+そのたびに画面の表示やテストが壊れるためです。`type` は変わりにくい識別子です。
+
+**解説**
+
+8.3.4 で、テストについてまったく同じ判断をしました。
+
+```json
+{"type":"string_too_long","loc":["body","title"],"msg":"String should have at most 20 characters"}
+```
+
+| 項目 | 中身 | 安定しているか |
+|------|------|-------------|
+| `type` | `"string_too_long"` | **変わりにくい**（機械が読むための識別子） |
+| `loc` | `["body", "title"]` | 変わりにくい（項目の場所） |
+| `msg` | 英語の説明文 | **変わることがある**（人が読むための文） |
+
+そもそも `msg` は英語なので、そのまま出しても日本語の画面には合いません。
+**`type` と `loc` から、自分の言葉で組み立てる**ほうが、表示としても正しくなります（9.3.3）。
+
+---
+
+**問 9.7 の解答**
+
+**解答例**
+
+**開発者ツールの Network タブに `POST /tasks` の行が出ているか**を確かめます。
+出ていなければフロント側（関数が呼ばれていない）、
+出ていればバック側かフロントの送り方の問題だと分かり、**調べる範囲が半分になる**からです。
+
+**解説**
+
+9.4.1 のフローチャートの、いちばん最初の分岐です。
+
+**症状（増えない）から原因を推理しないでください。**
+候補は「ボタンのイベントが繋がっていない」「トークンが無い」「CORS」「API のバグ」など
+いくつもあり、**思いついた順に試すと時間がかかります。**
+
+リクエストが出ているかどうかを見るだけで、**候補が2つのグループに割れます。**
+
+| Network タブ | 残る候補 |
+|-------------|---------|
+| 行が出ない | `onAdd` が呼ばれていない、`if` で止まっている、例外で止まっている |
+| 行が出る | ステータスコードを読む（`401` / `422` / `500` …） |
+
+「サーバーのログを見る」も正解ですが、
+**フロント側で止まっている場合は何も出ない**ので、
+Network タブのほうが最初の1手として広く効きます。
+
+---
+
+### 演習 9.1 の解答
+
+`src/components/TaskItem.jsx`（ファイル全体）
+
+```jsx
+function TaskItem({ task, onToggle, onDelete }) {
+  return (
+    <li className="task-item">
+      <label className="task-label">
+        <input
+          type="checkbox"
+          checked={task.isDone}
+          onChange={() => onToggle(task.id)}
+        />
+        <span className={task.isDone ? 'task-title is-done' : 'task-title'}>
+          {task.title}
+        </span>
+      </label>
+      <span className="task-owner">（{task.ownerName}）</span>
+      <button type="button" onClick={() => onDelete(task.id)}>
+        削除
+      </button>
+    </li>
+  )
+}
+
+export default TaskItem
+```
+
+`src/App.css`（末尾に追記）
+
+```css
+.task-owner {
+  color: #666;
+  font-size: 0.85rem;
+}
+```
+
+```text
+表示される内容:
+□ 郵便局に行く（山田）        [削除]
+□ 部屋を片づける（山田）      [削除]
+☑ レポートを書く（鈴木）      [削除]
+□ 牛乳を買う（山田）          [削除]
+```
+
+**解説**
+
+**変更したのは表示だけ**です。`src/api/tasks.js` を触らずに済んだ理由は、
+9.2.1 の `toTask` が、最初から `ownerName` を持たせていたからです。
+
+```js
+function toTask(item) {
+  return {
+    id: item.id,
+    title: item.title,
+    isDone: item.done,
+    ownerName: item.owner.name,     // ← API の owner.name をここで平らにしている
+  }
+}
+```
+
+**API の `owner` は入れ子のオブジェクト**（`{"owner": {"name": "山田"}}`）ですが、
+`toTask` で `ownerName` という1階層の項目に直しています。
+そのおかげで、`TaskItem` は `task.ownerName` と書くだけで済みます。
+
+もし変換を置いていなければ、`TaskItem` に
+`task.owner.name` と書くことになり、**API の形を画面の部品が知っている**状態になります。
+API の項目名が変わったとき、直す場所が増えます。
+
+> **よくある間違い**
+> `task.owner.name` と書いて、次のエラーになる間違いです。
+>
+> ```text
+> TypeError: Cannot read properties of undefined (reading 'name')
+> ```
+>
+> `toTask` を通ったあとのタスクに `owner` はありません（`ownerName` になっています）。
+> **いま自分が触っているのは「API の形」か「アプリの形」か**を、
+> `console.log(task)` で確かめる習慣を付けてください。
+
+**別解：`owner` を落とさずに持つ**
+
+`toTask` を次のようにして、`TaskItem` で `task.owner.name` と書く形もあります。
+
+```js
+    owner: item.owner,
+```
+
+**間違いではありません。** ただし、このテキストでは
+「アプリの中の形は、なるべく平らにする」方針を採っています。
+入れ子が深くなるほど、`undefined` を読んでしまう事故が増えるためです。
+
+---
+
+### 演習 9.2 の解答
+
+`src/App.jsx`（`handleLogin` の下に追記）
+
+```jsx
+  function handleLogout() {
+    localStorage.removeItem(TOKEN_KEY)
+    setToken('')
+  }
+```
+
+`src/App.jsx`（ログイン中の表示を次のように変更する）
+
+```diff
+  {token === '' ? (
+    <LoginForm onLogin={handleLogin} />
+  ) : (
+-   <p className="login-state">{userName} さんとしてログイン中</p>
++   <p className="login-state">
++     {userName} さんとしてログイン中
++     <button type="button" onClick={handleLogout}>
++       ログアウト
++     </button>
++   </p>
+  )}
+```
+
+```text
+ログアウトを押したあと:
+  [名前] [パスワード] [ログイン]
+  （追加フォームは消える）
+
+  □ 郵便局に行く           ← 一覧はそのまま見えている
+  □ 部屋を片づける
+```
+
+**解説**
+
+**`setUserName('')` を書いていない**ことに気づいたでしょうか。
+書いても間違いではありませんが、**書かなくても消えます。**
+
+9.2.2 で書いた `useEffect` が、`token` の変化を見張っているからです。
+
+```jsx
+  useEffect(() => {
+    if (token === '') {
+      setUserName('')      // ← ここで消える
+      return
+    }
+    ...
+  }, [token])
+```
+
+`setToken('')` → `token` が変わる → 依存配列に `token` があるので `useEffect` が動く →
+`userName` が空になる、という流れです（react-text 8.2.3）。
+
+**「トークンが正しいか」という判断を1か所にまとめた**結果、
+ログアウトの処理が2行で済んでいます。
+ログアウトのたびに `setUserName('')` も呼ぶ形にすると、
+**忘れた場所だけ名前が残る**という不具合が起きやすくなります。
+
+**完成条件の意味**を、1つずつ確認します。
+
+| 完成条件 | なぜそうなるか |
+|---------|-------------|
+| 一覧は表示されたまま | `GET /tasks` は認証不要（7.5.3）。トークンを送っていないだけ |
+| 追加フォームが消える | `{token !== '' && <TaskForm ... />}`（9.2.2） |
+| 再読み込みしても戻らない | `localStorage` から消したため。`token` の初期値もそこから読んでいる |
+
+> **よくある間違い**
+> **`setToken('')` だけ書いて、`localStorage.removeItem` を忘れる**間違いです。
+> 画面上はログアウトしたように見えますが、**再読み込みするとログイン状態に戻ります。**
+>
+> 逆に `localStorage.removeItem` だけだと、**再読み込みするまでログイン中のまま**です。
+> **「いまの画面の state」と「保存されているもの」の両方**を消す必要があります。
+
+---
+
+### 演習 9.3 の解答
+
+`src/components/TaskItem.jsx`（ファイル全体）
+
+```jsx
+// 注意：これは表示上の配慮にすぎません。ボタンを消しても、curl などから
+// DELETE /tasks/{id} は送れます。実際に守っているのは、API 側の get_my_task
+// が返す 403（7.5.3）です。画面のチェックを守りとして数えないでください。
+function TaskItem({ task, userName, onToggle, onDelete }) {
+  // 自分が登録したタスクかどうか
+  const isMine = task.ownerName === userName
+
+  return (
+    <li className="task-item">
+      <label className="task-label">
+        <input
+          type="checkbox"
+          checked={task.isDone}
+          onChange={() => onToggle(task.id)}
+        />
+        <span className={task.isDone ? 'task-title is-done' : 'task-title'}>
+          {task.title}
+        </span>
+      </label>
+      <span className="task-owner">（{task.ownerName}）</span>
+      {isMine && (
+        <button type="button" onClick={() => onDelete(task.id)}>
+          削除
+        </button>
+      )}
+    </li>
+  )
+}
+
+export default TaskItem
+```
+
+`src/components/TaskList.jsx`（`userName` を受け取って渡す）
+
+```diff
+- function TaskList({ tasks, totalCount, onToggle, onDelete }) {
++ function TaskList({ tasks, totalCount, userName, onToggle, onDelete }) {
+```
+
+```diff
+        <TaskItem
+          key={task.id}
+          task={task}
++         userName={userName}
+          onToggle={onToggle}
+          onDelete={onDelete}
+        />
+```
+
+`src/App.jsx`（`TaskList` に `userName` を渡す）
+
+```diff
+        <TaskList
+          tasks={visibleTasks}
+          totalCount={tasks.length}
++         userName={userName}
+          onToggle={handleToggle}
+          onDelete={handleDelete}
+        />
+```
+
+```text
+山田さんでログイン中:
+□ 郵便局に行く（山田）        [削除]
+□ 部屋を片づける（山田）      [削除]
+☑ レポートを書く（鈴木）              ← ボタンが出ない
+```
+
+**解説**
+
+**props を2段渡しています。**
+`App` → `TaskList` → `TaskItem` の順で、`TaskList` 自身は `userName` を使いません。
+**通過させるだけ**です。これが react-text 9.2.1 の「props のバケツリレー」です。
+
+このアプリは2段なので、そのまま渡すのがいちばん分かりやすくなります。
+段が4段、5段と増えたときに Context（react-text 9.2.3）を検討します。
+**先に Context を使わないでください。** 読む場所が増えて、かえって追いにくくなります。
+
+`userName` が空文字列（ログアウト中）のときは、
+`task.ownerName === ''` がどのタスクでも成り立たないので、**ボタンは1つも出ません。**
+`if` を追加しなくても、条件がそのまま効いています。
+
+**コメントに書くべきだった内容**は、次のとおりです。
+
+**画面からボタンを消しても、API は誰でも呼べます。**
+開発者ツールの Console から `fetch` を1行実行すれば、
+`DELETE /tasks/1` は送れてしまいます。
+
+```js
+// ブラウザの Console から、ボタンが無くても送れてしまう
+fetch('http://127.0.0.1:8000/tasks/1', {
+  method: 'DELETE',
+  headers: { 'Authorization': 'Bearer <トークン>' },
+})
+```
+
+**それでも消えないのは、`get_my_task` が `403` を返すからです**（7.5.3）。
+そして、それが壊れていないことは `pytest` が確かめています（8.4.2 の
+`test_他人のタスクは削除できない`）。
+
+| 層 | 役割 | 外せるか |
+|----|------|---------|
+| `TaskItem` のボタン | 押せないことを見せる（親切） | **外せる**（不便になるだけ） |
+| `get_my_task` の `403` | **本当に止める** | **外せない**（他人のデータが消える） |
+| `test_他人のタスクは削除できない` | 止まり続けていることを確かめる | 外すと、壊れても気づけない |
+
+9.3.3 の「フロントは親切、サーバーが守り」と、まったく同じ構図です。
+
+> **補足：完了のチェックボックスはどうするか**
+> `PATCH` も本人だけの操作なので、同じ配慮ができます。
+> `disabled={!isMine}` を `input` に足すと、他人のタスクは押せなくなります。
+>
+> このテキストでは削除だけを課題にしましたが、
+> **同じ考え方が使い回せる**ことを確認しておいてください。
+
+---
+
+### 演習 9.4 の解答
+
+`src/api/tasks.js`（`fetchTasks` を次のように書き換える）
+
+```js
+export async function fetchTasks(filter) {
+  // limit の既定値は 10 件なので、多めに指定する（6.4.5）
+  let path = '/tasks?limit=100'
+
+  if (filter === 'active') {
+    path = `${path}&done=false`
+  }
+  if (filter === 'done') {
+    path = `${path}&done=true`
+  }
+
+  const data = await request(path, {})
+  return data.tasks.map(toTask)
+}
+```
+
+`src/App.jsx`（`loadTasks` と `useEffect` を次のように書き換える）
+
+```diff
+- async function loadTasks() {
++ async function loadTasks(currentFilter) {
+    setIsLoading(true)
+    setErrorMessage('')
+    try {
+-     const loaded = await fetchTasks()
++     const loaded = await fetchTasks(currentFilter)
+      setTasks(loaded)
+    } catch (error) {
+      console.error(error)
+      setErrorMessage(toDisplayMessage(error))
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+-   loadTasks()
+- }, [])
++   loadTasks(filter)
++ }, [filter])
+```
+
+`src/App.jsx`（`filteredTasks` の計算を削除し、`visibleTasks` を次のように変更する）
+
+```diff
+- const filteredTasks = tasks.filter((task) => {
+-   if (filter === 'active') {
+-     return !task.isDone
+-   }
+-   if (filter === 'done') {
+-     return task.isDone
+-   }
+-   return true
+- })
+-
+- const visibleTasks = [...filteredTasks].sort((a, b) => {
++ const visibleTasks = [...tasks].sort((a, b) => {
+```
+
+`src/App.jsx`（`handleAdd` / `handleToggle` / `handleDelete` を次のように変更する）
+
+```diff
+  async function handleAdd(title) {
+    try {
+-     const created = await createTask(title, token)
+-     setTasks([...tasks, created])
++     await createTask(title, token)
++     await loadTasks(filter)
+      return ''
+```
+
+```diff
+  async function handleToggle(id) {
+    const target = tasks.find((task) => task.id === id)
+
+    try {
+-     const updated = await updateTask(id, { done: !target.isDone }, token)
+-     setTasks(tasks.map((task) => (task.id === id ? updated : task)))
++     await updateTask(id, { done: !target.isDone }, token)
++     // 絞り込みの条件から外れることがあるので、一覧を取り直す
++     await loadTasks(filter)
+    } catch (error) {
+```
+
+```diff
+  async function handleDelete(id) {
+    try {
+      await deleteTask(id, token)
+-     await loadTasks()
++     await loadTasks(filter)
+    } catch (error) {
+```
+
+```text
+Network タブ（「未完了」を押したとき）:
+GET  /tasks?limit=100&done=false   200
+
+Network タブ（「すべて」に戻したとき）:
+GET  /tasks?limit=100              200
+```
+
+**解説**
+
+**3つの変更が、セットで必要**です。1つでも欠けると動きが崩れます。
+
+| 変更 | 目的 | 忘れるとどうなるか |
+|------|------|-----------------|
+| `fetchTasks(filter)` | URL にクエリを足す | 常に全件が返る |
+| `useEffect` の依存配列に `filter` | **切り替えたときに呼び直す** | 最初の1回しか取得されず、ボタンを押しても変わらない |
+| `filteredTasks` の削除 | 二重に絞らない | 動くが、React 側の絞り込みが無駄に走る |
+
+**依存配列が、この演習の中心**です（react-text 8.2.3）。
+
+```jsx
+  useEffect(() => {
+    loadTasks(filter)
+  }, [filter])
+```
+
+`[]` のままだと、**最初の1回しか実行されません。**
+`filter` を入れることで、「`filter` が変わったら、もう一度実行する」という意味になります。
+
+**`handleToggle` で一覧を取り直している**のが、最後の完成条件です。
+
+サーバー側で絞ると、「未完了」を表示しているときにチェックを付けたタスクは、
+**もう `done=false` の条件に当てはまりません。**
+9.2.3 で書いた「返ってきた1件で置き換える」やり方だと、
+**完了になったタスクが、未完了の一覧に残り続けます。**
+
+| 絞り込みの場所 | `handleToggle` のあと |
+|-------------|-------------------|
+| React 側（本文） | `filteredTasks` が計算し直されるので、1件置き換えるだけでよい |
+| **サーバー側（この演習）** | **一覧を取り直す。** どれが条件に合うかはサーバーしか知らない |
+
+**「どちらが正しいか」ではなく、「絞る場所を変えたら、直し方も変わる」**という話です。
+
+> **補足：サーバー側で絞ると何が良いのか**
+> このアプリの件数では、体感はまったく変わりません。
+> 効いてくるのは、**タスクが数千件になったとき**です。
+>
+> | | 通信量 | ブラウザの負担 |
+> |---|-------|-------------|
+> | React 側で絞る | 全件を運ぶ | 全件を `filter` する |
+> | サーバー側で絞る | **該当分だけ運ぶ** | 受け取ったものを並べるだけ |
+>
+> 6.4.5 でページネーションを実装したのも、同じ理由です。
+> **運ぶ量を減らす判断は、データベース側でできることが多い**——
+> これは mysql-text 第7章で、もう一段深く扱います。
+
+> **よくある間違い**
+> **`done=False` と書く**間違いです。
+>
+> ```js
+> path = `${path}&done=False`      // ❌ Python の書き方
+> path = `${path}&done=false`      // ✅
+> ```
+>
+> URL に載るのは**文字列**で、FastAPI が真偽値に変換します（3.1.2）。
+> 実は `False` でも FastAPI は受け取れてしまいますが、
+> **JSON と URL の世界では小文字の `false`** が決まりです（1.3.2）。
+> Python の `True` / `False` と、JavaScript / JSON の `true` / `false` を
+> 混ぜないでください。
