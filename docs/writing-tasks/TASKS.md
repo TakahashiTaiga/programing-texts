@@ -24,10 +24,10 @@
 |----|-----------|
 | react-text | **13 / 13（完成）** |
 | python-text | **13 / 13（完成）** |
-| fastapi-text | 8 / 12 |
+| fastapi-text | 9 / 12 |
 | docker-text | 0 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **34 / 59** |
+| **合計** | **35 / 59** |
 
 ---
 
@@ -114,7 +114,7 @@
 | F-05 | 完了 | 第5章 プロジェクト構成 | `fastapi-text/05-project-structure.md` | part1 | 中 | `main.py` 1ファイルから **`app/` パッケージ**（`config.py` / `schemas.py` / `data.py` / `dependencies.py` / `errors.py` / `routers/`）へ移行する章。**起動コマンドが `fastapi dev app/main.py` に変わる**。第4章から先送りしていた `404`（`HTTPException`）を 5.4.1 で回収。**エラーレスポンスを `{"error": {"status", "message", "detail"}}` に統一した（5.4.3）。第6章以降もこの形を使うこと**。5.1.1 / 5.2.2 / 5.2.3 / 5.3.1 / 5.3.3 / 5.3.4 / 5.6.1 に Mermaid 図。**本文・解答編のコードと出力は `fastapi==0.115.6` / `pydantic==2.13.5` / `pydantic-settings==2.7.0` / Python 3.11 で実際に実行して確認済み**。glossary にルーター・依存性注入の補足・ミドルウェア・ログ・ログレベル・ロガー・例外ハンドラ・`409` を追加。第6章のスタブを新規作成 |
 | F-06 | 完了 | 第6章 データベース連携 | `fastapi-text/06-database.md` | part2 | 大 | SQLite + SQLAlchemy 2.0 系（`DeclarativeBase` / `Mapped` / `select()`）。**本文・解答編のコードと出力は `sqlalchemy==2.0.36` / `alembic==1.14.0` / `fastapi==0.115.6` / `pydantic==2.13.5` / Python 3.11 で実際に実行して確認済み**。`app/database.py` / `app/models.py` / `app/seed.py` を新規追加し、`app/data.py` は役目を終える。**エンティティ間の関連（外部キー・`relationship`）は扱わない**（担当者は `owner_name` / `owner_email` の平らな列＋`@property`。理由は curriculum-map に明記）。6.6 で `create_tables.py` を捨てて Alembic に移行（`app.db` を作り直す）。`@property` はここが初出（python-text では未習）。解答編 その2（`91-answers-part2.md`）を新規作成。6.1.1 / 6.1.2 / 6.2.1 / 6.2.3 / 6.3.3 / 6.4.5 / 6.5.1 / 6.6.1 に Mermaid 図。glossary に永続化・ORM・SQLAlchemy・SQLite・エンジン・セッション・モデル・スキーマ・コミット・ロールバック・ページネーション・Alembic を追加。第7章のスタブを新規作成 |
 | F-07 | 完了 | 第7章 認証 | `fastapi-text/07-authentication.md` | part2 | 大 | パスワードは **bcrypt**（`bcrypt==4.2.1` を直接使用。`passlib` は使わない）、トークンは **PyJWT**（`pyjwt==2.10.1` / `HS256`）。**本文・解答編のコードと出力は `fastapi==0.115.6` / `sqlalchemy==2.0.36` / `alembic==1.14.0` / `bcrypt==4.2.1` / `pyjwt==2.10.1` / Python 3.11 で実際に実行して確認済み**。`app/security.py` / `app/routers/users.py` / `app/routers/auth.py` を新規追加し、`users` テーブルのマイグレーションを1本足す。**`TaskCreate` から `owner` を外し、登録者はトークンから決める形に変更**（`Owner` スキーマは不要になる。第9章の React 側もこの前提）。**読むのは誰でも、書き換えるのは本人だけ**という方針（`GET /tasks` は認証不要）。5.4.3 の `handle_http_exception` に **`headers=exc.headers` を追加**（無いと `WWW-Authenticate` が落ちる）。7.3.1 に「既存テーブルに空にできない列を足すと `Cannot add a NOT NULL column`」→ `server_default` の注意（演習 7.4 で実際に踏む）。7.1.1 / 7.1.2 / 7.2.3 / 7.4.1 / 7.5.2 / 7.5.3 に Mermaid 図。glossary に認証・認可・平文・ハッシュ関数・ハッシュ値・ソルト・bcrypt・トークン・JWT・ペイロード・署名・秘密鍵・ベアラー認証・アカウント列挙・XSS・CSRF を追加。第8章のスタブを新規作成 |
-| F-08 | 未着手 | 第8章 テスト | `fastapi-text/08-testing.md` | part2 | 中 | |
+| F-08 | 完了 | 第8章 テスト | `fastapi-text/08-testing.md` | part2 | 中 | pytest（`pytest==9.1.1` を別途 `pip install`）＋ `TestClient`。**本文・解答編のコードと出力は `fastapi==0.115.6` / `pytest==9.1.1` / `httpx==0.28.1` / `sqlalchemy==2.0.36` / `bcrypt==4.2.1` / `pyjwt==2.10.1` / Python 3.11 で実際に実行して確認済み**（本文16件・演習14件のテストがすべて green）。`fastapi-lesson/pytest.ini`（`pythonpath = .` / `testpaths = tests`）と `tests/`（`conftest.py` / `test_security.py` / `test_schemas.py` / `test_tasks.py`）を新規追加。**テストは `test.db` を使い、`app.dependency_overrides[get_db]` で差し替える**（5.3.4 の伏線を回収）。8.3 ではあえて `app.db` を使ってデータが増える・消えるのを体験させ、8.4 で分離する構成。8.3.4 で `get_my_task` の `!=` を `==` に壊してテストが捕まえる実演あり。8.1.1 / 8.3.1 / 8.4.1 / 8.4.2 / 8.4.3 / 8.5.2 に Mermaid 図。glossary にリグレッション・正常系・異常系・テストクライアント・fixture・`conftest.py`・カバレッジ・httpx を追加。第9章のスタブを新規作成 |
 | F-09 | 未着手 | 第9章 実践：React と繋ぐ | `fastapi-text/09-practice-connect-react.md` | part2 | 大 | react-text 第10章の成果物を使う |
 | F-10 | 未着手 | 第10章 次のステップ | `fastapi-text/10-next-steps.md` | — | 小 | |
 | F-FIN | 未着手 | 通し確認 | — | — | 小 | |
