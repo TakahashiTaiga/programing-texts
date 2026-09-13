@@ -46,9 +46,9 @@ React本の 2.2.1 で詰まりました。
 
 | # | テキスト | ディレクトリ | 状態 |
 |---|---------|------------|------|
-| 1 | React（Web 開発入門 + React） | [`react-text/`](./react-text/) | 執筆中 |
-| 2 | Python | [`python-text/`](./python-text/) | 準備中 |
-| 3 | FastAPI | [`fastapi-text/`](./fastapi-text/) | 準備中 |
+| 1 | React（Web 開発入門 + React） | [`react-text/`](./react-text/) | ✅ 完成（全11章＋解答編） |
+| 2 | Python | [`python-text/`](./python-text/) | ✅ 完成（全11章＋解答編） |
+| 3 | FastAPI | [`fastapi-text/`](./fastapi-text/) | ✅ 完成（全10章＋解答編） |
 | 4 | Docker | [`docker-text/`](./docker-text/) | 準備中 |
 | 5 | MySQL | [`mysql-text/`](./mysql-text/) | 準備中 |
 
