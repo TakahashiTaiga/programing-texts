@@ -136,7 +136,7 @@
 
 | ID | 状態 | 章 | 出力ファイル | 解答編 | 規模 | 備考 |
 |----|------|----|------------|--------|------|------|
-| D-00 | 完了 | 第0章 はじめに | `docker-text/00-introduction.md` | — | 小 | `F-FIN` で反映漏れを補正（open な PR #37 で執筆済み。RUNBOOK 4.6-b） |
+| D-00 | 完了 | 第0章 はじめに | `docker-text/00-introduction.md` | — | 小 | 0.1.1 に react-text / python-text / fastapi-text の戻り場所つき前提表と `node --version` / `python --version` の確認（**入っていなくても第5章までは読める**と明記）、0.1.2 に3冊で踏んだつまずきの一覧と「渡す相手に伝える7手順」→ `docker compose up` 1行の比較（Mermaid 図）、0.2.2 に **OS だけでなく CPU（Apple Silicon か否か）を伝える**指示と環境依存の要因表・質問テンプレート・秘密情報の伏せ方、0.3 に進め方（壊して作り直せる／空き容量 20 GB／確認の輪の Mermaid 図）。**`docker` コマンドは `docker compose up` をゴールとして名前だけ見せ、実行はさせない**（インストールは第2章）。コードを書かない章のため理解度チェック／演習はなし（R-00 / P-00 / F-00 と同じ扱い）。README の 0.3 に項（0.3.1〜0.3.3）を追加。第1章のスタブを新規作成 |
 | D-01 | 未着手 | 第1章 Docker が解決する問題 | `docker-text/01-why-docker.md` | あり | 中 | 前3冊の苦労を具体的に回収する |
 | D-02 | 未着手 | 第2章 インストールと基本操作 | `docker-text/02-install-and-basics.md` | あり | 大 | ★要検証。2.2 が生命線 |
 | D-03 | 未着手 | 第3章 Dockerfile | `docker-text/03-dockerfile.md` | あり | 大 | |
