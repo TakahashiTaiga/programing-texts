@@ -2962,3 +2962,665 @@ exposing port TCP 0.0.0.0:8000 -> 0.0.0.0:0: listen tcp 0.0.0.0:8000: bind: addr
 > 便利な反面、**パスワードだけでデータベース全体を操作できる入口**です。
 > 学習用の環境でも、使わないときは `compose.yaml` から消しておくほうが安全です。
 > 第7章 7.4 で、この種の「開けっ放し」の危険を改めて扱います。
+
+---
+
+## 第7章
+
+### 理解度チェック
+
+**問 7.1 の解答**
+
+- ① **`AS`**
+- ② **`--from`**
+- ③ **いちばん最後**（最後の `FROM`）
+
+**解説**
+
+マルチステージビルドの書き方は、**この2つの言葉だけ**でできています（7.2.1）。
+
+```dockerfile
+FROM node:22-slim AS builder     ← ① ステージに名前を付ける
+...
+FROM nginx:1.27-alpine           ← ③ ここから最終イメージ
+COPY --from=builder /app/dist /usr/share/nginx/html    ← ② 名前で指定して取ってくる
+```
+
+③がいちばん大事です。**最後の `FROM` より前のステージは、ビルドが終わると捨てられます。**
+だから `node_modules`（152 MB）も Node.js（329 MB）も、最終イメージに残りません。
+
+> **よくある間違い：`COPY --from=builder` の元のパスを間違える**
+> `--from=builder` の右に書くのは、**ステージ1の中でのパス**です。
+> ステージ1で `WORKDIR /app` としているので、`dist` は **`/app/dist`** にあります。
+> `./dist` や `dist` と書くと「そんなものは無い」と言われます。
+
+---
+
+**問 7.2 の解答**
+
+**3. Node.js と `node_modules` がビルド用のステージに置き去りになり、最終イメージに含まれないから**
+
+**解説**
+
+7.2.3 で、実際に「入っていないこと」を確かめました。
+
+```text
+sh: node: not found
+ls: /app: No such file or directory
+```
+
+最終イメージは `nginx:1.27-alpine`（74.5 MB）の上に、`dist`（319 kB）と設定ファイル（20.5 kB）を
+置いただけのものです。**もともと入っていないので、減ったというより「最初から積まなかった」**が正確です。
+
+他の選択肢が誤りである理由です。
+
+| 選択肢 | なぜ誤りか |
+|--------|-----------|
+| 1. `npm install` にした | 変えていません。むしろ `npm ci` のままです（6.4.1） |
+| 2. ソースコードを圧縮した | ソースコードは 356 kB しかなく、圧縮しても効果はありません（7.1.2） |
+| 4. nginx が自動的に小さくする | nginx は配るだけで、イメージの大きさとは無関係です |
+
+---
+
+**問 7.3 の解答**
+
+**2. `/tasks/1` のような URL を直接開いたときに `404` にならないようにするため**
+
+**解説**
+
+react-text 第9章で学んだルーティングは、**ブラウザの中で JavaScript が URL を切り替えている**だけです。
+サーバー側に `/tasks/1` というファイルがあるわけではありません。
+
+| 開き方 | 何が起きるか |
+|--------|------------|
+| トップページから画面内で移動する | **JavaScript が処理する。** サーバーには問い合わせない |
+| **`/tasks/1` を直接開く／再読み込みする** | **サーバーに `/tasks/1` を要求する** → ファイルが無い → `404` |
+
+`try_files $uri $uri/ /index.html;` は、「要求されたファイル → ディレクトリ → **どれも無ければ `index.html`**」
+の順に探す指定です。`index.html` が返れば React が起動し、URL を見て正しい画面を出します。
+
+> **確かめ方**
+> 本番用のイメージを起動して、`http://localhost:8080/tasks/1` を**アドレス欄に直接入力**してみてください。
+> この行が無いと、nginx の `404 Not Found` の画面が出ます。
+
+---
+
+**問 7.4 の解答**
+
+**理由**：Vite の環境変数は、**`npm run build` を実行した瞬間に JavaScript のファイルへ文字として埋め込まれる**ため、
+コンテナを起動するときに環境変数を渡しても、すでに出来上がっているファイルの中身は変わらないから。
+
+**正しい渡し方**：`Dockerfile.prod` で `ARG VITE_API_BASE_URL` を受け取り、
+**ビルド時に `--build-arg VITE_API_BASE_URL=...`**（または `compose.yaml` の `build.args`）で渡す。
+
+**解説**
+
+7.2.2 の図が、そのまま答えです。
+
+| 動かし方 | 値が決まるタイミング |
+|---------|------------------|
+| 開発サーバー（`npm run dev`） | **コンテナが起動したとき**（`environment` が効く） |
+| **本番用のビルド（`npm run build`）** | **ビルドしたとき**（`--build-arg` が効く） |
+
+同じ `import.meta.env.VITE_API_BASE_URL` という書き方なのに、**効く渡し方が違う**のが混乱のもとです。
+「開発サーバーは、その場でファイルを組み立てている」「本番用は、組み立て済みのファイルを配っている」
+という違いから来ています（7.2.1 の表）。
+
+> **見分け方**
+> 出来上がったイメージの中を検索して、**住所が文字として入っていれば「ビルド時に決まる値」**です。
+>
+> ```bash
+> docker run --rm fullstack-web-prod:1.0 grep -ro "http://localhost:8000" /usr/share/nginx/html
+> ```
+
+---
+
+**問 7.5 の解答**
+
+`pip install` は**システム全体にライブラリを入れる作業**なので、`root` の権限が必要だから。
+（`USER appuser` を先に書くと、権限不足で失敗するか、`appuser` の個人用の場所に入って
+起動時に見つからなくなります。）
+
+**解説**
+
+7.4.1 の図のとおり、`USER` は「**ここから下を、この利用者として実行する**」という区切りです。
+
+```dockerfile
+RUN pip install --no-cache-dir -r requirements.txt   ← root で実行（システムに入れる）
+COPY . .                                              ← root で実行
+RUN useradd ... && chown -R appuser:appuser /code     ← root で実行（利用者を作る側の作業）
+USER appuser                                          ← ここで切り替える
+CMD [...]                                             ← appuser として起動
+```
+
+**「作るときは `root`、動かすときは `appuser`」**と覚えてください。
+イメージを作る作業（インストール・ファイル配置・利用者作成）は、すべて権限が要ります。
+
+> **よくある間違い：`chown` を忘れる**
+> `USER appuser` だけを書いて `chown` を書かないと、`/code` の中のファイルは `root` のものです。
+> 読むだけなら動くことが多いのですが、**アプリがファイルを書こうとした瞬間に `Permission denied`** になります。
+> 原因が起動直後ではなく**使っている途中**に出るので、見つけにくい種類の不具合です。
+
+---
+
+**問 7.6 の解答**
+
+イメージは**レイヤ（層）の積み重ね**でできており、`RUN rm .env` は「消えた状態の層を上に載せる」だけで、
+**`.env` の中身が入った下の層はそのまま残る**ため。`docker save` でイメージを取り出せば、その層から読めてしまう。
+
+**解説**
+
+7.4.2 の図と、演習 7.2 で実際に確かめたとおりです。
+
+```text
+層3: RUN rm .env      ← 「上から見えなくする」だけ
+層2: COPY . .         ← .env の中身は、ここに入ったまま
+層1: FROM python:3.13-slim
+```
+
+**コンテナから見えない = 存在しない、ではありません。**
+イメージを渡した相手は、`docker save` した中身を自由に調べられます。
+
+正しい対処は、**最初から入れないこと**です。
+
+| 方法 | 書く場所 |
+|------|---------|
+| `.dockerignore` に `.env` を書く | `fullstack-lesson/api/.dockerignore`（6.3.1） |
+| 秘密は**実行時の環境変数**で渡す | `compose.yaml` の `environment` + `.env`（5.5.2 / 6.3.2） |
+
+> **もし、すでに秘密を焼き込んだイメージを配ってしまったら**
+> イメージを作り直すだけでは不十分です。**その秘密自体を無効にして、作り直してください**
+> （`SECRET_KEY` なら作り直す、データベースのパスワードなら変更する）。
+> 一度渡ったものは、取り返せません。
+
+---
+
+**問 7.7 の解答**
+
+**3. `ports` のリスト**
+
+**解説**
+
+7.5.1 で実際に確かめたとおりです。
+
+| 種類 | 例 | 重ねたときの動き |
+|------|-----|----------------|
+| マッピング（項目名と値） | `environment` の各行、`build` の中身、`restart` | **同じ名前は上書き** |
+| **リスト（箇条書き）** | **`ports` / `volumes`** | **足し算される** |
+
+だから `compose.prod.yaml` に `ports: - "80:80"` と書いただけでは、**5173 と 80 の両方が開きます。**
+
+消したいときの書き方は2つです。
+
+```yaml
+ports: !override      # 書いたもので置き換える
+  - "80:80"
+volumes: !reset []    # 空にする（消す）
+```
+
+> **確認の習慣**
+> 重ねた結果は、**`docker compose -f a.yaml -f b.yaml config` で必ず目視**してください。
+> 頭の中で組み立てると、この問題は必ず間違えます。
+
+---
+
+### 演習問題
+
+### 演習 7.1 の解答
+
+**手順**
+
+`fullstack-lesson/web` で、2つビルドします。
+
+**Windows（PowerShell）**
+
+```powershell
+docker build -f Dockerfile.prod --build-arg VITE_API_BASE_URL=http://localhost:8000 -t fullstack-web-prod:local .
+docker build -f Dockerfile.prod --build-arg VITE_API_BASE_URL=https://api.example.com -t fullstack-web-prod:example .
+```
+
+**macOS / Linux**
+
+```bash
+docker build -f Dockerfile.prod --build-arg VITE_API_BASE_URL=http://localhost:8000 -t fullstack-web-prod:local .
+docker build -f Dockerfile.prod --build-arg VITE_API_BASE_URL=https://api.example.com -t fullstack-web-prod:example .
+```
+
+埋め込まれた住所を確認します。
+
+```bash
+docker run --rm fullstack-web-prod:local grep -ro "http://localhost:8000" /usr/share/nginx/html
+```
+
+```text
+/usr/share/nginx/html/assets/index-C9t0fL5M.js:http://localhost:8000
+```
+
+```bash
+docker run --rm fullstack-web-prod:example grep -ro "https://api.example.com" /usr/share/nginx/html
+```
+
+```text
+/usr/share/nginx/html/assets/index-BhK2wZ91.js:https://api.example.com
+```
+
+**同じ `Dockerfile.prod` から、中身の違う2つのイメージができました。**
+
+実行時に環境変数を渡しても変わらないことを確認します。
+
+```bash
+docker run --rm -e VITE_API_BASE_URL=http://localhost:8000 fullstack-web-prod:example grep -ro "http://localhost:8000" /usr/share/nginx/html
+```
+
+```text
+（何も表示されない）
+```
+
+`--build-arg` を付けずにビルドした場合は、`||` の右側（6.4.3）が埋め込まれます。
+
+```bash
+docker build -f Dockerfile.prod -t fullstack-web-prod:noarg .
+docker run --rm fullstack-web-prod:noarg grep -ro "http://127.0.0.1:8000" /usr/share/nginx/html
+```
+
+```text
+/usr/share/nginx/html/assets/index-DfR3xY7c.js:http://127.0.0.1:8000
+```
+
+**メモの例**
+
+> `dist` の JavaScript は、`npm run build` を実行した時点で**文字が確定したただのファイル**である。
+> コンテナを起動するときに環境変数を渡しても、すでに書き出されたファイルの中身は書き換わらない。
+> だから本番用では、**ビルド時に `--build-arg` で渡す**必要がある。
+
+**解説**
+
+この演習の目的は、**「設定には、ビルド時に決まるものと実行時に決まるものがある」**を体で覚えることです。
+
+| 値 | いつ決まるか | 渡し方 |
+|----|------------|--------|
+| `VITE_API_BASE_URL`（本番用のビルド） | **ビルド時** | `--build-arg` / `build.args` |
+| `DATABASE_URL`（`api`） | **実行時** | `environment`（6.3.2） |
+| `MYSQL_PASSWORD`（`db`） | **実行時** | `environment`（6.2.2） |
+
+**同じ「環境変数」という言葉なのに、効くタイミングが違う**のが、この章でいちばん混乱するところです。
+迷ったら「**このファイルは、いつ作られたのか**」を考えてください。
+
+> **よくある間違い：ファイル名（`index-C9t0fL5M.js`）が違うので不安になる**
+> `assets` の中のファイル名には、**中身から計算された文字列**が付きます。
+> 中身が変われば名前も変わるので、**あなたの環境では別の名前**になります。
+> 名前ではなく、**検索した文字が見つかるかどうか**を見てください。
+
+> **別解：`docker run --rm ... cat` で丸ごと見る**
+> `grep` を使わず、次のように中身を直接のぞいても構いません。
+>
+> ```bash
+> docker run --rm fullstack-web-prod:example sh -c "cat /usr/share/nginx/html/assets/*.js" | head -c 2000
+> ```
+>
+> ただし、ビルド済みの JavaScript は**改行がほとんど無い**ため読みにくいです。
+> 探しものが決まっているときは `grep` が確実です。
+
+---
+
+### 演習 7.2 の解答
+
+**手順**
+
+練習用のディレクトリを作ります。**`fullstack-lesson` の外**に作ってください。
+
+**Windows（PowerShell）**
+
+```powershell
+mkdir leak-lesson
+cd leak-lesson
+```
+
+**macOS / Linux**
+
+```bash
+mkdir leak-lesson
+cd leak-lesson
+```
+
+`leak-lesson/.env`
+
+```text
+SECRET_KEY=dummy-value-for-practice
+MYSQL_PASSWORD=dummy-password-for-practice
+```
+
+`leak-lesson/Dockerfile`
+
+```dockerfile
+FROM python:3.13-slim
+
+WORKDIR /code
+
+COPY . .
+
+# 消したつもり（実際には消えていない）
+RUN rm .env
+```
+
+ビルドして、コンテナからは見えないことを確認します。
+
+```bash
+docker build -t leaky:1.0 .
+docker run --rm leaky:1.0 ls -a /code
+```
+
+```text
+.
+..
+Dockerfile
+```
+
+**`.env` はありません。** ここで「消えた」と思ってしまうのが、この演習の出発点です。
+
+イメージを取り出して、層の中を探します。
+
+**Windows（PowerShell）**
+
+```powershell
+docker save leaky:1.0 -o leaky.tar
+docker run --rm -v "${PWD}:/work" -w /work python:3.13-slim sh -c 'mkdir -p out && tar -xf leaky.tar -C out && for f in out/blobs/sha256/*; do tar -xzOf "$f" code/.env 2>/dev/null; done; echo "--- 検索終わり ---"'
+```
+
+**macOS / Linux**
+
+```bash
+docker save leaky:1.0 -o leaky.tar
+docker run --rm -v "$(pwd):/work" -w /work python:3.13-slim sh -c 'mkdir -p out && tar -xf leaky.tar -C out && for f in out/blobs/sha256/*; do tar -xzOf "$f" code/.env 2>/dev/null; done; echo "--- 検索終わり ---"'
+```
+
+```text
+SECRET_KEY=dummy-value-for-practice
+MYSQL_PASSWORD=dummy-password-for-practice
+--- 検索終わり ---
+```
+
+**読めました。** コンテナからは見えないのに、イメージの中には残っています。
+
+**メモの例**
+
+> イメージは**レイヤの積み重ね**でできている。`COPY . .` の層に `.env` の中身が入り、
+> `RUN rm .env` は「消えた状態の層」を**その上に載せているだけ**なので、下の層はそのまま残る。
+> コンテナから見えるのは**積み上げた結果**なので見えないが、層を1枚ずつ取り出せば読める。
+>
+> 安全な渡し方は、**イメージに入れず、実行時の環境変数（`compose.yaml` の `environment` + `.env`）で渡す**こと。
+> `.dockerignore` に `.env` を書いて、そもそもビルドコンテキストから外すのが第一歩。
+
+片付けます。
+
+```bash
+docker rmi leaky:1.0
+```
+
+**解説**
+
+**「見えない」と「無い」は違う**——これがこの演習の主題です。
+
+イメージを渡すというのは、**層をまとめて渡す**ということです。
+渡した相手は、次のことが自由にできます。
+
+| できること | コマンド |
+|-----------|---------|
+| 中でシェルを動かして探す | `docker run --rm -it イメージ sh` |
+| ビルドの手順を読む | `docker history --no-trunc イメージ` |
+| **層を取り出して、消されたファイルを読む** | `docker save` |
+
+だから **「イメージに入れてよいのは、渡してよいものだけ」** になります。
+
+> **よくある間違い：`.dockerignore` があるのに秘密が入っている**
+> `.dockerignore` は**ビルドコンテキストの一番上**に置いたものだけが効きます（3.5.2 / 7.4.2）。
+> `fullstack-lesson/.dockerignore` を作っても、`build: ./api` のビルドには効きません。
+> **`api/` と `web/` それぞれに置く**必要があります。
+
+> **補足：層が gzip で圧縮されているため、普通の検索では見つかりません**
+> 展開した `out/blobs/sha256/` の中を `grep` しても、何も出てこないことがあります。
+> 層は**圧縮された tar** なので、`tar -xzOf` のように**展開しながら**でないと中身を読めません。
+> 「検索して出なかったから安全」と判断しないでください。
+
+> **注意：この演習で作った `leaky.tar` も、秘密が入ったファイルです**
+> 練習用のダミー値なので問題ありませんが、**本物で同じことをしたときは、
+> `.tar` ファイルの扱いにも気をつけてください**（Git に入れない、共有ディレクトリに置かない）。
+
+---
+
+### 演習 7.3 の解答
+
+**手順**
+
+`fullstack-lesson/api/Dockerfile.alpine` を作ります。**まずは `FROM` だけ変えてみます。**
+
+```dockerfile
+FROM python:3.13-alpine
+
+WORKDIR /code
+
+COPY requirements.txt .
+
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+RUN useradd --create-home --uid 1001 appuser && chown -R appuser:appuser /code
+
+USER appuser
+
+EXPOSE 8000
+
+CMD ["fastapi", "run", "app/main.py", "--port", "8000"]
+```
+
+ビルドします。
+
+```bash
+docker build -f Dockerfile.alpine -t api-alpine:1.0 .
+```
+
+```text
+ > [7/7] RUN useradd --create-home --uid 1001 appuser && chown -R appuser:appuser /code:
+0.187 /bin/sh: useradd: not found
+ERROR: process "/bin/sh -c useradd --create-home --uid 1001 appuser ..." did not complete
+successfully: exit code: 127
+```
+
+**`useradd: not found` で止まります。** 7.3.2 の表にあるとおり、Alpine には `useradd` がありません。
+`adduser` に書き直します。
+
+```diff
+- RUN useradd --create-home --uid 1001 appuser && chown -R appuser:appuser /code
++ RUN adduser -D -u 1001 appuser && chown -R appuser:appuser /code
+```
+
+`adduser -D -u 1001 appuser` の意味です。
+
+| 部分 | 意味 |
+|------|------|
+| `-D` | パスワードを設定しない（対話的に聞かれないようにする） |
+| `-u 1001` | 利用者の番号を指定する（`useradd --uid` と同じ） |
+
+もう一度ビルドすると、今度は成功します。**`pip install` は問題なく通ります**（7.3.2 で確認したとおり、
+この本の `requirements.txt` は `musllinux` のホイールが揃っています）。
+
+サイズを比較します。
+
+```bash
+docker images
+```
+
+```text
+IMAGE                  ID             DISK USAGE   CONTENT SIZE   EXTRA
+api-alpine:1.0         f8a1595650af        245MB         58.3MB
+fullstack-lesson-api   648af08f548e        356MB         83.8MB
+```
+
+**356 MB → 245 MB。111 MB 減りました**（転送量では 83.8 MB → 58.3 MB）。
+
+動作を確認します。
+
+```bash
+docker run -d --name api-alpine-test -p 8001:8000 api-alpine:1.0
+docker exec api-alpine-test whoami
+```
+
+```text
+appuser
+```
+
+ブラウザで `http://localhost:8001/docs` を開き、API のドキュメント画面が出れば成功です
+（`db` に繋がっていないので、`GET /tasks` を実行するとエラーになります。それで正常です）。
+
+片付けます。
+
+```bash
+docker rm -f api-alpine-test
+```
+
+**メモの例（採用する場合）**
+
+> **採用する。** 111 MB（約 3 割）小さくなり、この構成ではビルドも通った。
+> 書き直しが必要だったのは `useradd` → `adduser` の1行だけで、コストは小さい。
+> ただし、**ライブラリを足したときにビルドが止まる可能性**は残るので、
+> `requirements.txt` を変更したときは、必ずビルドが通るか確認する。
+
+**メモの例（採用しない場合）**
+
+> **採用しない。** 111 MB の差は、この本の用途（手元での学習と、小さなサーバーへの配置）では困らない。
+> 一方、ライブラリを1つ足すたびに「alpine で入るか」を気にする必要が生まれ、
+> Web で見つかる手順や AI の回答が Debian 系前提で**そのまま使えない**場面が増える。
+> **詰まったときに自力で戻れること**を優先して、`slim` のままにする。
+
+**どちらでも正解です。** 理由が書けていることが、この演習の完成条件です。
+
+**解説**
+
+7.3.3 で示した3つの材料（サイズ・ビルドが通るか・情報の見つけやすさ）で判断できたかを見る演習でした。
+
+| 材料 | この演習で分かったこと |
+|------|---------------------|
+| サイズ | 356 MB → 245 MB（約 3 割減） |
+| ビルドが通るか | **通った。** ただし `useradd` の書き直しが必要だった |
+| 情報の見つけやすさ | `useradd` → `adduser` のように、**手順を読み替える必要がある** |
+
+**「試してから決める」が、この演習の本体です。**
+第4章までで「壊しても作り直せる」ことは分かっているので、**まず試すのが最も速い判断方法**です。
+
+> **補足：`Dockerfile` を上書きしなかった理由**
+> `-f Dockerfile.alpine` で別ファイルとして作ったので、**元の `Dockerfile` は無傷**です（7.2.2 と同じやり方）。
+> 採用するなら `compose.yaml` の `build` を書き換え、採用しないならファイルを消すだけで済みます。
+> **試すときは、動いているものを壊さない形で試す**のが鉄則です。
+
+> **よくある間違い：`docker compose up` したら `slim` のイメージが起動した**
+> `compose.yaml` の `build: ./api` は、既定で **`Dockerfile`** を使います。
+> `Dockerfile.alpine` を使わせたい場合は、次のように書きます。
+>
+> ```yaml
+>   api:
+>     build:
+>       context: ./api
+>       dockerfile: Dockerfile.alpine
+> ```
+>
+> 7.5.2 の `web` と同じ書き方です。
+
+---
+
+### 演習 7.4 の解答
+
+**点検表の例**
+
+`fullstack-lesson/docs/release-checklist.md`
+
+```markdown
+# 公開前の点検表（web の本番用イメージ）
+
+対象: fullstack-web-prod:1.0
+点検日: 2026-09-12
+
+| # | 点検項目 | コマンド | 結果 | 判定 |
+|---|---------|---------|------|------|
+| 1 | 秘密ファイルが入っていないか | `docker run --rm fullstack-web-prod:1.0 sh -c "ls -a /usr/share/nginx/html; cat /usr/share/nginx/html/.env"` | `.env` は無い（`No such file or directory`） | 問題なし |
+| 2 | 履歴に秘密が残っていないか | `docker history --no-trunc fullstack-web-prod:1.0` | `ARG VITE_API_BASE_URL=http://localhost:8000` のみ。パスワード類なし | 問題なし |
+| 3 | 誰として動いているか | `docker run -d --name c1 -p 8080:80 ...` → `docker exec c1 ps -o pid,user,args` | マスターは root、ワーカーは nginx | **許容する**（理由は下） |
+| 4 | ベースイメージを取り直しても通るか | `docker build --pull -f Dockerfile.prod -t fullstack-web-prod:1.0 .` | 成功。起動も確認 | 問題なし |
+| 5 | 配る JS に秘密が混ざっていないか | `docker run --rm fullstack-web-prod:1.0 grep -ro "SECRET\|PASSWORD" /usr/share/nginx/html/assets` と、`.env` に書いた値そのものでの検索 | どちらも何も出ない（終了コード 1） | 問題なし |
+
+## 3 について（許容する理由）
+
+nginx の公式イメージは、**マスターのプロセスだけ root** で動き、
+実際に通信を処理するワーカーは `nginx` という利用者に落としている。
+80 番のような 1024 番未満のポートは root でないと開けないという Linux の決まりがあるためで、
+「全部を root で動かしている」のとは違う（7.4.1 の補足）。
+
+対処するなら、非特権ポート（8080 など）で待ち受ける nginx イメージに変える方法があるが、
+その場合はポートの対応（`ports: "80:8080"`）も変える必要がある。
+今回は**公式イメージの作りをそのまま使う**と判断した。
+
+## 次に公開するときの手順
+
+1. この表の1〜5を上から実行する
+2. `docker compose -f compose.yaml -f compose.prod.yaml config` で設定を目視する
+3. `docker compose -f compose.yaml -f compose.prod.yaml up -d --build` で起動する
+4. 6.5.3 の4段階（db → api → データ → 画面）で通し確認する
+```
+
+**解説**
+
+この演習に決まった答えはありません。**次の3つができていれば合格**です。
+
+| 見るところ | 何を確かめているか |
+|-----------|-----------------|
+| 5項目すべてに、**実行したコマンドと出力**があるか | 「読んで納得した」ではなく「**実際に確かめた**」か |
+| 3番で、**許容するか対処するかを決めているか** | 判断を先送りせず、**理由を言葉にできたか** |
+| **次に使える形**になっているか | 点検が1回きりの作業で終わっていないか |
+
+**3番が「問題なし」にならない**のは意図的です。
+7.4.1 で「`root` で動かさない」と学んだ直後に、**公式イメージが root で動いている**ものを点検させています。
+
+ここで大事なのは、**ルールを丸暗記して「違反だ」と判定することではなく、
+なぜそうなっているかを調べて、自分の状況で判断すること**です。
+実務でも、「推奨に沿っていないが、理由があって許容する」という判断は日常的に発生します。
+**判断したことと、その理由が記録に残っている**のが、いちばん重要です。
+
+**5番の検索の言葉について**
+
+「秘密が混ざっていないか」を確かめる言葉は、自分で決める課題にしました。
+例としては、次のようなものが考えられます。
+
+| 探す言葉 | 何を見つけたいか |
+|---------|----------------|
+| `SECRET` / `PASSWORD`（大文字） | 秘密らしい名前が JavaScript に入っていないか |
+| **`.env` に実際に書いた値そのもの** | **本物の値**が混ざっていないか（いちばん確実） |
+| `mysql` / `3306` | データベースの接続情報が漏れていないか |
+
+**2つ目がもっとも確実**です。名前ではなく**値そのもの**を探せば、見落としがありません。
+これは 6.4.3 で確認した「**`VITE_` で始まる値はブラウザから見える**」の実地の確認になります。
+
+> **注意：短い単語で検索すると、ライブラリのコードに当たります**
+> 小文字の `pass` で検索すると、React などのライブラリの中の文字に大量にぶつかります。
+>
+> ```text
+> /usr/share/nginx/html/assets/index-Cfr_78pX.js:pass
+> /usr/share/nginx/html/assets/index-Cfr_78pX.js:pass
+> ...
+> ```
+>
+> **これは秘密の漏洩ではありません。** ビルド済みの JavaScript には、
+> 使っているライブラリのコードがすべて含まれているためです。
+> だから、**大文字の名前**か、**自分が `.env` に書いた値そのもの**で探します。
+> 何も見つからないとき、`grep` は何も表示せずに終わります（終了コードは 1 です）。
+
+> **補足：この点検表は、`api` にも使えます**
+> 対象を `fullstack-lesson-api` に変えて、同じ5項目を実行してみてください。
+> 3番の答えが **`appuser`**（7.4.1 で直した）になり、
+> 1番では `.dockerignore` が効いていること（6.3.1）が確認できます。
+>
+> **点検表は、一度作れば毎回使えます。** これが「作って保存する」ことを完成条件に入れた理由です。
+
+> **よくある間違い：点検を `docker compose up` の前だけで済ませる**
+> イメージをビルドし直すたびに、中身は変わり得ます。
+> **公開する直前のイメージ**に対して実行しないと、点検した意味がありません。
+> 「ビルド → 点検 → 公開」の順を、手順として決めておいてください。
