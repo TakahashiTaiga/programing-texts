@@ -25,9 +25,9 @@
 | react-text | **13 / 13（完成）** |
 | python-text | **13 / 13（完成）** |
 | fastapi-text | **12 / 12（完成）** |
-| docker-text | 9 / 10 |
-| mysql-text | 0 / 11 |
-| **合計** | **47 / 59** |
+| docker-text | **10 / 10（完成）** |
+| mysql-text | 1 / 11 |
+| **合計** | **49 / 59** |
 
 ---
 
@@ -145,7 +145,7 @@
 | D-06 | 完了 | 第6章 実践：React + FastAPI + MySQL | `docker-text/06-practice-full-stack.md` | あり | 大 | ★3冊分の成果物を統合。新規プロジェクト `fullstack-lesson/` を作り、`api/`（`fastapi-lesson` のコピー）と `web/`（`task-app` のコピー）を置く構成。6.1 で3サービスと**通信経路**（**ブラウザは Docker のネットワークの外**＝React の `fetch` は `localhost:8000`、`api` → `db` はサービス名。`http://api:8000` は `ERR_NAME_NOT_RESOLVED`）、6.2 で MySQL 公式イメージ（`MYSQL_ROOT_PASSWORD` 無しで落ちる様子を**わざと見せる**・`MYSQL_USER` を使わせる・`/var/lib/mysql` に永続化・`mysql` コマンドで接続確認）、6.3 で **PyMySQL + cryptography**（MySQL 8 の `caching_sha2_password` のため）・`check_same_thread` の分岐（`startswith("sqlite")`）・`pool_pre_ping`・接続 URL（`?charset=utf8mb4`）・**`command:` で `sh -c "wait_for_db && alembic upgrade head && fastapi run"`**、6.4 でフロントの開発用 Dockerfile（`node:22-slim` / `npm ci` / `--host`）・**`- /app/node_modules`**（バインドマウントで `node_modules` が隠れる問題）・`VITE_API_BASE_URL`、6.5 で37行の完成版 `compose.yaml` と通し確認（下から4段階）、6.6 で切り分け（**エラーの場所と原因の場所は違う**）。6.1.2 に2点、6.3.2 / 6.3.3 / 6.4.2 / 6.6.2 に Mermaid 図（SVG→PNG は使用せず）。**`web` に `depends_on` を書かない**理由を 6.5.1 に明記。★要検証（**3サービスの実機通し確認は未実施**。とくに MySQL 8.4 + PyMySQL の接続、Vite の `usePolling` 設定、`adminer` の演習。`review-notes.md` に検証依頼あり）。**docker-text 4.6.3 の補足（Vite は `CHOKIDAR_USEPOLLING` で切り替わる）は誤りなので 6.4.2 で正しい方法を示し、4.6.3 の修正依頼を `review-notes.md` に追記した** |
 | D-07 | 完了 | 第7章 イメージの最適化と本番運用 | `docker-text/07-optimization.md` | あり | 中 | **本文・解答編のコマンドと出力は Docker Engine 29.3.1（linux/amd64）で実際に実行して確認済み**（イメージサイズ・`docker history`・マルチステージビルド・`useradd` / `USER` と `Permission denied`・`docker save` による層からの秘密の取り出し・alpine での `pyodbc` のビルド失敗・`docker compose config` のマージ結果）。7.2 で `web/Dockerfile.prod`（`node:22-slim AS builder` → `nginx:1.27-alpine`）と `web/nginx.conf` を新規追加し、**560 MB → 74 MB**。**`-f Dockerfile.prod` はここが初出**。**Vite の環境変数はビルド時に焼き付く**ため `ARG` + `--build-arg`（実行時の `-e` は効かない）を 7.2.2 で扱った。7.3.2 の alpine の落とし穴は、**「pip が遅い」という古い説明を採らず**、`musllinux` のホイールが無い場合（`pyodbc`）に絞って実測で示した（この本の `requirements.txt` は alpine でも入る）。`useradd` が無い（`adduser`）ことも 7.3.2 の表に入れ、演習 7.3 で踏ませる。7.4.1 で `api` を **`appuser`（uid 1001）実行に変更**（`Dockerfile` を書き換え。**`USER` は `pip install` より後**）。7.5 は `compose.prod.yaml` を追加し、**リストは足し算される**ことと **`!override` / `!reset`** を実測出力で示した。第8章のスタブを新規作成。7.2.1 / 7.2.2 / 7.4.1 / 7.4.2 / 7.5.1 / 7.5.3 と 7.1.2 に Mermaid 図（SVG→PNG は使用せず）。★要検証（`task-app` 実物でのサイズ・ビルド時間の秒数・Windows での `docker save` 検証・Docker Scout の画面・本番構成での通し起動。`review-notes.md` に検証依頼あり）。**3.2.1 の `python:3.13`「約 1 GB」（実測 1.62 GB）と、6章末の「1 GB を超えています」（実測 916 MB）の食い違いも review-notes に申し送り** |
 | D-08 | 完了 | 第8章 次のステップ | `docker-text/08-next-steps.md` | あり | 小 | **コマンドを新しく学ばない締めの章**（8.1.1 と 8.2 と 8.3 は読み物、手を動かすのは 8.1.3 と演習）。README の 8.1 / 8.2 / 8.3 に項（8.1.1〜8.1.4 / 8.2.1〜8.2.4 / 8.3.1〜8.3.3）を追加。8.1.1 に**戻る場所つき到達度チェックリスト35項目**（第1章〜第7章。F-10 の32項目と同じ形式）。8.1.3 が演習の土台で、**引き継ぎ用 `README.md` の見本**と、**別ディレクトリにコピーして「揃っていない状態」から再現する**方法（**プロジェクト名が変わるのでボリュームも別になる**＝5.2.4 の回収。元のデータを壊さずに初回起動をやり直せる）。`.env` が `.gitignore` にあるため Git 経由のコピーで付いてこないこと、そのとき `db` が 6.2.1 と同じ `MYSQL_ROOT_PASSWORD` エラーで落ちることを「よくある間違い」に。**fastapi-text 10.3.1 の「要るもの8個」が2個（Docker Desktop と `.env`）に減った**ことを表で回収。8.2 は**道具の名前と担当する困りごとだけ**を示し、インストールはさせない（Kubernetes / レジストリ / CI/CD / ログ・監視・バックアップ / `swarm`・`profiles`・`buildx`・`secrets`・`compose watch`）。**7.5.2 の「足りないもの」5つ全部に担当を割り当てた表**を 8.2.4 に置き、これが演習 8.4 の土台。**バックアップの具体的な取り方（`mysqldump` など）は mysql-text 第8章に送った**（この本では扱わない）。8.2.3 に**`down` / `down -v` / `up -d --build` で何が消えるかの表**（`--build` では消えない）。8.3.1 で **SQL の文とテーブルの形を自分で書いていない**ことを図で見せ、5冊目へ渡す。8.1.2 / 8.2.1 / 8.2.2 / 8.3.1 に Mermaid 図（SVG→PNG は使用せず）。glossary に Kubernetes・CI/CD・CI・リバースプロキシ・監視・バックアップを追加。**この章は新しいコマンドを導入しないため実機確認は不要だが、8.1.3 と演習 8.3 に載せた `db` の起動失敗ログと `docker volume ls` の出力は実機未確認**（`review-notes.md` に検証依頼あり） |
-| D-FIN | 未着手 | 通し確認 | — | — | 小 | |
+| D-FIN | 完了 | 通し確認 | — | — | 小 | PR #47 でマージ待ち（RUNBOOK 4.6 b により状態のみ補正） |
 
 > docker-text の解答編は分割せず `docker-text/90-answers.md` の1ファイルにまとめます。
 
@@ -168,7 +168,7 @@
 
 | ID | 状態 | 章 | 出力ファイル | 解答編 | 規模 | 備考 |
 |----|------|----|------------|--------|------|------|
-| M-00 | 未着手 | 第0章 はじめに | `mysql-text/00-introduction.md` | — | 小 | |
+| M-00 | 完了 | 第0章 はじめに | `mysql-text/00-introduction.md` | — | 小 | 0.1.1 に docker-text / fastapi-text の戻り場所つき前提表と `docker --version` / `docker compose version` の確認（**Docker が無いと第2章から先へ進めない**）、**練習用 MySQL は docker-text 第6章の `db` とは別に立てる**方針、空き容量 5 GB。0.1.2 は「いま書ける SQL は `SHOW TABLES;` と `SELECT * FROM tasks;` の2行だけ」→ **読めなくてよいゴールの15行**（`INNER JOIN` / `SUM` / `GROUP BY`）→ 部分ごとの担当章の表。**練習用テーブルは第2章 2.5 で決めるため、0.1.2 のテーブル名は仮であると明記**。0.2.2 がこの本固有の山で、**SQL は間違っていてもエラーを出さずに結果を返す**（`WHERE` 忘れ／`COUNT` の引数／`LEFT JOIN` + `WHERE` の3例を章番号だけ予告）→ AI には「この SQL は何を返すか」を説明させる／質問テンプレートに**「期待した結果」と「実際の結果」の両方**を入れた。0.3.1 は**読む向きではなく書く向き（日本語→SQL）**と確認の輪（件数を必ず見る・0 件と全件を疑う）。0.3.2 の詰まり順は **`mysql>` に戻っているか（セミコロン忘れの `->`）**から。コードを書かない章のため理解度チェック／演習はなし（R-00 / P-00 / F-00 / D-00 と同じ扱い。解答編への追記もなし）。0.1.2 / 0.3.1 に Mermaid 図（SVG→PNG は使用せず）。README の 0.2 / 0.3 に項（0.2.1〜0.2.2 / 0.3.1〜0.3.3）を追加。glossary に MySQL・プロンプトを追加。curriculum-map の mysql-text 第0章の行と第0章向けの AI 向け注意書きを追記（あわせて第9章の行が「解答編」になっていた誤りを修正）。第1章のスタブを新規作成 |
 | M-01 | 未着手 | 第1章 データベースとは | `mysql-text/01-what-is-database.md` | part1 | 中 | |
 | M-02 | 未着手 | 第2章 環境構築 | `mysql-text/02-environment.md` | part1 | 中 | ★練習用データを確定させる |
 | M-03 | 未着手 | 第3章 データを取り出す（SELECT） | `mysql-text/03-select.md` | part1 | 大 | |
