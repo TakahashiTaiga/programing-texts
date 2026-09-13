@@ -485,6 +485,8 @@ docker build -f Dockerfile.prod -t fullstack-web-prod:1.0 .
 
 **動かして確かめる**
 
+**Windows（PowerShell）**
+
 ```powershell
 docker run -d --name web-prod-test -p 8080:80 fullstack-web-prod:1.0
 ```
@@ -1731,7 +1733,8 @@ docker compose up -d
 
 ### 7.5.3 デプロイ先の選択肢（概観）
 
-**デプロイ**（deploy。作ったものを、実際に動かす場所に置いて公開すること）の話をします。
+**デプロイ**（[1.4.3](./01-why-docker.md#143-本番環境と同じものを手元で動かせる) で出てきた、
+作ったものを、動かす場所に配置して公開すること）の話をします。
 
 > **このテキストでは、特定のデプロイ先の手順を書きません。**
 > 理由は2つあります。
