@@ -91,6 +91,29 @@
         **学習者がインストールする Docker Desktop がどちらの表示になるかを確認し、必要なら主従を入れ替えてください**
   - [ ] 2.5.2 Docker Hub の**取得回数の上限**（本文は数値を書かず「公式サイトを確認」としています）
   - [ ] 2.1.1 の「大企業での業務利用は有料」という記述（ライセンス条件は変わります。公開前に公式の記載を確認してください）
+- [ ] `docker-text` 第3章（D-03）。**本文・解答編に載せた `docker build` 系の出力は、実機未確認です。**
+      執筆環境で Docker デーモンが動かせなかったため、`[+] Building ...` の表示・`CACHED` の行・
+      `docker history` の表示は、**形式に沿って書いた例**です。公開前に、次を通しで実行して差し替えてください
+  - [ ] 3.3.1 `docker build -t greeting-api .` の**出力全体**（BuildKit の表示形式・`[n/m]` の番号の付き方・
+        `transferring context` の数値）と、**初回ビルドにかかる時間**（本文は「20〜60 秒」と書いています）
+  - [ ] 3.3.1 `.` を忘れたときのエラー文言（本文は `ERROR: "docker buildx build" requires exactly 1 argument.`）と、
+        `Dockerfile` が見つからないときの文言（本文は `failed to read dockerfile: open Dockerfile: no such file or directory`）
+  - [ ] 3.3.1 / 演習 3.1 の `docker images` の**イメージのサイズ**（本文は `greeting-api` を 281MB / 88.4MB として、
+        `python:3.13-slim` の 189MB との差を「`pip install` で入った 92 MB」と説明しています）
+  - [ ] 3.3.3 `fastapi run main.py --port 8000` の**起動時の表示**（本文は要点だけを抜粋した形。
+        fastapi-text 2.4.1 の `fastapi dev` の表示と同じ扱いです）と、`docker ps` の `COMMAND` 列の省略のされ方
+  - [ ] 3.4.1 **`docker history` の出力**（列・`<missing>` の並び・`CREATED BY` の省略のされ方・
+        各レイヤのサイズ。本文は `RUN pip install` を 92.1MB としています）
+  - [ ] 3.2.3 コンテキスト外を `COPY` したときのエラー文言（本文は
+        `ERROR: failed to solve: failed to compute cache key: "/secret.txt": not found`）
+  - [ ] 3.6.2 **`.dockerignore` の有無によるビルドコンテキストの差**（本文は 412.83MB → 84.21kB、
+        送信時間 31 秒 → 0.1 秒。**`.venv` の大きさで変わるので、桁が合っていれば十分**です）
+  - [ ] 3.6.3 `no such table: tasks` のときの**ログの出方**（本文は `sqlalchemy.exc.OperationalError` の行と
+        `500 Internal Server Error` の行を抜粋）、および **コンテナの中での `alembic upgrade head` /
+        `python -m app.seed` が通ること**（`fastapi-lesson` を実際にイメージ化して確認してください）
+  - [ ] 解答編 演習 3.3 の、`CMD` だけで書いたときのエラー文言（本文は
+        `exec: "世界": executable file not found in $PATH` を含む長いメッセージ）。
+        **日本語の引数がそのまま表示されるか**もあわせて確認してください
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
 
 > **とくに各本の第1〜2章（環境構築）は、必ず自分で通しで実行してください。**
