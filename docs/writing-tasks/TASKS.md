@@ -24,10 +24,10 @@
 |----|-----------|
 | react-text | **13 / 13（完成）** |
 | python-text | **13 / 13（完成）** |
-| fastapi-text | 11 / 12 |
+| fastapi-text | **12 / 12（完成）** |
 | docker-text | 1 / 10 |
 | mysql-text | 0 / 11 |
-| **合計** | **38 / 59** |
+| **合計** | **39 / 59** |
 
 ---
 
@@ -117,7 +117,7 @@
 | F-08 | 完了 | 第8章 テスト | `fastapi-text/08-testing.md` | part2 | 中 | pytest（`pytest==9.1.1` を別途 `pip install`）＋ `TestClient`。**本文・解答編のコードと出力は `fastapi==0.115.6` / `pytest==9.1.1` / `httpx==0.28.1` / `sqlalchemy==2.0.36` / `bcrypt==4.2.1` / `pyjwt==2.10.1` / Python 3.11 で実際に実行して確認済み**（本文16件・演習14件のテストがすべて green）。`fastapi-lesson/pytest.ini`（`pythonpath = .` / `testpaths = tests`）と `tests/`（`conftest.py` / `test_security.py` / `test_schemas.py` / `test_tasks.py`）を新規追加。**テストは `test.db` を使い、`app.dependency_overrides[get_db]` で差し替える**（5.3.4 の伏線を回収）。8.3 ではあえて `app.db` を使ってデータが増える・消えるのを体験させ、8.4 で分離する構成。8.3.4 で `get_my_task` の `!=` を `==` に壊してテストが捕まえる実演あり。8.1.1 / 8.3.1 / 8.4.1 / 8.4.2 / 8.4.3 / 8.5.2 に Mermaid 図。glossary にリグレッション・正常系・異常系・テストクライアント・fixture・`conftest.py`・カバレッジ・httpx を追加。第9章のスタブを新規作成 |
 | F-09 | 完了 | 第9章 実践：React と繋ぐ | `fastapi-text/09-practice-connect-react.md` | part2 | 大 | react-text 第10章の `task-app` を API に繋ぎ変える章。**`src/api/client.js` / `src/api/tasks.js` を新設**し、`localStorage` によるタスク保存をやめる（トークンの保存にだけ `localStorage` を使う）。`toTask` で API の形（`done` / `owner.name` / `{count, tasks}`）をアプリの形（`isDone` / `ownerName`）へ変換。**`created_at` が既存データで `null` のため、並べ替えは `id` に変更**。FastAPI 側の変更は `app/config.py` の `cors_origins` と `app/main.py` の `CORSMiddleware` のみ（`.env` に `CORS_ORIGINS`）。**React 側の上限 30 文字と API 側の 20 文字の食い違いを、9.3.3 の題材として意図的に使ってから 20 にそろえる**。9.1.2（2つ）/ 9.2.1 / 9.2.2 / 9.3.1 / 9.4.1 に Mermaid 図。glossary にオリジン・同一オリジンポリシー・プリフライトリクエストを追加し、CORS の定義を「制限する仕組み」から「許可を出す仕組み」に修正。第10章のスタブを新規作成 |
 | F-10 | 完了 | 第10章 次のステップ | `fastapi-text/10-next-steps.md` | part2 | 小 | 到達度チェックリスト（32項目）、デプロイの概観（`fastapi dev` と **`fastapi run`** の違い・手元と本番の対応表・**死活監視と `503`**）、公開前チェック8項目、`.env.example` の突き合わせ（**第9章で `CORS_ORIGINS` が抜けていたのを演習で回収**）、手順書の書き方と docker-text への橋渡し。**特定のデプロイ先の手順は意図的に書いていない**（10.2.4）。演習の `/health`（`200` と `503`）と `conftest.py` の fixture は `fastapi==0.115.6` / `sqlalchemy==2.0.36` / `pytest==9.1.1` / `httpx==0.28.1` / Python 3.11 で実行して確認済み。10.1.2 / 10.2.2 / 10.3.2 と解答編に Mermaid 図。解答編 その2 を「第6章〜第10章」に改題し第10章を追記 |
-| F-FIN | 未着手 | 通し確認 | — | — | 小 | |
+| F-FIN | 完了 | 通し確認 | — | — | 小 | 章立てとの一致（11章・55 節・165 項）・リンク（本の中の相対／アンカー 112 件）・解答の対応（106 問すべてに解説あり）を機械的に確認。curriculum-map の表崩れ（未エスケープの `\|` 3箇所）を修正し、「よくあるつまずき」列を追加。デプロイの定義文を glossary に統一し、バックエンドの重複定義に参照を付与。解答編の区切り見出しを react-text / python-text と統一。glossary に未登録の 12 語を追記。残りの申し送りは `review-notes.md` へ |
 
 ### F-07 の注記
 
