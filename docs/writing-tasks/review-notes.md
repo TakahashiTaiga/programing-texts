@@ -227,6 +227,19 @@
       （`task-app` の依存が増えれば超えます）。
       第7章 7.1.1 では「3つ合わせて 2 GB 前後」（`mysql:8.4` の 1.12 GB を含む）と書いています。
       6章末を「2つ合わせて 900 MB 前後、`db` を含めると 2 GB 前後」に直すと、7.1.1 と揃います
+- [ ] **`docker-text` 第8章（D-08）の出力例**
+      この章は**新しいコマンドを導入しない締めの章**ですが、次の2か所に出力例を載せています。
+      **どちらも実機未確認**です（執筆環境に Docker Desktop と MySQL の実機がないため）。
+  - [ ] 8.1.3 の「よくある間違い」と、解答編 演習 8.3 の **`.env` が無いまま起動したときの `db` のログ**
+        （`Database is uninitialized and password option is not specified` と、続く3行の環境変数名）。
+        6.2.1 で載せたものと同じ内容ですが、**行の並びとタイムスタンプの形は `mysql:8.4` の実機で確認してください**
+  - [ ] 解答編 演習 8.3 の **`docker compose ps` の表示**
+        （`fullstack-rehearsal-db-1` が `Exited (1)`、`api` が `Created`、`web` が `Up` になること）。
+        **`api` が `Created` で止まる**のは `depends_on` の `service_healthy` 待ちという想定ですが、
+        Compose のバージョンによっては表示が変わる可能性があります
+  - [ ] 解答編 演習 8.3 の **`docker volume ls` に2つのプロジェクトのボリュームが並ぶ出力**
+        （`fullstack-lesson_db-data` と `fullstack-rehearsal_db-data`）
+  - [ ] 解答編 演習 8.1 の `docker ps` / `docker ps -a` の出力例（`nginx:1.27` を `-p 8090:80` で起動）
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
 
 > **とくに各本の第1〜2章（環境構築）は、必ず自分で通しで実行してください。**
