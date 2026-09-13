@@ -114,6 +114,24 @@
   - [ ] 解答編 演習 3.3 の、`CMD` だけで書いたときのエラー文言（本文は
         `exec: "世界": executable file not found in $PATH` を含む長いメッセージ）。
         **日本語の引数がそのまま表示されるか**もあわせて確認してください
+- [ ] `docker-text` 第4章（D-04）。**本文・解答編のコマンドと出力は、Docker Engine 29.3.1（linux/amd64）で
+      実際に実行した結果です**（マウント・ボリューム・ポート衝突・`0.0.0.0` / `127.0.0.1`・ネットワーク・
+      CRLF の実演と、演習 4.1〜4.4 の通し実行）。**未確認なのは、Docker Desktop 固有の挙動と 4.6 の Windows 手順**です
+  - [ ] 4.2.3 macOS の **Settings → Resources → File sharing** の項目名（`/Users` の外をマウントするときの案内）
+  - [ ] 4.2.4 **Windows / macOS の Docker Desktop で、コンテナが作ったファイルの持ち主がどう見えるか**
+        （本文は「ほとんど問題にならない」と書いています。Linux で `root` になることは確認済み）
+  - [ ] 4.4.2 **`Get-NetTCPConnection -LocalPort 8080 -State Listen`** の実際の出力（Windows 実機）。
+        macOS の `lsof -i :8080` は一般的な形で書いています
+  - [ ] 4.4.3 `127.0.0.1` で待っているコンテナに繋ごうとしたときの、**ブラウザ側の表示**
+        （本文は「接続がリセットされました」「ページが動作していません」と幅を持たせています。
+        `curl` での `Recv failure: Connection reset by peer` は確認済み）
+  - [ ] 4.5.4 **`host.docker.internal`** が Docker Desktop で解決できること（本文では名前の紹介のみ）
+  - [ ] 4.6.1 CRLF のときの **`exec ./start.sh: no such file or directory`**（Linux では確認済み。
+        **Windows で実際に CRLF のまま保存してビルドし、同じ文言になるか**を確認してください）
+  - [ ] 4.6.2 VS Code の設定 **`files.eol`** の項目名と、`git add --renormalize .` の実行結果
+  - [ ] 4.6.3 **Windows のバインドマウントでファイル監視が届かないこと**そのもの
+        （本文は「効かないことがある」と書いています。**WSL2 側に置いた場合との差**もあわせて確認してください）。
+        `WATCHFILES_FORCE_POLLING=true` で再起動がかかることは Linux で確認済み
 - [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
 
 > **とくに各本の第1〜2章（環境構築）は、必ず自分で通しで実行してください。**
