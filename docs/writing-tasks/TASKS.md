@@ -26,8 +26,8 @@
 | python-text | **13 / 13（完成）** |
 | fastapi-text | **12 / 12（完成）** |
 | docker-text | **10 / 10（完成）** |
-| mysql-text | 2 / 11 |
-| **合計** | **50 / 59** |
+| mysql-text | 3 / 11 |
+| **合計** | **51 / 59** |
 
 ---
 
@@ -170,7 +170,7 @@
 |----|------|----|------------|--------|------|------|
 | M-00 | 完了 | 第0章 はじめに | `mysql-text/00-introduction.md` | — | 小 | PR #48（`task/M-00-introduction`）で実施済み。**この行は M-01 の実行時に、RUNBOOK 4.6 に従って状態の反映漏れを補正したもの**（`main` 側は PR 未マージのため「未着手」のままだった）。内容は PR #48 を参照 |
 | M-01 | 完了 | 第1章 データベースとは | `mysql-text/01-what-is-database.md` | part1 | 中 | **SQL を1文も実行しない章**（MySQL の起動は第2章）。演習3問はすべて紙・テキストエディタ・表計算ソフトだけで完結する設計。1.1 は「データベースを使わずに `tasks.json` に保存したら」から入り、**遅い / 同時書き込みで消える・壊れる / 整合性が崩れる**の3問題を、それぞれの担当（第7章インデックス・第4章 4.5 ロック・4.4 トランザクション・第5章 5.1 データ型 / 5.2 制約 / 5.4 外部キー）に割り当てた表で締める。**型と制約では表記ゆれを止められない**ことを 1.1.3 に明記し、1.2.2 の「表を分ける」へ繋いだ（演習 1.1 の最後の完成条件の土台）。1.2.2 に**分ける手順4ステップ**と、**それを2回回す例（`owner_id` + `project_id`）**を置いた（演習 1.2 が「相手の主キーを持つ列が2つ以上」を求めるため。3.6 の自己点検で追加）。1.2.3 は python-text の `for` と `SELECT` を並べて**宣言型**を説明。1.3.2 の**「行に順番が無い → 必ず `ORDER BY`」**が第3章 3.4 の伏線。1.4 は fastapi-text 6.3 の `primary_key=True` を回収し、**3条件の判定フロー図**＋社員テーブルでの評価表（演習 1.3 の雛形）。**自然キー／代理キーは名前と方針まで**（詳細は第5章 5.3.3）、**複合主キー**は第6章 6.7.1 への予告。1.5 は**サーバー型とファイル型**の対比で、fastapi-text の `app.db` が SQLite だった回収（`dir` / `ls -l` の確認手順を Windows / macOS 両方で記載）。**解答編 その1（`90-answers-part1.md`）を新規作成。** 1.1.1 / 1.1.2 / 1.1.3 / 1.2.2 / 1.2.3 / 1.4.2 / 1.5.1 に Mermaid 図（SVG→PNG は使用せず）。glossary に値・一意・自然キー・代理キー・複合主キー・データ型・`NULL`・整合性・1対多・結合・正規化・DBMS・クエリ・宣言型・方言・全件走査・ロック・サーバー型・ファイル型・PostgreSQL・NoSQL を追加。curriculum-map に第1章の行と第1章向けの AI 向け注意書きを追記。README の解答編にリンクを追加。第2章のスタブを新規作成 |
-| M-02 | 未着手 | 第2章 環境構築 | `mysql-text/02-environment.md` | part1 | 中 | ★練習用データを確定させる |
+| M-02 | 完了 | 第2章 環境構築 | `mysql-text/02-environment.md` | part1 | 中 | ★練習用データを確定させた章。**練習環境は `mysql-lesson/` に新規作成**（docker-text 第6章の `fullstack-lesson` とは別プロジェクト＝ボリュームも別）。`compose.yaml`（`mysql:8.4` / `3306:3306` / `db-data:/var/lib/mysql` / **`./sql:/sql`**）＋ `.env`（`shop` / `shop_user`）＋ `.gitignore`。**接続コマンドは `docker compose exec db mysql -u root -p --default-character-set=utf8mb4 shop` に統一**（文字化けを避けるため 2.2.1 で先に付け、理由は 2.6.2 で回収）。第0章 0.3.2 が予告していた**`;` 忘れ → `->`** は 2.2.1、**`No database selected`** は 2.4.2、**`DESCRIBE`** は 2.4.4 で回収。2.1.3 に**初期化はボリュームが空のときだけ**（`.env` を直しても効かない）。2.3 は **Adminer（`adminer:4.8.1`）を5行足す形**（サーバ欄は `db`。外部 GUI は `127.0.0.1`）。2.4 は `sandbox` データベースで `CREATE TABLE` を練習し、最後に `DROP DATABASE`。**練習用テーブルは `categories`(4) / `customers`(8) / `products`(20) / `orders`(15) / `order_items`(37) の5つ**（第0章 0.1.2 の予告 SQL と同じ構成。`order_items` が多対多の中間テーブル。`birthday` / `released_on` に `NULL`、`stock` に `0`、`unit_price` は注文時の単価を写して持つ）。**外部キー制約・`AUTO_INCREMENT` の詳細・`NOT NULL` の詳細は第5章に送り、本文に明記**。投入は **`SOURCE /sql/shop.sql;`**（PowerShell の `<` を避けるため。`DROP TABLE IF EXISTS` 付きで何度でも流せる）。**`SELECT COUNT(*)` は確認用に形だけ先取り**（意味は第6章 6.5.1）。2.6.3 で **既定の照合順序では `Tokyo`=`TOKYO`・`は`=`ば`・`あ`=`ア` がすべて真**であることを実測で提示（第3章の検索の伏線）。**本文・解答編の SQL と出力は MySQL 8.0.46 で実際に実行して確認済み**（Docker / Compose まわりの出力は実機未確認。`review-notes.md` に検証依頼あり）。2.1.3 / 2.2.2 / 2.2.3 / 2.5.1（2つ）/ 2.6.1 / 2.6.2 に Mermaid 図（SVG→PNG は使用せず）。glossary に多対多・中間テーブル・権限・`utf8mb4`・照合順序を追加。第3章のスタブを新規作成 |
 | M-03 | 未着手 | 第3章 データを取り出す（SELECT） | `mysql-text/03-select.md` | part1 | 大 | |
 | M-04 | 未着手 | 第4章 データを変更する | `mysql-text/04-modify-data.md` | part1 | 中 | |
 | M-05 | 未着手 | 第5章 テーブル設計 | `mysql-text/05-table-design.md` | part1 | 大 | |

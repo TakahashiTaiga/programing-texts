@@ -240,7 +240,28 @@
   - [ ] 解答編 演習 8.3 の **`docker volume ls` に2つのプロジェクトのボリュームが並ぶ出力**
         （`fullstack-lesson_db-data` と `fullstack-rehearsal_db-data`）
   - [ ] 解答編 演習 8.1 の `docker ps` / `docker ps -a` の出力例（`nginx:1.27` を `-p 8090:80` で起動）
-- [ ] `mysql-text` 2.1 Docker での MySQL 起動と接続
+- [ ] `mysql-text` 第2章（M-02）**Docker まわりの出力**
+  - **本文・解答編の SQL とその実行結果は、MySQL 8.0.46（Ubuntu パッケージ）で実際に実行して確認済み**です
+    （`SHOW DATABASES` / `CREATE DATABASE` / `USE` / `CREATE TABLE` / `DESCRIBE` /
+    `SHOW CREATE TABLE ...\G` / `SHOW TABLES` / `SELECT COUNT(*)` / `SELECT *` /
+    `SHOW VARIABLES LIKE 'character\_set\_%'` / 照合順序の比較 / `shop.sql` の流し込み /
+    `ERROR 1044` / `ERROR 1045` / `ERROR 1046` / `ERROR 1406` / 文字化けした `?` の表示）。
+    **確認できていないのは、Docker と MySQL 8.4 に固有の部分です**
+  - [ ] 2.1.2 `docker compose up -d` / `docker compose ps` / `docker compose logs db` の**表示**
+        （とくにログ末尾の `ready for connections` の行。バージョン表記は `8.4.7` と仮に書いています。
+        **実機の `mysql:8.4` で出る版数に合わせて本文の数字を直してください**）
+  - [ ] 2.2.1 接続時のバナー（`Welcome to the MySQL monitor.` 以下）と `Server version:` の行
+  - [ ] 2.2.1 の接続コマンドに付けている **`--default-character-set=utf8mb4`**
+        （公式イメージの `mysql` クライアントが既定で `utf8mb4` になっている場合、この指定は無くても動きます。
+        **付いていても害はないので残していますが**、実機で外したときの挙動を一度見ておいてください）
+  - [ ] 2.2.3 の症状別の表のうち、**Docker 側のメッセージ**
+        （`Bind for 0.0.0.0:3306 failed` / `service "db" is not running`）
+  - [ ] 2.3.2 Adminer（`adminer:4.8.1`）を足したときの `docker compose up -d` の出力と、
+        ログイン画面の**入力欄の日本語表記**（「データベース種類」「サーバ」など。版で変わります）
+  - [ ] 2.5.2 `SOURCE /sql/shop.sql;` の出力（`Query OK` の並びと `rows affected` の数字。
+        **件数 4 / 8 / 20 / 15 / 37 は確認済み**ですが、`1 warning` が出る位置は実機で確認してください）
+  - [ ] 2.6.1 Windows での `chcp 65001` と、PowerShell での文字化けの再現
+  - [ ] 演習 2.1 / 演習 2.4 の `docker compose down` / `down -v` / `docker volume ls` の出力
 
 > **とくに各本の第1〜2章（環境構築）は、必ず自分で通しで実行してください。**
 > AI が書いた手順は、コマンド名やオプションが実在しないことがあります。
@@ -256,6 +277,7 @@
 - [ ] `fastapi-text` 2.5.1 `/docs`（Swagger UI）の画面（`F-FIN` で検出。この本の価値の中心なので、1枚あると効きます）
 - [ ] `fastapi-text` 9.4.2 開発者ツールの Network タブ（`F-FIN` で検出。プリフライトの `OPTIONS` の行が見えるもの）
 - [ ] `docker-text` 2.1 Docker Desktop の画面
+- [ ] `mysql-text` 2.3.2 Adminer のログイン画面（`http://localhost:8080`）。入力欄と 2.2.2 の5つの対応が一目で分かる1枚があると効きます
 
 画像は `<book>/images/` に置き、`docs/style-guide.md` の命名規則に従ってください。
 
@@ -273,6 +295,18 @@
 
 ## 内容に自信がない・要検討
 
+- `mysql-text` 第2章の SQL の実行結果は、**MySQL 8.0.46 で実際に実行して確認**しました。
+  本文が使う **8.4** とは、`SELECT VERSION();` の表示や起動ログの版数が異なります
+  （SQL の結果・`DESCRIBE` の表示・照合順序の判定は 8.0 と 8.4 で同じです）。
+  実機の `mysql:8.4` で、バージョンが出ている箇所だけ数字を合わせてください。
+- `mysql-text` の解答編の区切り見出しが **`### 演習問題`** になっています
+  （react-text / python-text / fastapi-text は `F-FIN` で **`### 演習`** に統一済み）。
+  第1章から同じ形で書かれているため、**`M-FIN` でまとめて統一**してください。
+- `mysql-text` 2.5.1 の練習用テーブルは、**第3章から第7章まで使い回す前提**で決めました。
+  第7章 7.1.1 で「10 万件を投入して速さを体感する」ため、
+  **`orders` / `order_items` に大量の行を足す想定**です（そのときの生成用 SQL は M-07 で用意します）。
+  いま入っている 84 行の内容を変更すると、以降の章の例題と解答がすべてずれます。
+  **中身を変えたい場合は、M-03 に入る前にご指示ください。**
 - `python-text` 1.6.2 の `cowsay`：本文は `cowsay==6.1` の `cowsay.cow("...")` を前提にしています。
   cowsay は過去に API が変わったことがあるため、実機で `pip install cowsay==6.1` → `import cowsay` →
   `cowsay.cow("test")` が動くこと、および表示される牛のアスキーアートを確認してください。

@@ -684,7 +684,7 @@
 |----|---------|----------------|
 | 0 | はじめに | — |
 | 1 | データベースとは | （SQL を1文も実行しない章）自分でファイルに保存すると起きる3つの問題（**全件走査**で遅くなる／同時書き込みで片方の変更が消える・書き込み途中で壊れる／型・表記ゆれ・項目の欠け・`id` 重複で**整合性**が崩れる。それぞれの担当が第7章インデックス・第4章 4.5 ロック・第4章 4.4 トランザクション・第5章 5.1 データ型 / 5.2 制約 / 5.4 外部キー、という対応表）、**書き込む経路は1つではないのでチェックはデータベース側に1箇所置く**、**DBMS**（「データベース」は保存されたデータとソフトウェアの両方を指すこと）、**RDB**（すべての行が必ず同じ列を持つ・1テーブル1種類・第2章以降は罫線付きの表と `1 row in set` の件数表示）、**表を分けて相手の主キーを持つ**（`tasks.owner` → `owners` + `tasks.owner_id`。**分ける手順4ステップ**＝繰り返しを見つける→くっついてくる情報ごと別表にする→主キーを用意する→もとの表は主キーを持つ。**繰り返しが2種類あれば手順を2回回す**＝`owner_id` と `project_id`。Mermaid の `erDiagram` で1対多）、分けると表記ゆれ・修正漏れが消える代わりに**結合（JOIN、第6章）**が要る、**正規化**は語のみ（詳細は第5章 5.5）、**SQL** と**クエリ**、**宣言型**（Python の `for` との比較。手順ではなく条件を書き、取り出し方は DBMS が決める＝第7章 7.4 実行計画）、SQL の3分類（`CREATE TABLE` / `SELECT` / `INSERT`・`UPDATE`・`DELETE`）と**方言**、用語の対応（テーブル・行・列・値。レコード／カラムの読み替え、Python の辞書のリスト・JS のオブジェクトの配列・fastapi-text 6.3 の `class Task(Base)` との対応表）、**データ型**（`INT` / `VARCHAR` / `DATE` / `BOOLEAN` は名前だけ。選び方は第5章 5.1）、**`NULL`**（空文字とも `0` とも別物。比べ方は第3章 3.3.4）、**表計算ソフトとの違い7点**（とくに**行に順番が無い → 並びが必要なら必ず `ORDER BY`**、第3章 3.4）、**主キー**（3条件＝重複しない（**一意**）・空にできない・変わらない。無いと `UPDATE` が複数行に当たる＝第4章 4.2.3 の伏線。fastapi-text 6.3 の `primary_key=True` を回収）、**主キーの選び方**（3条件を順に当てる判定フロー図。**自然キー**と**代理キー**は名前と方針（迷ったら代理キー）まで。詳細は第5章 5.3.3、`AUTO_INCREMENT` は 5.3.2）、**複合主キー**は名前と例のみ（第6章 6.7.1）、**サーバー型とファイル型**（MySQL / PostgreSQL / SQLite の比較表。fastapi-text 第6章の `app.db` が SQLite だった回収。`dir` / `ls -l` で確認）、**NoSQL**（4種類の表と「整合性の見張りをデータベースがやるかアプリがやるか」という軸）、MySQL を選ぶ理由と **MySQL 8.4**（docker-text 第6章と同じ）、MariaDB は名前のみ |
-| 2 | 環境構築（Docker で MySQL） | 接続、クライアント |
+| 2 | 環境構築（Docker で MySQL） | 第1章の範囲に加えて：**練習環境の作り方**（`mysql-lesson` ディレクトリ・`compose.yaml`（`image: mysql:8.4` / `ports: "3306:3306"` / `environment` の4つ / `db-data:/var/lib/mysql` / `./sql:/sql`）・`.env` の4項目（`MYSQL_ROOT_PASSWORD` / `MYSQL_DATABASE=shop` / `MYSQL_USER=shop_user` / `MYSQL_PASSWORD`）・`.gitignore` に `.env`・**docker-text 第6章の `fullstack-lesson` とは別プロジェクト**にする理由）、**起動と停止**（`up -d` / `ps` / `logs`・**`ready for connections` が出るまで接続できない**・`stop` / `start` / `down` / **`down -v` だけがボリュームを消す**）、**永続化**（`docker volume ls` の `mysql-lesson_db-data`・**初期化はボリュームが空のときだけ**＝`.env` を直しても既存のパスワードは変わらない → 練習環境では `down -v` で作り直す）、**接続**（`docker compose exec db mysql -u root -p --default-character-set=utf8mb4 shop`・`Enter password:` は表示されない・**`-p` にパスワードを続けて書かない**・`SELECT VERSION();`・**文末は `;`。`->` は続きを待っている状態**（`;` の打ち忘れ／引用符・かっこの閉じ忘れ）・**`\c` で打ちかけを取り消す**・`exit`）、**接続情報の5つ**（ホスト・ポート（**3306**）・ユーザー・パスワード・データベース名。**パソコン側からは `127.0.0.1`**（`localhost` は UNIX ソケット接続になる）・**コンテナの中からはサービス名 `db`**）、**権限**（`root` は何でも／`shop_user` は `shop` の中だけ・**見えないデータベースは一覧にも出ない**・`ERROR 1045`＝入口で断られた／`ERROR 1044 ... to database`＝入れたが操作が許されていない）、**切り分け**（`ps` が `Up` か → ログ → メッセージ別の対処表・`Bind for 0.0.0.0:3306 failed`＝ポート衝突 → **左側の数字だけ `3307` に変える**）、**GUI クライアント**（Adminer を `compose.yaml` に5行足す（`adminer:4.8.1` / `8080`）・**サーバ欄は `db`**・外部の GUI は `127.0.0.1`・**公開しない**・CLI と GUI の使い分け）、**`CREATE DATABASE`**（`SHOW DATABASES;`・MySQL 自身が使う4つの箱・`CHARACTER SET utf8mb4` を明示・`Query OK`）、**`USE`**（`SELECT DATABASE();`・**選んでいないと `No database selected`**・接続コマンドの最後に箱名を書ける・`USE` は接続中だけ有効）、**`CREATE TABLE`**（列名 → 型 → その他の指定・`INT` / `VARCHAR(n)` / `DATE` / `DATETIME` の4つだけ・`AUTO_INCREMENT`（**詳細は 5.3.2**）・`PRIMARY KEY`・`NOT NULL`（**詳細は 5.2.1**）・**空を許す列は何も書かない**・名前は半角英数字と `_`）、**確認**（`SHOW TABLES;`（見出しが `Tables_in_箱名`）・`DESCRIBE`（`Field` / `Type` / `Null` / `Key` / `Default` / `Extra` の読み方・**`DESC` とは書かない**（第3章の降順と紛らわしい））・**`SHOW CREATE TABLE ...\G`**（`\G` は縦表示）・`DROP DATABASE` は取り消せない）、**練習用テーブル（第3章〜第7章で使い回す）**（`categories`(4) / `customers`(8) / `products`(20) / `orders`(15) / `order_items`(37)・**`order_items` は多対多の中間テーブル**（第6章 6.7）・`birthday` と `released_on` は `NULL` あり・`stock` に `0` あり・`status` は `受付` / `発送済` / `キャンセル`・**`unit_price` は注文時の単価をあえて写して持つ**（理由は 5.5.3）・**外部キー制約はまだ付けていない**（第5章 5.4））、**流し込み**（`sql/shop.sql` を UTF-8 で保存 → **`SOURCE /sql/shop.sql;`**・先頭の `DROP TABLE IF EXISTS` で**何度でも同じ状態に戻せる**・`--` はコメント・PowerShell では `<` でのリダイレクトを使わない）、**確認の輪**（`SHOW TABLES;` → **`SELECT COUNT(*) FROM 表名;`**（**意味は第6章 6.5.1。ここでは形だけ先取り**）→ `SELECT * FROM categories;` で日本語を目視・罫線が日本語行でずれるのは正常）、**文字コード**（`?` に化ける／`Data too long`（バイト数で数えられている）・原因はファイル・クライアント・テーブルの3か所・**先に「表示だけの問題か」を切り分ける**・Windows は `chcp 65001`・`SHOW VARIABLES LIKE 'character\_set\_%';` で見るのは `client` / `results` / `database`・**`utf8mb4` と `utf8mb3`**・指定はサーバー → データベース → テーブル → 列の順に引き継ぐ）、**照合順序**（`utf8mb4_0900_ai_ci`・`ai`/`as`/`ci`/`cs` の意味・**既定では `Tokyo`=`TOKYO`、`は`=`ば`、`あ`=`ア` がすべて真**（第3章の検索に効く）・`COLLATE utf8mb4_ja_0900_as_cs` でその場だけ上書き・**混ぜると `Illegal mix of collations`**） |
 | 3 | SELECT | `WHERE`、`ORDER BY`、`LIMIT`、関数 |
 | 4 | データの追加・更新・削除 | `INSERT`/`UPDATE`/`DELETE`、トランザクション |
 | 5 | テーブル設計 | データ型、主キー、外部キー、制約、正規化の入口 |
@@ -713,6 +713,40 @@
 >   相談を受けたら、**並びが必要なら必ず `ORDER BY` を書く**（第3章 3.4）に着地させてください
 > - 演習 1.2 / 1.3 は**設計の問題で、正解が1つに決まりません。**
 >   学習者の分け方が解答例と違っても、狙いを満たしていれば正解として扱ってください
+
+> **注意：第2章の学習者が知っている SQL は、まだ「作る」と「見る」だけです。**
+> 第2章で扱ったのは `CREATE DATABASE` / `USE` / `CREATE TABLE` / `DROP DATABASE` と、
+> 確認のための `SHOW DATABASES` / `SHOW TABLES` / `DESCRIBE` / `SHOW CREATE TABLE` /
+> `SHOW VARIABLES` です。
+>
+> - **`SELECT` の文法は第3章です。** 第2章の本文に出てくる `SELECT * FROM categories;` と
+>   `SELECT COUNT(*) FROM 表名;` は、**投入を確認するための決まり文句として形だけ**先取りしたものです。
+>   `WHERE` / `ORDER BY` / `LIMIT` を先取りして見せないでください
+> - **`INSERT` / `UPDATE` / `DELETE` は第4章です。** 練習用データは `sql/shop.sql` を
+>   `SOURCE` で流し込む形で入れました。学習者はまだ `INSERT` を1文も書いていません。
+>   データを直したいという相談には、**`SOURCE /sql/shop.sql;` で入れ直す**方法を案内してください
+> - **外部キー制約（`FOREIGN KEY`）は付けていません**（第5章 5.4）。
+>   `category_id` などは「相手の主キーの値を入れることにした、ただの整数の列」です。
+>   `AUTO_INCREMENT` は 5.3.2、`NOT NULL` は 5.2.1、型の選び方は 5.1 で扱います
+> - **`JOIN` は第6章**です。「担当者名つきで一覧を出したい」という相談が来ても、
+>   第2章の範囲では答えられないことを伝えてください
+> - 接続・文字化け・ポート衝突は**レベル C** です。**手順を最後まで出して解決してください**
+> - よくある相談と、最初に確認させるべきことは次のとおりです。
+>
+> | 症状 | 最初に疑うもの |
+> |------|--------------|
+> | 起動直後に接続できない | **ログに `ready for connections` が出ているか**（2.1.2） |
+> | `.env` を直したのに `Access denied` | **初期化はボリュームが空のときだけ**（2.1.3）。`down -v` で作り直す |
+> | Enter を押しても何も起きない | プロンプトが **`->`** になっていないか（2.2.1）。`;` / 引用符 / かっこ |
+> | `No database selected` | `USE shop;` を打っていない（2.4.2） |
+> | 日本語が `?` になる | 接続時の **`--default-character-set=utf8mb4`**（2.2.1 / 2.6.1） |
+> | `Data too long for column ...` | 同上。バイト数で数えられている（2.6.1） |
+> | `Bind for 0.0.0.0:3306 failed` | ポート衝突。`compose.yaml` の**左側**を `3307` に（2.2.3） |
+> | `Can't connect to ... through socket` | ホストを `127.0.0.1` にする（2.2.2） |
+> | `ERROR 1044 ... to database` | `shop_user` で管理者の操作をしている（2.2.2） |
+>
+> **`docker compose down -v` を勧めるときは、必ず「練習用データも消える」と添えて、
+> 2.5.2 の `SOURCE /sql/shop.sql;` で戻せることまで伝えてください。**
 
 ---
 

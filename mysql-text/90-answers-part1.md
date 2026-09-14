@@ -441,3 +441,591 @@ SQLite がファイル型だったからです（1.5.1）。
 > 避けるのではなく、**この表では代理キーのほうが都合がよい**という選び方をしてください。
 
 ---
+
+## 第2章
+
+### 理解度チェック
+
+**問 2.1 の解答**
+
+- ① **`stop`**（`down` でも可）
+- ② **`-v`**
+- ③ **`ready for connections`**
+
+**解説**
+
+①と②は、取り違えるとデータが消える組み合わせです（2.1.2）。
+
+| コマンド | データ |
+|---------|-------|
+| `docker compose stop` | 残る |
+| `docker compose down` | 残る（ボリュームは消えない） |
+| `docker compose down -v` | **消える** |
+
+`down` はコンテナとネットワークを消しますが、
+ボリューム（`mysql-lesson_db-data`）はそのままなので、データは残ります。
+①は「データが残る」ものを答える問題なので、`stop` と `down` のどちらでも正解です。
+
+③は、**起動コマンドが終わった時点ではまだ接続できない**という話でした（2.1.2）。
+MySQL は起動後に内部の準備をしています。
+`docker compose logs db` の最後に `ready for connections` が出て、はじめて接続できます。
+
+> **よくある間違い**
+> ここで慌てて `docker compose down -v` からやり直す人が多い箇所です。
+> **待てば解決する**ものを作り直してしまうと、原因が分からないまま時間だけが過ぎます。
+> まずログを見てください。
+
+---
+
+**問 2.2 の解答**
+
+**2. パスワードの設定は、ボリュームが空のとき（初回）だけ行われるため**
+
+**解説**
+
+2.1.3 で扱った、MySQL の公式イメージのいちばん誤解されやすい性質です。
+
+`MYSQL_ROOT_PASSWORD` などの値は、**ボリュームが空のときだけ**読まれて、
+そのときにユーザーとパスワードが作られます。
+2回目以降の起動では、ボリュームの中にできあがったデータがあるので、
+`.env` を書き換えても**何も起きません。**
+
+1 が誤りなのは、`down` してもボリュームは残るからです。`up` し直しても結果は同じです。
+3 は、`${...}` の書き方が間違っていれば、そもそも初回に
+`Database is uninitialized and password option is not specified` で起動に失敗します（2.2.3）。
+4 は、そのような仕組みはありません。
+
+練習環境での直し方は、作り直しです（2.1.3）。
+
+```bash
+docker compose down -v
+docker compose up -d
+```
+
+そのあと、2.5.2 の流し込みをやり直します。
+
+---
+
+**問 2.3 の解答**
+
+**3. `127.0.0.1`**
+
+**解説**
+
+GUI クライアントは**パソコン側**で動いているので、
+`compose.yaml` の `ports: - "3306:3306"` の左側（パソコン側の 3306 番）を通って中に入ります（2.2.2）。
+
+2 の `localhost` が不正解なのは、MySQL のクライアントが
+**`localhost` を「UNIX ソケットで繋ぐ」という意味に解釈する**ためです（2.2.2）。
+Docker の中の MySQL にはソケットのファイルが手元に無いので、
+`Can't connect to local MySQL server through socket` になることがあります。
+
+1 の `db` は、**コンテナの中から繋ぐとき**の書き方です（2.3.2 の Adminer）。
+パソコン側からは、この名前は解決できません。
+4 のコンテナ名も同じ理由で使えません。
+
+> **補足：どちらの側にいるかで書き方が変わる**
+>
+> | 繋ぐ側 | ホスト | ポート |
+> |-------|-------|-------|
+> | パソコン側の GUI・アプリ | `127.0.0.1` | `compose.yaml` の左側の数字 |
+> | 同じ Compose の中のコンテナ | サービス名（`db`） | `3306`（コンテナ側の数字） |
+
+---
+
+**問 2.4 の解答**
+
+次のうち2つが書けていれば正解です（2.2.1）。
+
+- **文末の `;` を打ち忘れた**
+- **引用符（`'`）を閉じ忘れた**
+- **かっこ（`(`）を閉じ忘れた**
+
+**解説**
+
+`->` は「文の続きを待っています」という表示で、**エラーではありません。**
+MySQL は `;` が来るまで、何行でも待ち続けます。
+
+`;` の打ち忘れなら、`;` を打って Enter を押せば実行されます。
+引用符やかっこの閉じ忘れの場合は、続きを打っても意図した文になりません。
+**`\c` で打ちかけの文を捨ててから、打ち直してください。**
+
+> **よくある間違い**
+> `->` の状態で `exit` と打っても、抜けられません。
+> `exit` も「文の一部」として飲み込まれます。
+> **先に `\c` を打って `mysql>` に戻してから** `exit` してください。
+
+---
+
+**問 2.5 の解答**
+
+**`--default-character-set=utf8mb4` を付けて接続し直し、正しく表示されるかを見る。**
+正しく見えるなら、データは無事で、表示だけの問題だった（2.6.1）。
+
+**解説**
+
+文字化けの原因は、**ファイル・クライアント・テーブル**の3か所のどこかにあります（2.6.1）。
+このうち、**クライアント（やりとりの文字コード）は接続し直すだけで変えられる**ので、
+最初に試すべきものです。
+
+接続し直して正しく見えたなら、保存されているデータそのものは正しい状態です。
+`SHOW VARIABLES LIKE 'character\_set\_%';` を見ると、
+付け忘れたときは `character_set_client` と `character_set_results` が
+`latin1` などになっているはずです（2.6.2）。
+
+**大事なのは、確かめる前にデータを入れ直さないこと**です（2.6.1 の「よくある間違い」）。
+壊れた状態のまま入れ直すと、本当に壊れたデータが保存されます。
+
+---
+
+**問 2.6 の解答**
+
+**1回の注文には複数の商品が入り、1つの商品は複数の注文に現れる（多対多）ため、
+そのままでは表で持てない。あいだに `order_items` を置いて、
+「どの注文の、どの商品が、何個か」を1行ずつ記録している。**
+
+**解説**
+
+2.5.1 で扱った**中間テーブル**の話です。
+
+第1章 1.2.2 の1対多（1人の担当者が複数のタスクを持つ）とは形が違います。
+1対多なら、「多」の側に相手の主キーを1列持てば表せました。
+
+多対多では、それができません。
+`orders` に「商品の番号」を持たせようとすると、1つの注文に複数の商品が入るので
+**1行に複数の値を持つ**ことになります。第1章 1.2.1 の「すべての行が同じ列を持つ」に反します。
+
+そこで、`order_items` に**注文1つ・商品1つの組を1行ずつ**書きます。
+このとき、明細ならではの情報（`quantity` / `unit_price`）も一緒に持てます。
+
+中間テーブルの書き方と、そこからの取り出し方は第6章 6.7 で扱います。
+
+---
+
+**問 2.7 の解答**
+
+**`birthday` は `NULL`（値が入っていない状態）を許す列、
+`registered_on` は `NOT NULL`（必ず値を入れなければならない）列であることを表している。**
+
+**解説**
+
+`DESCRIBE` の `Null` 列は、**「`NULL` を入れてよいか」**を表します（2.4.4）。
+
+| 表示 | 意味 | `CREATE TABLE` での書き方 |
+|------|------|------------------------|
+| `YES` | `NULL` を入れてよい | 何も書かない |
+| `NO` | `NULL` は入れられない | `NOT NULL` を書く |
+
+`birthday`（生年月日）は、登録していない顧客がいるので `NULL` を許しています。
+一方 `registered_on`（会員登録日）は、**登録した日が無い顧客は存在しない**ので必須です。
+
+この「必ずあるか / 無いことがあるか」の判断は、テーブル設計の中心にあるものです。
+詳しくは第5章 5.2.1 で扱います。
+
+---
+
+### 演習問題
+
+### 演習 2.1 の解答
+
+**手順と結果**
+
+```bash
+docker compose down
+```
+
+```text
+[+] Running 2/2
+ ✔ Container mysql-lesson-db-1   Removed
+ ✔ Network mysql-lesson_default  Removed
+```
+
+```bash
+docker compose ps
+```
+
+```text
+NAME      IMAGE     COMMAND   SERVICE   CREATED   STATUS    PORTS
+```
+
+コンテナは消えました。ボリュームを見ます。
+
+```bash
+docker volume ls
+```
+
+```text
+DRIVER    VOLUME NAME
+local     mysql-lesson_db-data
+```
+
+**残っています。** 起動し直します。
+
+```bash
+docker compose up -d
+docker compose logs db
+```
+
+`ready for connections` を確認してから接続し、件数を数えます。
+
+```sql
+SELECT COUNT(*) FROM products;
+```
+
+```text
++----------+
+| COUNT(*) |
++----------+
+|       20 |
++----------+
+1 row in set (0.00 sec)
+```
+
+**残っている理由**
+
+`compose.yaml` の次の1行のおかげです。
+
+```yaml
+      - db-data:/var/lib/mysql
+```
+
+MySQL がデータを書く場所（`/var/lib/mysql`）を、
+**コンテナの外にある名前付きボリューム `db-data` に置いている**ためです（2.1.3）。
+
+**解説**
+
+docker-text 第4章で学んだことを、MySQL で確かめる演習です。
+
+コンテナは「消して作り直せるもの」、ボリュームは「残すもの」という役割分担になっています。
+この分担があるから、**MySQL のバージョンを上げたいときにコンテナだけ入れ替える**、
+といったことができます。
+
+> **よくある間違い**
+> `docker compose down -v` を実行してしまうと、`docker volume ls` の一覧から
+> `mysql-lesson_db-data` が消えます。
+> この状態で `up -d` すると、**空のデータベースが新しく作られます。**
+> `SELECT COUNT(*) FROM products;` は `Table 'shop.products' doesn't exist` になります。
+>
+> 慌てなくて構いません。2.5.2 の `SOURCE /sql/shop.sql;` をやり直せば元に戻ります。
+> これが「`shop.sql` を残しておく」ことの価値です。
+
+---
+
+### 演習 2.2 の解答
+
+**手順**
+
+```sql
+CREATE DATABASE sandbox2 CHARACTER SET utf8mb4;
+USE sandbox2;
+```
+
+```sql
+CREATE TABLE readings (
+    id          INT AUTO_INCREMENT PRIMARY KEY,
+    title       VARCHAR(100) NOT NULL,
+    author      VARCHAR(40)  NOT NULL,
+    finished_on DATE,
+    rating      INT
+);
+```
+
+```sql
+DESCRIBE readings;
+```
+
+```text
++-------------+--------------+------+-----+---------+----------------+
+| Field       | Type         | Null | Key | Default | Extra          |
++-------------+--------------+------+-----+---------+----------------+
+| id          | int          | NO   | PRI | NULL    | auto_increment |
+| title       | varchar(100) | NO   |     | NULL    |                |
+| author      | varchar(40)  | NO   |     | NULL    |                |
+| finished_on | date         | YES  |     | NULL    |                |
+| rating      | int          | YES  |     | NULL    |                |
++-------------+--------------+------+-----+---------+----------------+
+5 rows in set (0.00 sec)
+```
+
+**自分が書いていないのに付いている指定**
+
+```sql
+SHOW CREATE TABLE readings\G
+```
+
+```text
+*************************** 1. row ***************************
+       Table: readings
+Create Table: CREATE TABLE `readings` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `title` varchar(100) NOT NULL,
+  `author` varchar(40) NOT NULL,
+  `finished_on` date DEFAULT NULL,
+  `rating` int DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+1 row in set (0.00 sec)
+```
+
+次のどれか1つが書けていれば正解です（2.4.4）。
+
+- `id` に **`NOT NULL`** が付いた（`AUTO_INCREMENT` の列は空にできないため）
+- `finished_on` と `rating` に **`DEFAULT NULL`** が付いた
+- `PRIMARY KEY` の指定が、列の定義とは別の行として書き出された
+- **`ENGINE=InnoDB`**（データの保存方式）が付いた
+- **`DEFAULT CHARSET=utf8mb4`** と **`COLLATE=utf8mb4_0900_ai_ci`** が付いた（2.6）
+
+後片づけ：
+
+```sql
+DROP DATABASE sandbox2;
+```
+
+**解説**
+
+この演習で確かめたかったのは、**日本語の要件を SQL に翻訳する**ことです。
+
+| 日本語の要件 | SQL |
+|------------|-----|
+| 連番 | `INT AUTO_INCREMENT` |
+| 行を1つに特定する | `PRIMARY KEY` |
+| 最大 100 文字の文字列 | `VARCHAR(100)` |
+| 空を許さない | `NOT NULL` |
+| **空を許す** | **何も書かない** |
+| 日付 | `DATE` |
+
+**「空を許す」ときに何も書かない**のが、いちばん引っかかるところです。
+`NULL` と書くこともできますが、書かないのが普通です。
+「書いていない＝許す」という既定を覚えてください。
+
+`rating` を `INT` にしましたが、「5段階なのに `INT` は大きすぎないか」と思った人は鋭いです。
+もっと小さい型もあります。型の選び分けは第5章 5.1 で扱います。
+
+> **よくある間違い**
+> `CREATE DATABASE sandbox2;` のあとに `USE sandbox2;` を忘れると、
+> **`shop` の中に `readings` を作ってしまいます。**
+> 気づかずに進むと、第3章以降で `SHOW TABLES;` の結果が本文と違って驚くことになります。
+>
+> 作る前に `SELECT DATABASE();` を打つ習慣をつけてください（2.4.2）。
+> もし `shop` の中に作ってしまったら、`USE shop;` してから
+> `DROP TABLE readings;` で消せます。
+
+---
+
+### 演習 2.3 の解答
+
+**`shop_user` で接続する**
+
+```bash
+docker compose exec db mysql -u shop_user -p --default-character-set=utf8mb4 shop
+```
+
+パスワードは `.env` の `MYSQL_PASSWORD`（`shop_pass_1234`）です。
+
+**見えるデータベースが違う**
+
+```sql
+SHOW DATABASES;
+```
+
+```text
++--------------------+
+| Database           |
++--------------------+
+| information_schema |
+| performance_schema |
+| shop               |
++--------------------+
+3 rows in set (0.00 sec)
+```
+
+`root` のときは5つ見えていました（2.4.1）。
+`shop_user` からは、**`mysql` と `sys` が見えません。**
+**権限が無いものは、エラーになるのではなく、そもそも一覧に出てこない**のが特徴です。
+
+**読み書きはできる**
+
+```sql
+SELECT COUNT(*) FROM products;
+```
+
+```text
++----------+
+| COUNT(*) |
++----------+
+|       20 |
++----------+
+1 row in set (0.00 sec)
+```
+
+`shop` の中では、`root` と同じことができます。
+
+**箱を作ることはできない**
+
+```sql
+CREATE DATABASE test1;
+```
+
+```text
+ERROR 1044 (42000): Access denied for user 'shop_user'@'%' to database 'test1'
+```
+
+**パスワードを間違えたとき**
+
+```text
+ERROR 1045 (28000): Access denied for user 'shop_user'@'172.18.0.1' (using password: YES)
+```
+
+2.2.3 の表の
+**「`ERROR 1045 ... Access denied ...` → パスワードが違う」**の行に当たります。
+
+**なぜアプリからは `root` を使わないのか**
+
+**アプリに穴があったときの被害を、そのデータベースの中だけに閉じ込めるためです**（2.2.2）。
+
+**解説**
+
+2つの `Access denied` を見分けられることが、この演習の狙いです。
+
+| 番号 | メッセージの形 | 意味 |
+|------|--------------|------|
+| **1045** | `Access denied for user 'ユーザー名'@'接続元' (using password: YES)` | **入口で断られた。** ユーザー名かパスワードが違う |
+| **1044** | `Access denied for user 'ユーザー名'@'%' to database 'データベース名'` | **入れたが、その操作は許されていない** |
+
+見分ける鍵は、**メッセージに `to database ...` が付いているか**です。
+付いていれば「接続はできている」ので、パスワードを疑う必要はありません。
+
+`'shop_user'@'172.18.0.1'` の `@` のうしろは**接続元**です。
+Docker のネットワーク内から繋いだので、コンテナの IP アドレスが出ています。
+この数字は環境によって違います。
+
+> **補足：`%` の意味**
+> `'shop_user'@'%'` の `%` は「**どこから繋いできてもよい**」という意味です。
+> MySQL のユーザーは「名前」だけでなく「**名前と接続元の組**」で管理されています。
+> 同じ名前でも、接続元が違えば別のユーザーとして扱えます。
+> 権限の細かい設定は、この本では扱いません。
+
+---
+
+### 演習 2.4 の解答
+
+**手順書の例**
+
+`mysql-lesson/README.md`
+
+````markdown
+# mysql-text 練習用データベース
+
+## 必要なもの
+
+- Docker Desktop（起動しておくこと）
+- ディスクの空き 5 GB 程度
+- `.env` ファイル（**Git には入っていません。** 下の「作り直す手順」の 1 を参照）
+
+## 作り直す手順
+
+1. `mysql-lesson` の直下に `.env` を作り、次の4行を書く
+
+   ```text
+   MYSQL_ROOT_PASSWORD=root_pass_1234
+   MYSQL_DATABASE=shop
+   MYSQL_USER=shop_user
+   MYSQL_PASSWORD=shop_pass_1234
+   ```
+
+2. いまあるコンテナとデータを消す（**データが消えます**）
+
+   ```bash
+   docker compose down -v
+   ```
+
+3. 起動する
+
+   ```bash
+   docker compose up -d
+   ```
+
+4. **接続できるようになるまで待つ。** 次を実行して
+   `ready for connections` が出るまで、10 秒おきに確認する
+
+   ```bash
+   docker compose logs db
+   ```
+
+5. 接続する（パスワードは `.env` の `MYSQL_ROOT_PASSWORD`）
+
+   ```bash
+   docker compose exec db mysql -u root -p --default-character-set=utf8mb4 shop
+   ```
+
+6. 練習用データを流し込む
+
+   ```sql
+   SOURCE /sql/shop.sql;
+   ```
+
+## どうなれば成功か
+
+`mysql>` で次を打ち、5つの件数が下の表と一致すること。
+
+```sql
+SELECT COUNT(*) FROM categories;
+SELECT COUNT(*) FROM customers;
+SELECT COUNT(*) FROM products;
+SELECT COUNT(*) FROM orders;
+SELECT COUNT(*) FROM order_items;
+```
+
+| テーブル | 件数 |
+|---------|-----|
+| `categories` | 4 |
+| `customers` | 8 |
+| `products` | 20 |
+| `orders` | 15 |
+| `order_items` | 37 |
+
+さらに、日本語が読めることを確認する。
+
+```sql
+SELECT * FROM categories;
+```
+
+`食器` / `キッチン` / `収納` / `文房具` と表示されれば成功。
+`??` になっていたら、接続時の `--default-character-set=utf8mb4` を確認する。
+
+## 注意
+
+- `docker compose down -v` は**データを消す**。作り直したいとき以外は打たない
+- 止めるだけなら `docker compose stop`、再開は `docker compose start`
+- `DROP DATABASE shop;` は、練習用データを消してしまう
+````
+
+**解説**
+
+2.5.3 の最後に並べた4段階を、**自分以外の人が読んで実行できる形**に書き出す演習です。
+（docker-text 8.1.3 で「引き継ぎ用の手順書」を書いた人は、同じ形で構いません。）
+
+**この手順書で確認してほしかったのは、次の3つです。**
+
+1. **`.env` が Git に入らない**こと（2.1.1 の `.gitignore`）。
+   これを書き忘れると、渡された人は起動した瞬間に
+   `Database is uninitialized and password option is not specified` で止まります（2.2.3）
+2. **待つ場所が明記されている**こと（手順の 4）。
+   ここを書かないと、渡された人は「手順どおりにやったのに接続できない」と報告してきます
+3. **成功の判断基準が数字で書かれている**こと。
+   「動きました」ではなく「20 件出ました」と言える形にします（第0章 0.3.1）
+
+**手順書は、書いただけでは正しいか分かりません。**
+自分の環境はすでに揃っているので、たいてい成功してしまうためです。
+だから、この演習では **`docker compose down -v` から実際にやり直す**ところまでを条件にしました。
+
+> **よくある間違い**
+> 手順書に「`docker compose up -d` して、接続して、SQL を流す」とだけ書いてしまうと、
+> **渡された人は `sql/shop.sql` の存在を知りません。**
+> 手順書は「その環境を知らない人が読む」前提で書いてください。
+>
+> なお、`.env` の中身を手順書にそのまま書けるのは、
+> **練習用のパスワードだから**です。実際のアプリでは、
+> パスワードは別の安全な方法で伝えます（fastapi-text 7.6.2）。
+
+---
