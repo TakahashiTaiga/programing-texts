@@ -2729,3 +2729,785 @@ SOURCE /sql/shop.sql;
 `SOURCE` ならテーブルごと作り直されるので、値も列も確実に元に戻ります。
 
 ---
+
+## 第5章
+
+### 理解度チェック
+
+**問 5.1 の解答**
+
+- ① **`NOT NULL`**
+- ② **`UNIQUE`**
+- ③ **`CHECK`**
+- ④ **外部キー**（`FOREIGN KEY`）
+
+**解説**
+
+①〜③が 5.2 の制約、④が 5.4 の外部キーです。
+
+| 決まり | 止めるもの | エラー |
+|-------|----------|-------|
+| `NOT NULL` | 空の値（5.2.1） | `1048` / `1364` |
+| `UNIQUE` | 重複した値（5.2.3） | `1062` |
+| `CHECK` | 条件を満たさない値（5.2.4） | `3819` |
+| 外部キー | 存在しない相手を指す値（5.4.3） | `1452` / `1451` |
+
+4つとも「**人間が気をつける**」から「**データベースが止める**」への置き換えです。
+
+---
+
+**問 5.2 の解答**
+
+**3. `DECIMAL(10, 2)`**
+
+**解説**
+
+`FLOAT` と `DOUBLE` は**浮動小数点数**で、10進数の小数をぴったり持てません（5.1.5）。
+本文で見たとおり、`1999.99` を入れたのに `= 1999.99` が偽になります。
+
+4の `VARCHAR(10)` は、値としては入りますが**計算も比較もできません。**
+`'1999.99' > '300'` のような文字列の比較になり、順番も金額の大小になりません。
+
+`DECIMAL(10, 2)` は「全体で 10 桁、うち小数点以下 2 桁」です。
+
+> **補足：円だけを扱うなら `INT` が最善です**
+> この本の `products.price` が `INT` なのは、**円に小数が無い**からです。
+> 外貨や税率のように小数が避けられないときだけ `DECIMAL` を使います。
+
+---
+
+**問 5.3 の解答**
+
+**2. `4` と `5` は配られたが、その行が取り消された（または削除された）**
+
+**解説**
+
+`AUTO_INCREMENT` は「いま入っている最大の番号の次」ではなく、
+**テーブルが内部で持っている「次に配る番号」**を配ります（5.3.2）。
+
+配った番号は、`ROLLBACK` しても、その行を `DELETE` しても**戻りません。**
+番号を返そうとすると、同時に `INSERT` している別の接続を待たせることになり、
+そのほうが困るからです（4.5.1 のロックと同じ事情）。
+
+1が違うのは、これが正常な動作だからです。
+4が違うのは、取り消された行はどこにも残っていないからです（4.4.2）。
+
+> **よくある間違い**
+> 欠番を見つけて `UPDATE` で番号を詰めると、
+> **その `id` を指している子テーブルの行が、全部別の行を指すことになります**（5.4）。
+> `id` は「何番目か」ではなく「名札」です。飛んでいても困りません。
+
+---
+
+**問 5.4 の解答**
+
+**2. `books` の行を消そうとしたが、その本を指す `loans` の行が残っていた**
+
+**解説**
+
+外部キーは、2つの方向から参照整合性を守ります（5.4.3）。
+
+| 番号 | 何をしたとき | エラー |
+|------|------------|-------|
+| `1452` | **存在しない親を指す子**を入れようとした | `Cannot add or update a child row` |
+| `1451` | **子に指されている親**を消そうとした | `Cannot delete or update a parent row` |
+
+英語のメッセージを読むと、`child row`（子の行）か `parent row`（親の行）かで
+**どちらの向きで止まったか**が分かります。
+
+1は `ERROR 1452`、3は `ERROR 1048`（5.2.1）、4は `ERROR 1062`（5.2.3）です。
+
+---
+
+**問 5.5 の解答**
+
+**`MODIFY COLUMN` は列の定義をまるごと書き直すため、
+書かなかった `DEFAULT 1` が消えてしまったから。**
+
+**解説**
+
+`MODIFY COLUMN copies INT NOT NULL` は
+「`NOT NULL` を足す」ではなく「**`INT NOT NULL` という定義に置き換える**」という意味です（5.6.2 ②）。
+
+置き換えた結果、`DEFAULT 1` が無くなりました。
+そのため `copies` を省略した `INSERT` は、
+**入れる値が決まっていない**状態になり `ERROR 1364` で止まります（5.2.1）。
+
+**正しい直し方**
+
+```sql
+ALTER TABLE books MODIFY COLUMN copies INT NOT NULL DEFAULT 1;
+```
+
+**打つ前に `SHOW CREATE TABLE` でいまの定義を確認し、
+変えたいところ以外はそのまま書き写す**のが確実です（5.6.3 のチェックリスト②）。
+
+> **補足：この事故は、その場では気づけません**
+> `ALTER TABLE` 自体は `Query OK` で成功します。
+> 困るのは、**次に `INSERT` を打った人**です。
+> 「昨日まで動いていたのに」という報告になるのは、このためです。
+
+---
+
+**問 5.6 の解答**
+
+**同じタイトルが書かれた行が何行もあるため、1行だけ直すと表記がばらばらになり、
+全部直そうとしても「全部直せた」と確かめる手段がない。**
+
+**解説**
+
+5.5.1 の①（更新の異常）です。実際に試すと、こうなりました。
+
+```text
+|  1 | リーダブルコード入門 第2版             | 田中 陽子     |
+|  2 | リーダブルコード入門                   | 佐藤 健       |
+|  4 | リーダブルコード入門                   | 鈴木 一郎     |
+```
+
+**同じ本が2つの名前で存在してしまっています。**
+
+「3行とも直せばよい」と思えますが、行が3万行あったら、
+打ち間違いのある行が混ざっていたら、直している最中に新しい行が増えたら——
+**直し終わったことを誰も保証できません。**
+
+分けてあれば、直すのは `books` の1行だけです。
+これが「**同じ事実は1か所にだけ置く**」という正規化の目的です。
+
+---
+
+**問 5.7 の解答**
+
+1. **`NULL` を許す形で足す**：`ALTER TABLE members ADD COLUMN phone VARCHAR(20);`
+2. **`UPDATE` で 1000 行すべてに値を入れる**
+3. **`MODIFY` で `NOT NULL` にする**：`ALTER TABLE members MODIFY COLUMN phone VARCHAR(20) NOT NULL;`
+
+**解説**
+
+5.6.2 ①の「安全な3段階」です。
+
+いきなり `NOT NULL` で足すと、既存の 1000 行に
+**空文字が黙って入る**か、型によっては `ERROR 1292` で止まります。
+空文字が入った場合がとくに厄介で、
+**`NULL` ではないので `WHERE phone IS NULL` では見つけられません。**
+
+> **補足：2段階目で入れる値が無いときは**
+> 1000 人分の電話番号が手元に無いなら、**その列は `NOT NULL` にできません。**
+> 「決まりを守れないデータが現実にある」ということなので、
+> 制約のほうを諦めて `NULL` を許す、というのが正しい判断です（5.2.1）。
+
+---
+
+### 演習問題
+
+### 演習 5.1 の解答
+
+**解答例**
+
+```sql
+CREATE TABLE magazines (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    title         VARCHAR(60) NOT NULL,
+    issue_number  INT         NOT NULL,
+    price         INT         NOT NULL DEFAULT 0,
+    published_on  DATE        NOT NULL,
+    note          TEXT,
+    registered_at DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+```sql
+DESCRIBE magazines;
+```
+
+実行結果:
+
+```text
++---------------+-------------+------+-----+-------------------+-------------------+
+| Field         | Type        | Null | Key | Default           | Extra             |
++---------------+-------------+------+-----+-------------------+-------------------+
+| id            | int         | NO   | PRI | NULL              | auto_increment    |
+| title         | varchar(60) | NO   |     | NULL              |                   |
+| issue_number  | int         | NO   |     | NULL              |                   |
+| price         | int         | NO   |     | 0                 |                   |
+| published_on  | date        | NO   |     | NULL              |                   |
+| note          | text        | YES  |     | NULL              |                   |
+| registered_at | datetime    | NO   |     | CURRENT_TIMESTAMP | DEFAULT_GENERATED |
++---------------+-------------+------+-----+-------------------+-------------------+
+7 rows in set (0.01 sec)
+```
+
+**確認：`title` を書かない `INSERT`**
+
+```sql
+INSERT INTO magazines (issue_number, published_on) VALUES (1, '2026-09-01');
+```
+
+```text
+ERROR 1364 (HY000): Field 'title' doesn't have a default value
+```
+
+**確認：3つの列を省略した `INSERT`**
+
+```sql
+INSERT INTO magazines (title, issue_number, published_on) VALUES ('月刊データベース', 9, '2026-09-01');
+SELECT id, title, issue_number, price, registered_at FROM magazines;
+```
+
+実行結果:
+
+```text
++----+--------------------------+--------------+-------+---------------------+
+| id | title                    | issue_number | price | registered_at       |
++----+--------------------------+--------------+-------+---------------------+
+|  1 | 月刊データベース         |            9 |     0 | 2026-09-15 07:31:16 |
++----+--------------------------+--------------+-------+---------------------+
+1 row in set (0.00 sec)
+```
+
+`price` に `0`、`registered_at` に実行した瞬間の日時が入っています。
+`note` は `NULL` のままです。
+
+**解説**
+
+型の選び方は、次のように決めました。
+
+| 列 | 選んだ型 | 理由 |
+|----|--------|------|
+| `id` | `INT AUTO_INCREMENT` | 代理キー（5.3.3）。行数が 21 億を超えることはない |
+| `title` | `VARCHAR(60)` | **上限が決まっている**ので `VARCHAR`（5.1.2） |
+| `issue_number` | `INT` | 号数。`TINYINT` では 127 号で足りなくなる（5.1.1） |
+| `price` | `INT` | **円に小数は無い**（5.1.5） |
+| `published_on` | `DATE` | 時刻に意味が無い（5.1.3） |
+| `note` | `TEXT` | **上限を決められない**ため（5.1.2） |
+| `registered_at` | `DATETIME` | 「いつ登録したか」は時刻まで意味がある（5.1.3） |
+
+**価格に `FLOAT` を選ばない理由**（完成条件の最後の項目）
+
+> 入れた値と保存される値がぴったり一致せず、
+> 合計や比較の結果がずれるため（5.1.5）。
+
+> **よくある間違い**
+> `note` を `TEXT NOT NULL DEFAULT '未記入'` と書くと、次のエラーになります。
+>
+> ```text
+> ERROR 1101 (42000): BLOB, TEXT, GEOMETRY or JSON column 'note' can't have a default value
+> ```
+>
+> **`TEXT` は既定値を持てません**（5.2.2 の「よくある間違い」）。
+> 既定値を持たせたいなら `VARCHAR(n)` にできないかを先に考えてください。
+
+> **補足：`published_on` を `NOT NULL` にした理由**
+> 「発売日が決まっていない雑誌」は、雑誌として成り立ちません（5.2.1 の判断基準）。
+> 一方 `books.published_on` は、**昔の本で発売日が分からないものがある**ため空を許しました。
+> **同じ名前の列でも、扱うデータによって判断は変わります。**
+
+---
+
+### 演習 5.2 の解答
+
+**解答例**
+
+```sql
+DROP TABLE magazines;
+
+CREATE TABLE magazines (
+    id            INT AUTO_INCREMENT PRIMARY KEY,
+    title         VARCHAR(60) NOT NULL,
+    issue_number  INT         NOT NULL,
+    price         INT         NOT NULL DEFAULT 0,
+    published_on  DATE        NOT NULL,
+    note          TEXT,
+    registered_at DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_magazines_title_issue UNIQUE (title, issue_number),
+    CONSTRAINT chk_magazines_price CHECK (price >= 0),
+    CONSTRAINT chk_magazines_issue CHECK (issue_number >= 1)
+);
+```
+
+**3つのエラーを出す**
+
+```sql
+INSERT INTO magazines (title, issue_number, price, published_on) VALUES ('月刊データベース', 9, 1200, '2026-09-01');
+INSERT INTO magazines (title, issue_number, price, published_on) VALUES ('月刊データベース', 9, 1200, '2026-09-01');
+```
+
+```text
+Query OK, 1 row affected (0.01 sec)
+
+ERROR 1062 (23000): Duplicate entry '月刊データベース-9' for key 'magazines.uq_magazines_title_issue'
+```
+
+```sql
+INSERT INTO magazines (title, issue_number, price, published_on) VALUES ('週刊ネットワーク', 3, -1, '2026-09-08');
+```
+
+```text
+ERROR 3819 (HY000): Check constraint 'chk_magazines_price' is violated.
+```
+
+```sql
+INSERT INTO magazines (title, issue_number, price, published_on) VALUES ('週刊ネットワーク', 0, 800, '2026-09-08');
+```
+
+```text
+ERROR 3819 (HY000): Check constraint 'chk_magazines_issue' is violated.
+```
+
+**号数が違えば入る**
+
+```sql
+INSERT INTO magazines (title, issue_number, price, published_on) VALUES ('月刊データベース', 10, 1200, '2026-10-01');
+SELECT id, title, issue_number FROM magazines;
+```
+
+実行結果:
+
+```text
++----+--------------------------+--------------+
+| id | title                    | issue_number |
++----+--------------------------+--------------+
+|  1 | 月刊データベース         |            9 |
+|  3 | 月刊データベース         |           10 |
++----+--------------------------+--------------+
+2 rows in set (0.00 sec)
+```
+
+**解説**
+
+**① 2列まとめての `UNIQUE`**
+
+```sql
+CONSTRAINT uq_magazines_title_issue UNIQUE (title, issue_number)
+```
+
+これは「**`title` と `issue_number` の組み合わせ**が重複しない」という意味です（5.2.3）。
+`title` 単体は重複して構わないので、9月号と10月号は両方登録できます。
+
+もし `title VARCHAR(60) NOT NULL UNIQUE` と**列に直接**書いてしまうと、
+**同じ雑誌の2号目が登録できません。**
+どちらの意味で重複を禁じたいのかを、はっきりさせてから書いてください。
+
+**② エラーメッセージに名前が出る**
+
+`CONSTRAINT 名前` を付けておいたので、
+
+```text
+Check constraint 'chk_magazines_price' is violated.
+```
+
+のように、**どちらの `CHECK` に引っかかったか**が一目で分かります（5.2.4）。
+名前を省略すると `magazines_chk_1` / `magazines_chk_2` のような自動の名前になり、
+定義を見に行かないと分かりません。
+
+**③ `id` が `1` の次が `3` になっています**
+
+失敗した `INSERT` も番号を使うことがあるためです（5.3.2）。
+**欠番は正常です。**
+
+> **よくある間違い**
+> `CHECK (price > 0)` と書くと、**無料の付録誌（0 円）が登録できなくなります。**
+> `>` と `>=` の違いが、そのまま業務の決まりになります。
+> **制約は「データベースの都合」ではなく「業務の決まり」を書く場所**だと考えてください。
+
+---
+
+### 演習 5.3 の解答
+
+**解答例（3段階）**
+
+**1段階目：`NULL` を許す形で足す**
+
+```sql
+ALTER TABLE loans ADD COLUMN due_on DATE;
+```
+
+```text
+Query OK, 0 rows affected (0.05 sec)
+Records: 0  Duplicates: 0  Warnings: 0
+```
+
+**2段階目：`UPDATE` で埋める**
+
+```sql
+UPDATE loans SET due_on = DATE_ADD(loaned_on, INTERVAL 14 DAY);
+```
+
+```text
+Query OK, 2 rows affected (0.01 sec)
+Rows matched: 2  Changed: 2  Warnings: 0
+```
+
+```sql
+SELECT * FROM loans;
+```
+
+実行結果:
+
+```text
++----+---------+-----------+------------+-------------+------------+
+| id | book_id | member_id | loaned_on  | returned_on | due_on     |
++----+---------+-----------+------------+-------------+------------+
+|  2 |       2 |         1 | 2026-09-01 | NULL        | 2026-09-15 |
+|  3 |       3 |         2 | 2026-09-05 | NULL        | 2026-09-19 |
++----+---------+-----------+------------+-------------+------------+
+2 rows in set (0.00 sec)
+```
+
+**3段階目：`NOT NULL` にする**
+
+```sql
+ALTER TABLE loans MODIFY COLUMN due_on DATE NOT NULL;
+```
+
+**制約を足す**
+
+```sql
+ALTER TABLE loans ADD CONSTRAINT chk_loans_due CHECK (due_on >= loaned_on);
+```
+
+**確認**
+
+```sql
+INSERT INTO loans (book_id, member_id, loaned_on, due_on) VALUES (2, 3, '2026-09-15', '2026-09-01');
+```
+
+```text
+ERROR 3819 (HY000): Check constraint 'chk_loans_due' is violated.
+```
+
+```sql
+INSERT INTO loans (book_id, member_id, loaned_on, due_on) VALUES (2, 3, '2026-09-15', '2026-09-29');
+SELECT COUNT(*) FROM loans;
+```
+
+```text
+Query OK, 1 row affected (0.01 sec)
+
++----------+
+| COUNT(*) |
++----------+
+|        3 |
++----------+
+```
+
+**解説**
+
+**なぜ3段階なのか**
+
+1段階目でいきなり `NOT NULL` にすると、既存の2行に入れる値がありません。
+
+```sql
+ALTER TABLE loans ADD COLUMN due_on DATE NOT NULL;
+```
+
+```text
+ERROR 1292 (22007): Incorrect date value: '0000-00-00' for column 'due_on' at row 1
+```
+
+MySQL が入れようとした `0000-00-00` は、**存在しない日付**です（5.6.2 ①）。
+
+この列が `VARCHAR` だった場合は、**エラーにならずに空文字が入ります。**
+そちらのほうが厄介で、`NULL` ではないので
+**`WHERE ... IS NULL` では見つけられません。**
+
+**`UPDATE` に `WHERE` を書いていないのはなぜか**
+
+第4章 4.2.3 で「`WHERE` を書き忘れると全行に当たる」と学びました。
+ここでは、**全行を埋めたいので、あえて `WHERE` を書いていません。**
+
+とはいえ、`Rows matched` が予想どおりかは必ず確認してください。
+2行のはずが 200 行だったら、`USE` するデータベースを間違えています。
+
+**列をまたぐ `CHECK`**
+
+```sql
+CHECK (due_on >= loaned_on)
+```
+
+`CHECK` の中には、**同じ行の別の列**を書けます（5.2.4）。
+「返却日は貸出日以降」のように空を許す列が絡む場合は、
+`CHECK (returned_on IS NULL OR returned_on >= loaned_on)` のように
+**`NULL` の場合を通す条件**を足す必要があります。
+`NULL` との比較は「不明」になり、**`CHECK` は不明を「違反ではない」として通します**が、
+条件の書き方によっては意図しない結果になるため、明示しておくのが安全です。
+
+> **よくある間違い**
+> 3段階目を `ALTER TABLE loans MODIFY COLUMN due_on NOT NULL;` と書くと、
+> **型を書いていない**ので `ERROR 1064`（文法エラー）になります。
+> `MODIFY` は定義の書き直しなので、**型から全部書きます**（5.6.2 ②）。
+
+---
+
+### 演習 5.4 の解答
+
+**解答例**
+
+```sql
+USE shop;
+SOURCE /sql/shop.sql;
+
+ALTER TABLE products
+    ADD CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES categories (id);
+ALTER TABLE orders
+    ADD CONSTRAINT fk_orders_customer FOREIGN KEY (customer_id) REFERENCES customers (id);
+ALTER TABLE order_items
+    ADD CONSTRAINT fk_items_order FOREIGN KEY (order_id) REFERENCES orders (id);
+ALTER TABLE order_items
+    ADD CONSTRAINT fk_items_product FOREIGN KEY (product_id) REFERENCES products (id);
+```
+
+**確認：存在しない顧客の注文**
+
+```sql
+INSERT INTO orders (customer_id, ordered_at, status) VALUES (99, '2026-09-15 10:00:00', '受付');
+```
+
+```text
+ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`shop`.`orders`, CONSTRAINT `fk_orders_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`))
+```
+
+**第4章 4.1.3 では、この行が入ってしまっていました。**
+
+**確認：使われている分類の削除**
+
+```sql
+DELETE FROM categories WHERE id = 4;
+```
+
+```text
+ERROR 1451 (23000): Cannot delete or update a parent row: a foreign key constraint fails (`shop`.`products`, CONSTRAINT `fk_products_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`))
+```
+
+**確認：`order_items` の外部キーは2本**
+
+```sql
+SHOW CREATE TABLE order_items\G
+```
+
+実行結果（抜粋）:
+
+```text
+  PRIMARY KEY (`id`),
+  KEY `fk_items_order` (`order_id`),
+  KEY `fk_items_product` (`product_id`),
+  CONSTRAINT `fk_items_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`),
+  CONSTRAINT `fk_items_product` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+```
+
+**最後の確認：`SOURCE` を流し直すと消える**
+
+```sql
+SOURCE /sql/shop.sql;
+SHOW CREATE TABLE orders\G
+```
+
+実行結果（抜粋）:
+
+```text
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+```
+
+`CONSTRAINT` の行が消えています。
+
+**消える理由**（完成条件の最後の項目）
+
+> `shop.sql` は先頭で `DROP TABLE IF EXISTS` をしてテーブルを作り直しており、
+> **外部キーはテーブルの定義の一部**なので、作り直しと一緒に消えるため（5.4.2 の補足）。
+
+**解説**
+
+**① 順番に意味があります**
+
+4本の `ALTER TABLE` は、**親テーブルが先に存在していれば**どの順でも構いません。
+ただし `SOURCE` を流す前に足そうとすると、
+第4章の演習で壊れたデータが残っている場合に `ERROR 1452` で拒否されます（5.4.2 の「注意」）。
+
+**制約は、これから入る行だけでなく、いま入っている行にも適用されます。**
+
+**② `DROP TABLE` の順番も外部キーで決まります**
+
+`shop.sql` の先頭は、次の順でした（2.5.2）。
+
+```sql
+DROP TABLE IF EXISTS order_items;
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS products;
+DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS customers;
+```
+
+**子（`order_items`）から先に消しています。**
+外部キーを足したあとでこのファイルを流せるのは、この順番のおかげです。
+順番が逆だと、`Cannot drop table ... referenced by a foreign key constraint` で止まります。
+
+**③ 外部キーを `shop.sql` に書き足してもよいのか**
+
+やって構いません。`CREATE TABLE` の中に `CONSTRAINT ... FOREIGN KEY ...` を書けば、
+流し直すたびに外部キー付きで作られます。
+
+ただし**この本では書き足しません。**
+第6章以降の例では、外部キーの有無にかかわらず同じ結果になるためです。
+「テキストのファイルと自分の環境を同じに保つ」ほうを優先してください。
+
+> **よくある間違い**
+> `ALTER TABLE ... ADD FOREIGN KEY (...) REFERENCES ...;` と、
+> **`CONSTRAINT 名前` を省いて書く**こともできます。
+> この場合 MySQL が `orders_ibfk_1` のような名前を自動で付けます。
+>
+> 動きは同じですが、**エラーメッセージを見ても、どの関連で止まったのか分かりません。**
+> 外部キーが4本もあるときは、とくに名前を付けてください（5.4.2）。
+
+---
+
+### 演習 5.5 の解答
+
+**解答例**
+
+```sql
+USE design;
+
+CREATE TABLE equipment (
+    id      INT AUTO_INCREMENT PRIMARY KEY,
+    name    VARCHAR(40) NOT NULL UNIQUE,
+    storage VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE employees (
+    id         INT AUTO_INCREMENT PRIMARY KEY,
+    name       VARCHAR(20) NOT NULL,
+    department VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE rentals (
+    id           INT  AUTO_INCREMENT PRIMARY KEY,
+    equipment_id INT  NOT NULL,
+    employee_id  INT  NOT NULL,
+    rented_on    DATE NOT NULL,
+    returned_on  DATE,
+    CONSTRAINT fk_rentals_equipment FOREIGN KEY (equipment_id) REFERENCES equipment (id),
+    CONSTRAINT fk_rentals_employee  FOREIGN KEY (employee_id)  REFERENCES employees (id)
+);
+```
+
+**データを入れ直す（親 → 子の順）**
+
+```sql
+INSERT INTO equipment (name, storage) VALUES
+    ('プロジェクター',   '3F 倉庫'),
+    ('ノートパソコン A', '2F 事務室'),
+    ('測定器',           '3F 倉庫'),
+    ('三脚',             '3F 倉庫');
+
+INSERT INTO employees (name, department) VALUES
+    ('田中 陽子', '営業部'),
+    ('佐藤 健',   '開発部'),
+    ('鈴木 一郎', '開発部');
+
+INSERT INTO rentals (equipment_id, employee_id, rented_on, returned_on) VALUES
+    (1, 1, '2026-07-06', '2026-07-08'),
+    (2, 2, '2026-07-21', '2026-07-30'),
+    (1, 2, '2026-08-03', '2026-08-05'),
+    (3, 3, '2026-08-17', NULL),
+    (2, 1, '2026-09-01', '2026-09-04'),
+    (4, 1, '2026-09-07', NULL);
+```
+
+**件数の確認**
+
+```sql
+SELECT COUNT(*) FROM equipment;
+SELECT COUNT(*) FROM employees;
+SELECT COUNT(*) FROM rentals;
+```
+
+それぞれ **4 / 3 / 6** が返れば正解です。
+
+**保管場所の変更が1行で済む**
+
+```sql
+UPDATE equipment SET storage = '1F 倉庫' WHERE name = 'プロジェクター';
+```
+
+```text
+Query OK, 1 row affected (0.01 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+```
+
+元の台帳では、プロジェクターの行が2行あったので **2行直す**必要がありました。
+分けたことで、**直す場所が1か所**になりました（5.5.1）。
+
+**存在しない備品番号**
+
+```sql
+INSERT INTO rentals (equipment_id, employee_id, rented_on) VALUES (99, 1, '2026-09-15');
+```
+
+```text
+ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`design`.`rentals`, CONSTRAINT `fk_rentals_equipment` FOREIGN KEY (`equipment_id`) REFERENCES `equipment` (`id`))
+```
+
+**どの列をどこに置いたか**（完成条件の最後の項目）
+
+| 列 | 置いたテーブル | 理由 |
+|----|------------|------|
+| 備品名 | `equipment` | **備品ごとに1つ**決まる |
+| 保管場所 | `equipment` | **備品名で決まる**（貸出とは関係ない）→ 第3正規形（5.5.2） |
+| 社員名 | `employees` | **社員ごとに1つ**決まる |
+| 部署 | `employees` | **社員名で決まる**（貸した備品とは関係ない）→ 第3正規形 |
+| 貸出日 | `rentals` | **その貸出1回ごと**に決まる |
+| 返却日 | `rentals` | 同上。**まだ返っていない場合は `NULL`** |
+
+**解説**
+
+**① 判断の手順**
+
+台帳の列を1つずつ見て、「**この値は何で決まるか**」を問いました。
+
+```text
+保管場所は「3F 倉庫」——何で決まる？ → 備品名で決まる（貸出日や社員では変わらない）
+   → 備品のテーブルへ
+
+部署は「開発部」——何で決まる？ → 社員名で決まる
+   → 社員のテーブルへ
+
+貸出日は「2026-07-06」——何で決まる？ → その貸出1回だけで決まる
+   → 貸出のテーブルに残す
+```
+
+**「何で決まるか」が同じ列を集めると、テーブルになります。**
+これが 5.5.2 の第3正規形でやっていることです。
+
+**② 未返却は `NULL`**
+
+「（未返却）」という**文字**を入れてはいけません。
+`returned_on` は `DATE` 型なので、そもそも文字が入りません（5.1.3）。
+「値が無い」は `NULL` で表します（3.3.4）。
+
+未返却だけを探すには `WHERE returned_on IS NULL` です。
+
+**③ `equipment.name` に `UNIQUE` を付けた理由**
+
+同じ備品名が2行できると、**分けた意味がなくなります**（また2か所に散らばります）。
+「備品名は重複しない」という業務の決まりを、制約として書いておきました（5.2.3）。
+
+社員名に `UNIQUE` を付けなかったのは、**同姓同名がありうる**からです。
+`employees` の行を区別するのは `id` であって、名前ではありません（5.3.3）。
+
+**④ 元の台帳は復元できるか**
+
+できます。`rentals` の各行から `equipment_id` と `employee_id` をたどれば、
+備品名・保管場所・社員名・部署がすべて分かります。
+
+ただし、**いまの知識では3回 `SELECT` を打って目で突き合わせる**ことになります。
+1回の `SELECT` で台帳の形に戻す方法が、次の章の**結合（`JOIN`）**です。
+
+> **別解：貸出のテーブルに `id` を置かない設計**
+> 「同じ社員が同じ備品を、同じ日に2回借りることはない」と決めるなら、
+> `PRIMARY KEY (equipment_id, employee_id, rented_on)` という複合主キー（5.3.1）にもできます。
+>
+> ただし、**その決まりが将来も正しいとは限りません**（午前と午後で2回借りるかもしれません）。
+> この本では、**中間に立つテーブルにも `id` を1本立てる**方針を取ります（5.3.3）。
+
+---
