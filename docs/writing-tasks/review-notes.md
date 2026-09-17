@@ -358,6 +358,63 @@
         書いています（本文の方針は「`HAVING` には式をそのまま書く」）。
         この書き方の説明が強すぎないか、レビューで見てください
 
+- [ ] `mysql-text` 第8章（M-08）**MySQL 8.0.46 + 実アプリで確認済み。差分と Windows の確認をお願いします**
+  - **本文・解答編に載せたコマンド・SQL・Python・出力は、次の版で実際に実行して確認済み**です。
+    MySQL **8.0.46**（Ubuntu パッケージ）/ SQLAlchemy **2.0.36** / PyMySQL **1.1.1** /
+    cryptography **44.0.0** / Alembic **1.14.0** / FastAPI **0.115.6** / Python **3.11**。
+    確認した範囲は次のとおりです
+    - `CREATE DATABASE` / `CREATE USER` / `GRANT` / `SHOW GRANTS` / `SHOW DATABASES` の出力と、
+      `USE shop;` が `1044` になること
+    - `alembic upgrade head` の出力（`Context impl MySQLImpl.` / `Will assume non-transactional DDL.`）
+    - `SHOW CREATE TABLE tasks` / `comments` / `alembic_version` の**全文**
+      （`tinyint(1)` / `json` / `KEY task_id` / `CONSTRAINT comments_ibfk_1` / `varchar(32)`）
+    - `ON DELETE CASCADE` の実際の挙動（`tasks` 1件削除で `comments` が3件減る）と `1452`
+    - N+1 の本数（`general_log` で `GET /tasks` が **4本 → 2本**、`GET /tasks/1` は **2本**）と、
+      `sqlalchemy.engine` のログ出力（`IN (...)` に変わるところまで）
+    - インジェクション4種（`' OR '1'='1` / `UNION` での `owner_email` 漏れ /
+      `; DROP TABLE` が `1064` になること / プレースホルダで 0 件になること）
+    - プールの計測（`NullPool` 1.0 ミリ秒 / 既定 0.3 ミリ秒）、`SHOW GLOBAL STATUS LIKE 'Connections'`
+      の増え方（+11 / +2）、`pool.status()` の表示、枯渇時の `TimeoutError`
+    - `mysqldump` の出力内容と、`SOURCE` による復旧（`products` 15 → 20 件）
+  - [ ] **確認できていないのは、本のターゲットである MySQL 8.4 との差分**です。
+        とくに次の2点を見てください
+        - `SHOW GRANTS` の**権限の並び順**（本文は `SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, REFERENCES, INDEX, ALTER` の順で載せています）
+        - `wait_timeout` / `max_connections` の既定値（本文は **28800** / **151**）
+  - [ ] **Windows（PowerShell）での動作が未確認**です。とくに次の3つ
+        - `curl.exe --get --data-urlencode "q=' OR '1'='1"` の**引用符の扱い**（8.4.1 / 8.4.3）。
+          PowerShell では `'` の扱いが bash と違うため、**囲み方を変える必要があるかもしれません**
+        - `docker compose exec db sh -c "mysqldump ... > /sql/shop_backup.sql"` が、
+          PowerShell から**そのまま通るか**（8.6.1。`"` の中の `>` が解釈されないこと）
+        - `.\.venv\Scripts\Activate.ps1` 後の `pip install PyMySQL cryptography`
+  - [ ] **docker-text 6.3.2 の記述に誤りがあります。修正をお願いします。**
+        `check_same_thread` を MySQL に渡したときのエラーとして、
+        docker-text は次を載せています。
+        ```text
+        TypeError: Invalid argument(s) 'check_same_thread' sent to create_engine()
+        ```
+        SQLAlchemy 2.0.36 + PyMySQL 1.1.1 での実際の出力は次のとおりです。
+        ```text
+        TypeError: Connection.__init__() got an unexpected keyword argument 'check_same_thread'
+        ```
+        **さらに、これは `create_engine(...)` の時点では起きず、最初に接続したときに出ます**
+        （そのため「起動は成功したのに最初のリクエストで 500」という形で現れます）。
+        mysql-text 8.1.2 ⑦ の表には、正しい文言と出るタイミングを書いてあります
+  - [ ] 8.4.1 で**わざと危ない窓口 `/tasks/search-ng` を作らせています。**
+        本文の 8.4.3 の末尾で削除を指示し、演習 8.3 の完成条件にも入れていますが、
+        **「残したまま docker-text 第7章の本番イメージを作る」事故が起きないか**、
+        レビューで指示の強さを見てください
+  - [ ] 8.5.1 の計測値（1.0 ミリ秒 → 0.3 ミリ秒、約3倍）は、
+        **MySQL が同じマシンで動いている環境での値**です。
+        本文には「絶対値ではなく比を見る」と書いてありますが、
+        **Docker のネットワークを経由する読者の環境では差がもっと大きく出ます。**
+        「約3倍」という表現が弱すぎないか、ご判断ください
+  - [ ] 8.2 で `comments` テーブルを `taskapp` に追加しています。
+        **`shop` 側には影響しません**（別のデータベースです）。
+        M-09 / M-FIN を書くときは、**`taskapp` に `tasks` / `comments` / `alembic_version` の
+        3テーブルがある前提**で構いません
+  - [ ] 8.1.2 ⑥ で、`POST /tasks` で足した1件を **`DELETE` で消して3件に戻す**よう指示しています。
+        以降の本数・件数がすべて「タスク3件」前提なので、**この指示が目立つかどうか**を見てください
+
 > **補足：`mysql-text/90-answers-part1.md` の冒頭から `./91-answers-part2.md` への
 > リンクは、M-06 で `91-answers-part2.md` を作成したため解消しました。**
 > あわせて `mysql-text/README.md` の「解答編 その2」もリンクに差し替えています。

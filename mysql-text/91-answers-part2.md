@@ -1380,3 +1380,885 @@ WHERE code = 'ORD-0500%'
 > ```
 
 ---
+
+## 第8章
+
+> **この章の解答は、`tasks` が3件・`comments` が6件の状態で書いています**
+> 第8章 8.1.2 ⑥ と 8.2.2 のとおりに進めた場合の件数です。
+> 件数が違っていても手順は同じです。**数字だけ自分の環境に読み替えてください。**
+
+> **SQL の本数は、必ず自分の手元で数えてください**
+> 8.3 の本数は「執筆時に数えた値」ではなく、**仕組みから決まる値**です
+> （タスク3件なら 1 + 3 = 4本）。
+> 数が合わないときは、`TRUNCATE TABLE mysql.general_log;` を打ち忘れていないか、
+> `.options(...)` の行が残っていないかを確かめてください。
+
+### 理解度チェック
+
+**問 8.1 の解答**
+
+- ① **`CREATE USER`**
+- ② **`GRANT`**
+- ③ **`SHOW GRANTS`**
+- ④ **接続元**（どこから繋いでくるか。`'ユーザー名'@'接続元'` の右側）
+
+**解説**
+
+3つのコマンドは、すべて 8.1.1 で使いました。
+
+④が、MySQL のユーザーで最も戸惑うところです。
+**`'task_user'@'localhost'` と `'task_user'@'%'` は、名前が同じでも別のユーザー**です。
+片方にだけ `GRANT` しても、もう片方は何もできません。
+
+```sql
+SHOW GRANTS FOR 'task_user'@'localhost';
+```
+
+こう打って `ERROR 1141` になったら、そのユーザーは存在していません。
+**8.1.1 で `'%'` を選んだ理由は、コンテナの外から繋ぐため**でした（8.1.3）。
+
+**よくある間違い**
+
+`SHOW GRANTS FOR task_user;`（引用符なし）と打つと、
+`'task_user'@'%'` と解釈されます。**たまたま今回は合っていますが、当てにしないでください。**
+必ず `'名前'@'接続元'` の形で書いてください。
+
+---
+
+**問 8.2 の解答**
+
+**2. `1142 CREATE command denied` になる。テーブルを作る権限が無い**
+
+**解説**
+
+8.1.1 の「よくある間違い」で扱ったものです。実際のエラーはこうなります。
+
+```text
+pymysql.err.OperationalError: (1142, "CREATE command denied to user 'task_user'@'localhost' for table 'alembic_version'")
+```
+
+**エラーの対象が `alembic_version` である**ことに注目してください。
+`tasks` を作る前に、Alembic は**自分の管理用テーブルを作ろうとして**止まっています。
+
+1が誤りなのは、**マイグレーションはテーブルの形を変える作業（DDL）**だからです。
+アプリ本体が使うのは読み書きの4つだけですが、**接続するユーザーは同じ**なので、
+DDL の権限も必要になります。
+
+3と4が誤りなのは、**接続そのものは成功している**からです。
+番号で区別できます（8.1.2 ⑦ の表）。
+
+| 番号 | どこで止まったか |
+|------|---------------|
+| 2003 | **繋がっていない** |
+| 1045 | 繋がったが、**誰か分からない** |
+| 1044 | 誰かは分かったが、**そのデータベースに入れない** |
+| 1142 | データベースには入れたが、**その操作ができない** |
+
+**別解の考え方**
+
+本番の運用では、「アプリ用」と「マイグレーション用」で**ユーザーを分ける**やり方もあります。
+
+- アプリ用：`SELECT, INSERT, UPDATE, DELETE` だけ
+- マイグレーション用：上記＋ `CREATE, ALTER, DROP, INDEX, REFERENCES`
+
+この本では、確認するものを増やさないために1つにまとめています。
+
+---
+
+**問 8.3 の解答**
+
+**4. 51 本**
+
+**解説**
+
+一覧を取る1本と、タスク50件ぶんの50本で 51 本です（8.3.1 の表）。
+
+3（50 本）を選びたくなりますが、**一覧そのものの1本を数え忘れています。**
+「N+1」の **+1 がそれ**です。
+
+1（1本）になるのは `joinedload` を使った場合、
+2（2本）になるのは `selectinload` を使った場合です（8.3.3）。
+
+**確かめ方**
+
+問題文どおり 50 件にするのは手間なので、手元の3件で確かめれば十分です。
+8.3.2 ②の方法で **4本**になることを見てから、
+「タスクが1件増えるごとに1本増える」と読み替えてください。
+
+---
+
+**問 8.4 の解答**
+
+**1本1本の SQL はインデックスが効いていて速いので、
+`long_query_time` の閾値を超えず、記録されないから。**
+
+**解説**
+
+8.3.1 の表で整理したとおりです。
+
+スロークエリログは「**1本が遅いもの**」を見つける道具でした（7.4.3）。
+N+1 の問題は「**軽い SQL が何百本も飛ぶ**」ことなので、性質が違います。
+
+`comments` の `task_id` には、**外部キーのために MySQL がインデックスを自動で作っています**（8.2.1）。
+そのため1本あたりの `EXPLAIN` は `type: ref` / `rows: 2` で、何も問題がありません。
+
+**そこで、8.3.2 では「本数を数える」道具に切り替えました。**
+
+| 何を疑うか | 使う道具 |
+|-----------|---------|
+| 1本が重い | `EXPLAIN` / スロークエリログ（第7章） |
+| **本数が多い** | **`sqlalchemy.engine` のログ / `general_log`**（8.3.2） |
+
+**補足**
+
+`long_query_time = 0` にすればすべて記録されますが、
+**それはもう「スロークエリログ」ではなく `general_log` と同じ使い方**です。
+目的に合った道具を選んでください。
+
+---
+
+**問 8.5 の解答**
+
+**危険なのは A。** 理由は、**f 文字列で SQL の文そのものを組み立てており、
+`q` に `'` が含まれていると文字列の終わりをこちらで決められてしまうから。**
+
+**解説**
+
+8.4.2 の最後の囲み記事で扱った区別です。**両方とも f 文字列を使っています。**
+違うのは「**何を作っているか**」です。
+
+| | 作っているもの | 危険か |
+|---|-------------|-------|
+| A | **SQL の文**（`SELECT ... WHERE ...`） | **危険** |
+| B | `LIKE` に渡す**値**（`%...%` というパターン） | 安全 |
+
+B で `q` が最終的にどう扱われるかは、8.4.2 のログで確認しました。
+
+```text
+WHERE tasks.title LIKE %(title_1)s
+[generated in 0.00013s] {'title_1': "%' OR '1'='1%"}
+```
+
+**SQL の本体に値が入っていません。** 値は別に渡されています。
+
+**判定の手順**
+
+迷ったら、次の順に見てください。
+
+1. その文字列は、最終的に `text(...)` か `execute(...)` に渡されるか
+2. 渡されるなら、その文字列に `{}` / `+` / `%` / `.format()` で外の値が入っているか
+3. 入っているなら**危険**
+
+**よくある間違い**
+
+「`text()` を使っているから危険」と覚えると、8.4.3 の安全な形まで避けてしまいます。
+**`text()` 自体は危険ではありません。** 危険なのは**組み立て方**です。
+
+```python
+# 安全（プレースホルダ）
+text("SELECT id, title FROM tasks WHERE title LIKE :pattern")
+```
+
+---
+
+**問 8.6 の解答**
+
+**`wait_timeout`。一定時間（既定 28800 秒 = 8時間）使われなかった接続を、
+MySQL 側から切る設定。**
+
+**解説**
+
+8.5.2 で確かめたものです。
+
+```sql
+SHOW VARIABLES LIKE 'wait_timeout';
+```
+
+プールは接続を**切らずに待機所に置いておく**仕組みでした（8.5.1）。
+ところが MySQL 側は、放置された接続を勝手に切ります。
+**プールはそれを知らないまま貸し出す**ので、次のエラーになります。
+
+```text
+pymysql.err.OperationalError: (2013, 'Lost connection to MySQL server during query')
+```
+
+`pool_pre_ping=True` は、**貸し出す直前に生きているか確かめる**指定です。
+死んでいれば、黙って作り直してから貸します。
+
+**別解**
+
+`pool_recycle=3600` でも同じ問題に対処できます（8.5.2 の表）。
+「**確認の往復を毎回するか、時間で割り切るか**」の違いです。
+
+このテキストが `pool_pre_ping` を選んだのは、
+**`wait_timeout` の値が環境によって変わる**ためです。
+秒数を当てにする書き方は、移した先で壊れます。
+
+---
+
+**問 8.7 の解答**
+
+**いま接続しているデータベースが、戻したい相手で合っているかを確かめる。**
+
+```sql
+SELECT DATABASE();
+```
+
+**解説**
+
+8.6.2 の「戻すときの注意」の1つ目です。
+
+`mysqldump` のダンプには、**`USE shop;` が入っていません**（`--databases` を付けない場合）。
+`CREATE TABLE` と `INSERT` だけが並んでいるので、
+**`SOURCE` を打った時点で繋いでいるデータベースに流し込まれます。**
+
+`taskapp` に繋いだまま `shop_backup.sql` を流すと、
+**`taskapp` の中に `categories` や `products` が作られます。**
+エラーにならないので、気づくのが遅れます。
+
+**他にも確かめるべきこと**（どれを答えても正解です）
+
+| 確かめること | 理由 |
+|------------|------|
+| ダンプがいつの時点のものか | 戻るのはその時点まで。以降の変更は失われる |
+| ダンプが壊れていないか | 途中で失敗すると、`DROP TABLE` だけ済んだ状態になる |
+| ファイルの文字コードが UTF-8 か | PowerShell の `>` で作ると UTF-16 になる（8.6.1 の注意） |
+
+---
+
+### 演習問題
+
+### 演習 8.1 の解答
+
+**表の答え**
+
+| 調べること | 答え |
+|-----------|------|
+| `comments` の主キーの列と、自動採番されるか | **`id`。`AUTO_INCREMENT` が付いているので自動採番される** |
+| `comments` の外部キーの制約名と、参照先 | **`comments_ibfk_1`。`tasks` の `id`** |
+| `comments` に、自分で作っていないインデックスが何本あるか | **1本**（`KEY task_id (task_id)`） |
+| `tasks` の `done` 列の型 | **`tinyint(1)`** |
+| `alembic_version` の `version_num` 列の型と桁数 | **`varchar(32)`** |
+
+**打ったコマンド**
+
+```sql
+SHOW CREATE TABLE comments\G
+SHOW CREATE TABLE tasks\G
+SHOW CREATE TABLE alembic_version\G
+```
+
+`alembic_version` の結果です。
+
+```text
+*************************** 1. row ***************************
+       Table: alembic_version
+Create Table: CREATE TABLE `alembic_version` (
+  `version_num` varchar(32) NOT NULL,
+  PRIMARY KEY (`version_num`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+```
+
+**`created_at` の確認**
+
+```sql
+INSERT INTO comments (task_id, body) VALUES (1, '型を確かめる');
+SELECT id, task_id, body, created_at FROM comments ORDER BY id DESC LIMIT 1;
+```
+
+実行結果:
+
+```text
++----+---------+--------------------+---------------------+
+| id | task_id | body               | created_at          |
++----+---------+--------------------+---------------------+
+|  7 |       1 | 型を確かめる       | 2026-09-17 06:02:11 |
++----+---------+--------------------+---------------------+
+```
+
+**実行した時刻が入っています。** 後片付けです。
+
+```sql
+DELETE FROM comments WHERE body = '型を確かめる';
+```
+
+**解説**
+
+この演習の狙いは、**Python で書いたモデルの各行が、SQL の何になったかを結びつける**ことです。
+
+| `app/models.py` | `SHOW CREATE TABLE` | 対応する本文 |
+|----------------|--------------------|-----------|
+| `mapped_column(primary_key=True)` | `AUTO_INCREMENT` + `PRIMARY KEY` | 5.3.1 / 5.3.2 |
+| `ForeignKey("tasks.id", ondelete="CASCADE")` | `CONSTRAINT ... FOREIGN KEY ... ON DELETE CASCADE` | 5.4.2 / 5.4.4 |
+| `server_default=func.now()` | `DEFAULT CURRENT_TIMESTAMP` | 5.2.2 |
+| `Mapped[bool]` | **`tinyint(1)`** | 5.1.4 |
+
+**`KEY task_id (task_id)` を自分で作っていない**ところが、いちばん気づきにくい点です。
+MySQL は**外部キーの列にインデックスを自動で作ります**（8.2.1）。
+制約を守るために「その `id` が `tasks` にあるか」を毎回引く必要があり、
+索引が無いと `tasks` の全件走査になってしまうためです（7.1.2）。
+
+**`created_at` に値を入れなかったのに時刻が入る**のは、
+第4章 4.1.3 で扱った「列を省略したときの挙動」です。
+省略された列には `DEFAULT` の値が入ります。
+ここでの `DEFAULT` は `CURRENT_TIMESTAMP`（いまの時刻）でした。
+
+**よくある間違い**
+
+後片付けを `DELETE FROM comments;` と打ってしまう間違いです。
+**`WHERE` が無いので全件消えます**（4.2.3 の `UPDATE` と同じ事故です）。
+消してしまった場合は、8.2.2 の表のとおりに入れ直してください。
+
+---
+
+### 演習 8.2 の解答
+
+**表の答え**
+
+| 窓口 | `selectinload` 無し | `selectinload` 有り |
+|------|-------------------|-------------------|
+| `GET /tasks` | **4 本** | **2 本** |
+| `GET /tasks/1` | **2 本** | **2 本** |
+
+**`GET /tasks/1` は N+1 問題と呼べるか**
+
+**呼べません。** タスクの件数が増えても**2本のまま**で、
+件数に比例して増える N の部分がないからです。
+
+**打った手順**
+
+`selectinload` を外した状態に戻します。
+
+`fastapi-lesson/app/routers/tasks.py`（一覧の窓口）
+
+```python
+    statement = select(Task)
+    # statement = statement.options(selectinload(Task.comments))
+```
+
+MySQL 側で記録を始めます。
+
+```sql
+SET GLOBAL log_output = 'TABLE';
+SET GLOBAL general_log = ON;
+TRUNCATE TABLE mysql.general_log;
+```
+
+窓口を1回だけ叩きます。
+
+```bash
+curl http://127.0.0.1:8000/tasks
+```
+
+止めて数えます。
+
+```sql
+SET GLOBAL general_log = OFF;
+SELECT COUNT(*) AS 本数 FROM mysql.general_log
+WHERE command_type = 'Query'
+  AND CONVERT(argument USING utf8mb4) LIKE 'SELECT%FROM%';
+```
+
+```text
++------+
+| 本数 |
++------+
+|    4 |
++------+
+```
+
+**4マスぶん、同じことを4回**繰り返します。
+**毎回 `TRUNCATE TABLE mysql.general_log;` を打つ**ことを忘れないでください。
+
+最後に必ず止めます。
+
+```sql
+SET GLOBAL general_log = OFF;
+```
+
+**解説**
+
+`GET /tasks/1` が2本で止まる理由は、8.2.2 の最後のシーケンス図にあります。
+
+1. `db.get(Task, 1)` で `tasks` を1行引く（1本目）
+2. `TaskRead` が `task.comments` を読んだ瞬間に `comments` を引く（2本目）
+
+**「タスク1件につきコメントの SELECT が1本」という構造は同じ**です。
+違うのは、**タスクが1件しかない**ことです。
+
+```text
+一覧   ： 1 + タスクの件数     ← 件数が増えると増える（N+1）
+1件取得： 1 + 1                ← いつも2本
+```
+
+**`selectinload` を付けても本数が変わらない**のは、
+まとめる相手が1件しかないので「まとめる意味がない」からです。
+`IN (1)` になるだけで、本数は同じ2本です。
+
+**よくある間違い**
+
+**`TRUNCATE` を忘れて、前の回の記録が足されている**間違いです。
+4本のはずが8本、12本と増えていきます。
+
+もう1つは、**ブラウザで `/docs` から実行している**場合です。
+`/docs` を開くだけでは SQL は飛びませんが、
+**「Try it out」を2回押していると2回ぶん記録されます。**
+`curl` で1回だけ叩くほうが、数え間違いが起きません。
+
+**補足：なぜ `LIKE 'SELECT%FROM%'` で絞るのか**
+
+`general_log` には、`mysql` コマンド自身が打つ SQL も入ります。
+
+```text
+select @@version_comment limit 1
+```
+
+これには `FROM` が無いので、`LIKE 'SELECT%FROM%'` で落ちます（3.3.1）。
+`ROLLBACK` や `Connect` の行も、`command_type` と `LIKE` の条件で落ちています。
+
+---
+
+### 演習 8.3 の解答
+
+**解答のコード**
+
+`fastapi-lesson/app/routers/tasks.py`（`/{task_id}` より**上**に追記）
+
+```python
+# 探してよい列。ここに無い名前は受け付けない（8.4.3）
+SEARCHABLE = {"title": "title", "owner_name": "owner_name"}
+
+
+@router.get("/search2", response_model=list[dict])
+def search_tasks2(
+    q: str = Query(min_length=1),
+    field: str = Query(default="title"),
+    db: Session = Depends(get_db),
+):
+    """タイトルか登録者名で探す（列名は許可リストで決める）。"""
+    column = SEARCHABLE.get(field)
+    if column is None:
+        raise HTTPException(
+            status_code=422,
+            detail=f"{field} では検索できません",
+        )
+
+    # 列名は許可リストの値だけを埋め込む。値はプレースホルダで渡す
+    sql = text(f"SELECT id, title FROM tasks WHERE {column} LIKE :pattern")
+    rows = db.execute(sql, {"pattern": f"%{q}%"}).mappings().all()
+    return [dict(row) for row in rows]
+```
+
+`import` を足します。
+
+`fastapi-lesson/app/routers/tasks.py`（先頭）
+
+```diff
+- from fastapi import APIRouter, Depends, Query
++ from fastapi import APIRouter, Depends, HTTPException, Query
+```
+
+**確認**
+
+```bash
+curl "http://127.0.0.1:8000/tasks/search2?q=牛乳"
+curl --get --data-urlencode "q=山田" --data-urlencode "field=owner_name" http://127.0.0.1:8000/tasks/search2
+curl --get --data-urlencode "q=山田" --data-urlencode "field=owner_email" http://127.0.0.1:8000/tasks/search2
+curl --get --data-urlencode "q=' OR '1'='1" http://127.0.0.1:8000/tasks/search2
+```
+
+実行結果:
+
+```json
+[{"id":1,"title":"牛乳を買う"}]
+[{"id":1,"title":"牛乳を買う"},{"id":3,"title":"部屋を片づける"}]
+{"detail":"owner_email では検索できません"}
+[]
+```
+
+3番目は HTTP ステータス **`422`** で返ります。確かめるには `-i` を付けてください。
+
+```bash
+curl -i --get --data-urlencode "q=山田" --data-urlencode "field=owner_email" http://127.0.0.1:8000/tasks/search2
+```
+
+```text
+HTTP/1.1 422 Unprocessable Entity
+```
+
+**解説**
+
+この演習の要点は、**`q` と `field` を別の扱いにする**ことです。
+
+| 受け取るもの | 何になるか | 扱い方 |
+|------------|----------|-------|
+| `q` | SQL の**値** | **プレースホルダ**（`:pattern`） |
+| `field` | SQL の**形**（列名） | **許可リスト**（`SEARCHABLE`） |
+
+**f 文字列を使っていますが、埋め込んでいるのは `SEARCHABLE` の値だけ**です。
+`field` に何が来ても、`SEARCHABLE.get(field)` を通った後の値しか SQL に入りません。
+**外から来た文字が、そのまま SQL に入ることはありません**（8.4.3）。
+
+**なぜ辞書にするのか**
+
+```python
+SEARCHABLE = {"title": "title", "owner_name": "owner_name"}
+```
+
+キーと値が同じなので、リストでもよさそうに見えます。
+
+```python
+# これでも動きます
+SEARCHABLE = ["title", "owner_name"]
+if field not in SEARCHABLE:
+    raise HTTPException(...)
+```
+
+辞書にしておくと、**外から見える名前と、実際の列名を変えられます。**
+
+```python
+SEARCHABLE = {"title": "title", "owner": "owner_name"}
+```
+
+こうすれば `?field=owner` で探せます。
+**列名をそのまま外に見せない**ことは、地味ですが役に立ちます。
+
+**別解：ORM で書く**
+
+`text(...)` を使わない書き方もできます。
+
+```python
+SEARCHABLE_COLUMNS = {"title": Task.title, "owner_name": Task.owner_name}
+
+
+@router.get("/search3", response_model=list[dict])
+def search_tasks3(
+    q: str = Query(min_length=1),
+    field: str = Query(default="title"),
+    db: Session = Depends(get_db),
+):
+    column = SEARCHABLE_COLUMNS.get(field)
+    if column is None:
+        raise HTTPException(status_code=422, detail=f"{field} では検索できません")
+
+    tasks = db.scalars(select(Task).where(column.like(f"%{q}%"))).all()
+    return [{"id": task.id, "title": task.title} for task in tasks]
+```
+
+**辞書の値が、文字列ではなくモデルの列そのもの**になっています。
+SQL の文字列を1文字も書かないので、こちらのほうが安全側に倒れています。
+**実務では、まずこの形を検討してください。**
+
+**よくある間違い**
+
+**`field` をプレースホルダで渡そうとする**間違いです。
+
+```python
+# 動きません
+sql = text("SELECT id, title FROM tasks WHERE :column LIKE :pattern")
+```
+
+エラーにはならず、**常に0件**になります。
+`WHERE 'title' LIKE '%牛乳%'` という、
+「`title` という**文字列**が `%牛乳%` に当てはまるか」という条件になるためです（8.4.3）。
+
+もう1つは、**`search-ng` を消し忘れる**ことです。
+安全な窓口を足しても、**危ない窓口が残っていれば意味がありません。**
+
+---
+
+### 演習 8.4 の解答
+
+**手順と結果**
+
+**1. ダンプを取る**
+
+```bash
+cd ~/Documents/mysql-lesson
+docker compose exec db sh -c "mysqldump -u root -proot_pass_1234 --single-transaction --no-tablespaces --default-character-set=utf8mb4 taskapp > /sql/taskapp_backup.sql"
+```
+
+**8.6.1 のコマンドの `shop` を `taskapp` に、ファイル名を `taskapp_backup.sql` に変えただけ**です。
+
+**2. 外部キー制約を確認する**
+
+`mysql-lesson/sql/taskapp_backup.sql` を VS Code で開くと、次の行があります。
+
+```sql
+CREATE TABLE `comments` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `task_id` int NOT NULL,
+  `body` varchar(200) NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `task_id` (`task_id`),
+  CONSTRAINT `comments_ibfk_1` FOREIGN KEY (`task_id`) REFERENCES `tasks` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+```
+
+**3. 件数を記録する**
+
+```sql
+SELECT DATABASE();
+SELECT COUNT(*) AS tasks FROM tasks;
+SELECT COUNT(*) AS comments FROM comments;
+```
+
+```text
++------------+
+| DATABASE() |
++------------+
+| taskapp    |
++------------+
+
++-------+
+| tasks |
++-------+
+|     3 |
++-------+
+
++----------+
+| comments |
++----------+
+|        6 |
++----------+
+```
+
+**4. 事故を起こす**
+
+```sql
+DELETE FROM tasks WHERE id = 3;
+```
+
+```text
+Query OK, 1 row affected (0.01 sec)
+```
+
+**5. 数え直す**
+
+```sql
+SELECT COUNT(*) AS tasks FROM tasks;
+SELECT COUNT(*) AS comments FROM comments;
+```
+
+```text
++-------+
+| tasks |
++-------+
+|     2 |
++-------+
+
++----------+
+| comments |
++----------+
+|        3 |
++----------+
+```
+
+**理由**：`comments` の外部キーに **`ON DELETE CASCADE`** が付いているため、
+親のタスクを消すと、それを指していたコメント3件も MySQL が自動で消した。
+
+**6. 戻す**
+
+```sql
+SELECT DATABASE();
+SOURCE /sql/taskapp_backup.sql;
+SELECT COUNT(*) AS tasks FROM tasks;
+SELECT COUNT(*) AS comments FROM comments;
+```
+
+```text
++-------+
+| tasks |
++-------+
+|     3 |
++-------+
+
++----------+
+| comments |
++----------+
+|        6 |
++----------+
+```
+
+**解説**
+
+この演習の狙いは3つあります。
+
+| 狙い | どこで効いたか |
+|------|-------------|
+| `mysqldump` は**データベース名を変えるだけ**で使える | 手順1 |
+| **外部キーの挙動をダンプが持ち運ぶ** | 手順2 |
+| **`ON DELETE CASCADE` は便利だが、消える範囲が広い** | 手順4・5 |
+
+**`tasks` を1件消したら、コメントが3件消えました。**
+第5章 5.4.4 で `ON DELETE` の挙動を選んだとき、
+「`CASCADE` は一緒に消える」と学びました。それがアプリのテーブルで起きた形です。
+
+**この挙動が望ましいかどうかは、扱うデータで変わります。**
+
+| データ | `CASCADE` は妥当か |
+|-------|-----------------|
+| タスクのコメント | **妥当**。タスクが無いコメントは意味がない |
+| 顧客の注文履歴 | **危険**。顧客を消したら売上の記録まで消える |
+
+後者では、`ON DELETE RESTRICT`（相手がいる間は消させない）や、
+第4章 4.3.3 の**論理削除**を選びます。
+
+**`SELECT DATABASE();` を2回打っている**ことにも意味があります。
+**流し込む直前にもう一度確かめる**のが、8.6.2 の注意です。
+`taskapp` のダンプを `shop` に流すと、**`shop` の中に `tasks` と `comments` が作られます。**
+
+**よくある間違い**
+
+**ファイル名を `shop_backup.sql` のままにして、8.6.1 で取ったダンプを上書きする**間違いです。
+上書きしてしまった場合は、8.6.1 をもう一度実行すれば `shop` のダンプは取り直せます。
+
+もう1つは、**`alembic_version` も一緒に戻ることに気づかない**ことです。
+ダンプには `alembic_version` も入っています。
+**「ダンプを取った時点のマイグレーションの状態」に戻る**ので、
+ダンプを取ったあとに新しいマイグレーションを当てていた場合は、
+戻したあとに `alembic upgrade head` を打ち直す必要があります。
+
+---
+
+### 演習 8.5 の解答
+
+**解答のコード**
+
+`fastapi-lesson/check_pool_limit.py`（ファイル全体）
+
+```python
+"""プールが足りなくなるところを見る（mysql-text 演習 8.5）。"""
+
+import time
+
+from sqlalchemy import create_engine
+
+from app.config import settings
+
+MAX_OVERFLOW = 0  # ここを 1 に変えて、もう一度実行する
+
+engine = create_engine(
+    settings.database_url,
+    pool_size=2,
+    max_overflow=MAX_OVERFLOW,
+    pool_timeout=3,
+)
+
+borrowed = []
+try:
+    for i in range(1, 4):
+        start = time.perf_counter()
+        try:
+            borrowed.append(engine.connect())
+            print(f"{i} 本目: 借りられた（{time.perf_counter() - start:.1f} 秒）")
+            print("   ", engine.pool.status())
+        except Exception as error:
+            print(f"{i} 本目: 失敗（{time.perf_counter() - start:.1f} 秒）")
+            print("   ", type(error).__name__)
+            print("   ", str(error).splitlines()[0])
+finally:
+    # 借りた接続は必ず返す
+    for conn in borrowed:
+        conn.close()
+    print("返しました:", engine.pool.status())
+```
+
+**`max_overflow = 0` のときの実行結果**
+
+```text
+1 本目: 借りられた（0.0 秒）
+    Pool size: 2  Connections in pool: 0 Current Overflow: -1 Current Checked out connections: 1
+2 本目: 借りられた（0.0 秒）
+    Pool size: 2  Connections in pool: 0 Current Overflow: 0 Current Checked out connections: 2
+3 本目: 失敗（3.0 秒）
+    TimeoutError
+    QueuePool limit of size 2 overflow 0 reached, connection timed out, timeout 3.00 (Background on this error at: https://sqlalche.me/e/20/3o7r)
+返しました: Pool size: 2  Connections in pool: 2 Current Overflow: 0 Current Checked out connections: 0
+```
+
+**`max_overflow = 1` に変えたときの実行結果**
+
+```text
+1 本目: 借りられた（0.0 秒）
+    Pool size: 2  Connections in pool: 0 Current Overflow: -1 Current Checked out connections: 1
+2 本目: 借りられた（0.0 秒）
+    Pool size: 2  Connections in pool: 0 Current Overflow: 0 Current Checked out connections: 2
+3 本目: 借りられた（0.0 秒）
+    Pool size: 2  Connections in pool: 0 Current Overflow: 1 Current Checked out connections: 3
+返しました: Pool size: 2  Connections in pool: 2 Current Overflow: 0 Current Checked out connections: 0
+```
+
+**`返しました` の行**では、どちらも `Checked out connections: 0` に戻っています。
+`Connections in pool: 2` は、**切断せずに待機所に戻した2本**です（8.5.2）。
+
+**MySQL 側の確認**（`max_overflow = 0` で2本借りている最中に打つ）
+
+```sql
+SHOW STATUS LIKE 'Threads_connected';
+```
+
+```text
++-------------------+-------+
+| Variable_name     | Value |
++-------------------+-------+
+| Threads_connected | 3     |
++-------------------+-------+
+```
+
+Python 側の2本と、**いま `mysql` で打っているぶんの1本**です（8.5.1 と同じ数え方）。
+
+**違いの説明**
+
+**同時に借りられる本数の上限は、`pool_size` と `max_overflow` の合計**である。
+`max_overflow=0` なら 2 本、`max_overflow=1` なら 3 本まで借りられる。
+
+**解説**
+
+`pool_size` は「**待機所に置いておく本数**」、
+`max_overflow` は「**足りないときに一時的に増やせる本数**」でした（8.5.2 の表）。
+
+```text
+同時に借りられる上限 = pool_size + max_overflow
+既定では             = 5 + 10 = 15 本
+```
+
+**3本目が「エラーではなく、まず待つ」ところ**が重要です。
+`pool_timeout=3` の3秒ぶん待ってから、あきらめて `TimeoutError` になりました。
+
+**実際のアプリでは、この「待ち」が表に出ます。**
+同時アクセスが増えると、**SQL は速いのに、レスポンスだけが遅くなります。**
+待っているのは SQL の実行ではなく、**接続の順番待ち**です。
+
+| 症状 | 疑うところ |
+|------|----------|
+| 特定の画面だけ遅い | 1本の SQL（第7章 `EXPLAIN`） |
+| 一覧の画面だけ遅い | **本数**（8.3 の N+1） |
+| **混んでいるときだけ全部遅い** | **プールの本数**（この演習） |
+
+**`Current Overflow` の読み方**
+
+慣れないと分かりにくい表示です。
+
+| 表示 | 意味 |
+|------|------|
+| `Current Overflow: -1` | 待機所の枠が **1つ余っている** |
+| `Current Overflow: 0` | 待機所の枠は**ちょうど使い切った** |
+| `Current Overflow: 1` | 枠を超えて **1本、一時的に作った** |
+
+**`max_overflow` を超えられない**のが、この演習で見た上限です。
+
+**よくある間違い**
+
+**借りた接続を返さずにスクリプトを終える**間違いです。
+Python が終了すれば接続も切れるので実害は出ませんが、
+**`finally` で必ず返す形を身に付けてください。**
+
+アプリの中で返し忘れると、**プールが枯れたまま戻りません。**
+fastapi-text 6.5.1 の `get_db` が `try` / `finally` で `close()` していたのは、これを防ぐためです。
+
+もう1つは、**`pool_timeout` を指定せずに試して、30秒待たされる**ことです。
+既定は 30 秒です（8.5.2 の表）。**待っているだけなので、止めずに待ってください。**
+
+---
