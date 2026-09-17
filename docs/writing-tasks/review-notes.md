@@ -415,6 +415,28 @@
   - [ ] 8.1.2 ⑥ で、`POST /tasks` で足した1件を **`DELETE` で消して3件に戻す**よう指示しています。
         以降の本数・件数がすべて「タスク3件」前提なので、**この指示が目立つかどうか**を見てください
 
+- [ ] `mysql-text` **第9章（M-09）全体**：**この章の SQL と出力は実機未確認です。**
+      Docker が使えない実行環境だったため、1つも実行できていません。次の3点を確認してください。
+  - [ ] 9.2.1 の `SELECT @@transaction_isolation;` の出力（`REPEATABLE-READ` の1行。
+        罫線の幅を含めて、`mysql:8.4` で実際に打った表示と合っているか）
+  - [ ] 解答編 第9章 演習 9.3 の `UPDATE products SET price = ROUND(price * 1.1) WHERE stock <= 5;` が
+        **`Rows matched: 4  Changed: 4`** になるか（第2章の `shop.sql` を流した直後の状態で。
+        対象は `id` が 4・7・13・20 の4行のはずです）。
+        あわせて、その直前の `SELECT ... WHERE stock <= 5` が4行になるかも見てください
+  - [ ] 解答編 第9章 演習 9.2 の解答例（`myapp` データベースと `books` / `authors` /
+        `book_authors` / `reading_logs` の `CREATE TABLE`、`INSERT`、3本の `SELECT`）が
+        **エラー無しで通るか**。`CHECK (score BETWEEN 1 AND 5)` を含みます
+  - [ ] 9.3.3 の「AI が出してきた SQL」の実例（`customers` と `orders` の `LEFT JOIN`）について、
+        **直す前の SQL が `Empty set` にならず「注文0件の顧客が `1` と数えられた行」を返すこと**、
+        **直したあとの SQL が渡辺さくらさんの1行になること**（`HAVING COUNT(o.id) = 0`）
+  - [ ] 解答編 第9章 演習 9.3 の依頼2「分類ごとの売上」の直した SQL が **4行**になるか
+        （`categories` は4件。`LEFT JOIN` と `COALESCE` で売上0の分類も出す形にしています）
+
+> **補足：mysql-text 第9章で新しく導入した SQL は `SELECT @@transaction_isolation;` の1つだけです。**
+> それ以外の SQL は、すべて第1章〜第8章で扱った構文の組み合わせです。
+> 第9章は読み物と演習が中心で、**9.2 に出てくる分野（レプリケーション・DDD・AWS など）は
+> 名前と担当を示しただけ**で、手順は書いていません。
+
 > **補足：`mysql-text/90-answers-part1.md` の冒頭から `./91-answers-part2.md` への
 > リンクは、M-06 で `91-answers-part2.md` を作成したため解消しました。**
 > あわせて `mysql-text/README.md` の「解答編 その2」もリンクに差し替えています。
