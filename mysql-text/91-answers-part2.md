@@ -14,6 +14,13 @@ title: "解答編 その2（第6章〜第9章）"
 
 第1章から第5章の解答は [解答編 その1](./90-answers-part1.md) にあります。
 
+> **補足：この解答編のコマンドの書き方**
+> `docker` で始まるコマンドは、**Windows（PowerShell）でも macOS / Linux でも同じ**なので、
+> `bash` のブロックで1つだけ示しています。
+> **`curl` やパスの書き方のように OS で違うものは**、本文と同じように
+> 「Windows（PowerShell）」と「macOS / Linux」を並記しています
+> （Windows の PowerShell では、`curl` ではなく **`curl.exe`** と打つ必要があります。8.4.1）。
+
 > **注意：解答と自分の答えが違っても、間違いとは限りません**
 > SQL は、同じ結果を得る書き方が複数あります（第0章 0.3.3）。
 > とくに第6章は、**サブクエリと `JOIN` のどちらでも書ける問題**が多くあります（6.6.4）。
@@ -230,7 +237,7 @@ COALESCE(SUM(oi.quantity * oi.unit_price), 0)
 
 ---
 
-### 演習問題
+### 演習
 
 ### 演習 6.1 の解答
 
@@ -938,7 +945,7 @@ GROUP BY p.id, p.name;
 
 ---
 
-### 演習問題
+### 演習
 
 ### 演習 7.1 の解答
 
@@ -1626,7 +1633,7 @@ SELECT DATABASE();
 
 ---
 
-### 演習問題
+### 演習
 
 ### 演習 8.1 の解答
 
@@ -1746,6 +1753,14 @@ TRUNCATE TABLE mysql.general_log;
 
 窓口を1回だけ叩きます。
 
+**Windows（PowerShell）**
+
+```powershell
+curl.exe http://127.0.0.1:8000/tasks
+```
+
+**macOS / Linux**
+
 ```bash
 curl http://127.0.0.1:8000/tasks
 ```
@@ -1860,6 +1875,17 @@ def search_tasks2(
 
 **確認**
 
+**Windows（PowerShell）**
+
+```powershell
+curl.exe "http://127.0.0.1:8000/tasks/search2?q=牛乳"
+curl.exe --get --data-urlencode "q=山田" --data-urlencode "field=owner_name" http://127.0.0.1:8000/tasks/search2
+curl.exe --get --data-urlencode "q=山田" --data-urlencode "field=owner_email" http://127.0.0.1:8000/tasks/search2
+curl.exe --get --data-urlencode "q=' OR '1'='1" http://127.0.0.1:8000/tasks/search2
+```
+
+**macOS / Linux**
+
 ```bash
 curl "http://127.0.0.1:8000/tasks/search2?q=牛乳"
 curl --get --data-urlencode "q=山田" --data-urlencode "field=owner_name" http://127.0.0.1:8000/tasks/search2
@@ -1877,6 +1903,14 @@ curl --get --data-urlencode "q=' OR '1'='1" http://127.0.0.1:8000/tasks/search2
 ```
 
 3番目は HTTP ステータス **`422`** で返ります。確かめるには `-i` を付けてください。
+
+**Windows（PowerShell）**
+
+```powershell
+curl.exe -i --get --data-urlencode "q=山田" --data-urlencode "field=owner_email" http://127.0.0.1:8000/tasks/search2
+```
+
+**macOS / Linux**
 
 ```bash
 curl -i --get --data-urlencode "q=山田" --data-urlencode "field=owner_email" http://127.0.0.1:8000/tasks/search2
@@ -1972,6 +2006,15 @@ sql = text("SELECT id, title FROM tasks WHERE :column LIKE :pattern")
 **手順と結果**
 
 **1. ダンプを取る**
+
+**Windows（PowerShell）**
+
+```powershell
+cd ~\Documents\mysql-lesson
+docker compose exec db sh -c "mysqldump -u root -proot_pass_1234 --single-transaction --no-tablespaces --default-character-set=utf8mb4 taskapp > /sql/taskapp_backup.sql"
+```
+
+**macOS / Linux**
 
 ```bash
 cd ~/Documents/mysql-lesson
@@ -2437,7 +2480,7 @@ SQL は、間違っていても動いてしまいます。
 
 ---
 
-### 演習問題
+### 演習
 
 ### 演習 9.1 の解答
 
