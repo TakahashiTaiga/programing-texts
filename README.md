@@ -50,7 +50,7 @@ React本の 2.2.1 で詰まりました。
 | 2 | Python | [`python-text/`](./python-text/) | ✅ 完成（全11章＋解答編） |
 | 3 | FastAPI | [`fastapi-text/`](./fastapi-text/) | ✅ 完成（全10章＋解答編） |
 | 4 | Docker | [`docker-text/`](./docker-text/) | 準備中 |
-| 5 | MySQL | [`mysql-text/`](./mysql-text/) | 準備中 |
+| 5 | MySQL | [`mysql-text/`](./mysql-text/) | 🚧 執筆中（第0章まで） |
 
 将来的に扱う予定のテーマ（ハードウェア基礎 / ネットワーク / データベース設計 / DDD / AWS / IaC）は
 [`docs/roadmap.md`](./docs/roadmap.md) を参照してください。
